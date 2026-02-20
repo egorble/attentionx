@@ -48,7 +48,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onReady }) => {
             />
 
             {/* Glow effect */}
-            <div className="absolute w-64 h-64 bg-yc-orange/10 rounded-full blur-[100px]" />
+            <div className="absolute w-64 h-64 bg-yc-purple/10 rounded-full blur-[100px]" />
 
             {/* Logo */}
             <div className="relative mb-8">
@@ -62,7 +62,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onReady }) => {
 
             {/* Brand text */}
             <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight mb-1">
-                UNICORN<span className="text-yc-orange">X</span>
+                ATTENTION<span className="text-yc-purple">X</span>
             </h1>
             <p className="text-gray-500 text-xs font-medium tracking-widest uppercase mb-10">
                 Fantasy YC Trading
@@ -71,7 +71,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onReady }) => {
             {/* Progress bar */}
             <div className="w-48 md:w-64 h-1 bg-white/10 rounded-full overflow-hidden">
                 <div
-                    className="h-full bg-gradient-to-r from-yc-orange to-orange-400 rounded-full transition-all duration-500 ease-out"
+                    className="h-full bg-gradient-to-r from-yc-purple to-purple-400 rounded-full transition-all duration-500 ease-out"
                     style={{ width: `${progress}%` }}
                 />
             </div>

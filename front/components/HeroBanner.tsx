@@ -30,13 +30,13 @@ const HeroBanner: React.FC = () => {
         
         <h2 className="text-3xl md:text-5xl font-black text-yc-text-primary dark:text-white mb-6 leading-tight tracking-tight">
           BUILD YOUR <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-yc-orange to-red-500 dark:to-white">UNICORN PORTFOLIO</span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-yc-purple to-red-500 dark:to-white">STARTUP PORTFOLIO</span>
         </h2>
         
         <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
             <button 
                 onClick={scrollToGrid}
-                className="w-full sm:w-auto bg-yc-orange hover:bg-orange-600 text-white px-8 py-3 rounded-lg font-bold text-sm uppercase tracking-wide flex items-center justify-center transition-all shadow-lg shadow-orange-500/30 active:scale-95"
+                className="w-full sm:w-auto bg-yc-purple hover:bg-purple-600 text-white px-8 py-3 rounded-lg font-bold text-sm uppercase tracking-wide flex items-center justify-center transition-all shadow-lg shadow-purple-500/30 active:scale-95"
             >
                 <Play className="w-4 h-4 mr-2 fill-current" />
                 Play Now
@@ -56,18 +56,18 @@ const HeroBanner: React.FC = () => {
         <div className="w-48 h-48 border-[1px] border-gray-300 dark:border-[#333] rounded-full absolute"></div>
         
         {/* Spinning Orange Ring Segment */}
-        <div className="w-40 h-40 border-4 border-transparent rounded-full absolute animate-spin-slow border-t-yc-orange border-r-yc-orange/30"></div>
+        <div className="w-40 h-40 border-4 border-transparent rounded-full absolute animate-spin-slow border-t-yc-purple border-r-yc-purple/30"></div>
         
         {/* Counter-Spinning Green Ring Segment */}
         <div className="w-32 h-32 border-4 border-transparent rounded-full absolute animate-spin-reverse-slow border-b-yc-green border-l-yc-green/30"></div>
         
         {/* Center Logo */}
          <div className="w-20 h-20 bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-[#333] rounded-full absolute flex items-center justify-center z-10 shadow-xl">
-            <span className="text-yc-orange font-black text-2xl">YC</span>
+            <span className="text-yc-purple font-black text-2xl">YC</span>
          </div>
          
          {/* Pulse Effect behind Logo */}
-         <div className="w-20 h-20 bg-yc-orange/10 rounded-full absolute animate-ping opacity-20"></div>
+         <div className="w-20 h-20 bg-yc-purple/10 rounded-full absolute animate-ping opacity-20"></div>
       </div>
     </div>
   );
