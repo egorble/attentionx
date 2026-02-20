@@ -8,7 +8,7 @@ import { useNFT } from '../hooks/useNFT';
 import { useMarketplaceV2 } from '../hooks/useMarketplaceV2';
 import { usePollingData } from '../hooks/usePollingData';
 import { formatXTZ } from '../lib/contracts';
-import { currencySymbol } from '../lib/networks';
+import { currencySymbol, getActiveNetworkId } from '../lib/networks';
 import gsap from 'gsap';
 import { useOnboarding } from '../hooks/useOnboarding';
 import OnboardingGuide, { OnboardingStep } from './OnboardingGuide';
@@ -37,6 +37,7 @@ interface PortfolioProps {
 
 const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
     const packPriceLabel = '0.01';
+    const networkId = getActiveNetworkId();
     const [activeTab, setActiveTab] = useState<'cards' | 'performance'>('cards');
     const [myCards, setMyCards] = useState<CardData[]>([]);
     const [isMergeMode, setIsMergeMode] = useState(false);
