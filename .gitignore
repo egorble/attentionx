@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Build output
+build/
+front/dist/
+
+# Environment files
+.env
+*.env
+.env.*
+scripts/.env
+backend/.env
+backend/.env.*
+
+# Deployment files (deployment-rise.json is tracked — needed by server for contract sync)
+test-results.json
+
+# IDE
+.vscode/
+.idea/
+.claude/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Database (production data — never overwrite via git)
+server/db/*.db
+
+# Server logs
+server/logs/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Cache
+.cache/
+.npm/
+
+# OpenZeppelin flattened
+flattened/

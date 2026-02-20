@@ -1,0 +1,25 @@
+{
+  "network": "rise",
+  "networkName": "RISE Testnet",
+  "chainId": 11155931,
+  "explorer": "https://explorer.testnet.riselabs.xyz",
+  "timestamp": "2026-02-20T16:18:18.152Z",
+  "deployer": "0x233c8C54F25734B744E522bdC1Eed9cbc8C97D0c",
+  "deployMode": "UUPS Proxy",
+  "proxies": {
+    "UnicornX_NFT": "0xd75293a06Ebce94a3A2C07431fC3f2CF16eaE304",
+    "PackOpener": "0x3676c7D4f9C04C9e225d1F589921F6afc0Af4BFC",
+    "TournamentManager": "0x70d8596574223719341f6DDf334B5C486f82a1D6",
+    "MarketplaceV2": "0x606d031ca8477Ece0b074F8af4E1b3464e250225"
+  },
+  "implementations": {
+    "UnicornX_NFT": "0xaDB299863c295d40C94Ff66116E6496B0b503eD0",
+    "PackOpener": "0x2ab6D30798D45e197b2b754e26FB882EBCC3971B",
+    "TournamentManager": "0xE125310923816E768593B5a7f0400A3B1593b404",
+    "MarketplaceV2": "0x478439EddEad541C7851aE6eC1Bb223728F0B872"
+  },
+  "configuration": {
+    "owner": "0x233c8C54F25734B744E522bdC1Eed9cbc8C97D0c",
+    "treasury": "0x233c8C54F25734B744E522bdC1Eed9cbc8C97D0c"
+  }
+}

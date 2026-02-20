@@ -1,0 +1,139 @@
+import React from 'react';
+import { Trophy, ArrowRight, Crown, Medal, Award } from 'lucide-react';
+import { NavSection } from '../types';
+import { generatePixelAvatar } from '../lib/pixelAvatar';
+import { useWalletContext } from '../context/WalletContext';
+import { useActiveTournament, useSharedLeaderboard } from '../hooks/useSharedData';
+
+interface DashboardLeaderboardProps {
+    onNavigate: (section: NavSection) => void;
+}
+
+const DashboardLeaderboard: React.FC<DashboardLeaderboardProps> = ({ onNavigate }) => {
+    const { data: tournament } = useActiveTournament();
+    const tournamentId = tournament?.id ?? null;
+    const { data: players, isLoading: loading } = useSharedLeaderboard(tournamentId);
+    const { address } = useWalletContext();
+
+    const formatAddress = (addr: string) => {
+        if (addr.length <= 12) return addr;
+        return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+    };
+
+    const getRankIcon = (rank: number) => {
+        if (rank === 1) return <Crown className="w-4 h-4 text-yellow-500" />;
+        if (rank === 2) return <Medal className="w-4 h-4 text-gray-400" />;
+        if (rank === 3) return <Award className="w-4 h-4 text-orange-700" />;
+        return <span className="text-xs font-bold text-gray-500 w-4 text-center">{rank}</span>;
+    };
+
+    if (loading) {
+        return (
+            <div className="my-8">
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center">
+                        <Trophy className="w-5 h-5 mr-2 text-yc-orange" />
+                        Leaderboard
+                    </h3>
+                </div>
+                <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl p-8">
+                    <div className="flex items-center justify-center">
+                        <div className="w-6 h-6 border-2 border-yc-orange border-t-transparent rounded-full animate-spin"></div>
+                        <span className="ml-3 text-gray-400 text-sm">Loading leaderboard...</span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!tournamentId || !players || players.length === 0) {
+        return (
+            <div className="my-8">
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center">
+                        <Trophy className="w-5 h-5 mr-2 text-yc-orange" />
+                        Leaderboard
+                    </h3>
+                </div>
+                <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl p-8 text-center">
+                    <Trophy className="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+                    <p className="text-gray-400 text-sm">No players yet. Be the first to enter the tournament!</p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="my-8">
+            <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center">
+                    <Trophy className="w-5 h-5 mr-2 text-yc-orange" />
+                    Leaderboard
+                </h3>
+                <button
+                    onClick={() => onNavigate(NavSection.LEAGUES)}
+                    className="text-xs font-bold text-yc-orange hover:text-orange-600 flex items-center transition-colors"
+                >
+                    View Full Leaderboard
+                    <ArrowRight className="w-3 h-3 ml-1" />
+                </button>
+            </div>
+
+            <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl overflow-hidden shadow-sm dark:shadow-none">
+                <div className="divide-y divide-gray-100 dark:divide-[#1E1E1E]">
+                    {players.map((player) => {
+                        const isCurrentUser = address && player.address.toLowerCase() === address.toLowerCase();
+
+                        return (
+                            <div
+                                key={player.address}
+                                className={`flex items-center px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors ${
+                                    isCurrentUser ? 'bg-yc-orange/5' : ''
+                                }`}
+                            >
+                                {/* Rank */}
+                                <div className={`w-8 h-8 flex items-center justify-center rounded-full shrink-0 ${
+                                    player.rank === 1 ? 'bg-yellow-500/10' :
+                                    player.rank === 2 ? 'bg-gray-400/10' :
+                                    player.rank === 3 ? 'bg-orange-700/10' : ''
+                                }`}>
+                                    {getRankIcon(player.rank)}
+                                </div>
+
+                                {/* Avatar + Name */}
+                                <div className="flex items-center ml-3 flex-1 min-w-0">
+                                    <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-[#333] border border-gray-300 dark:border-gray-700 overflow-hidden shrink-0">
+                                        <img
+                                            src={player.avatar || generatePixelAvatar(player.address, 56)}
+                                            alt=""
+                                            className="w-full h-full object-cover"
+                                            style={{ imageRendering: player.avatar ? 'auto' : 'pixelated' }}
+                                        />
+                                    </div>
+                                    <div className="ml-2 min-w-0">
+                                        <p className={`text-sm font-bold truncate ${
+                                            isCurrentUser ? 'text-yc-orange' : 'text-gray-900 dark:text-white'
+                                        }`}>
+                                            {player.username || formatAddress(player.address)}
+                                            {isCurrentUser && <span className="text-[10px] text-yc-orange ml-1">(You)</span>}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Score */}
+                                <div className="text-right shrink-0">
+                                    <p className="text-sm font-bold font-mono text-gray-900 dark:text-white">
+                                        {player.score.toFixed(1)}
+                                    </p>
+                                    <p className="text-[10px] text-gray-400 font-mono">pts</p>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default DashboardLeaderboard;
