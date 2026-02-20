@@ -54,7 +54,7 @@ const WalletModal: React.FC<WalletModalProps> = ({
                 {/* Connecting spinner */}
                 {isConnecting && (
                     <div className="text-center py-8">
-                        <div className="w-10 h-10 mx-auto border-3 border-yc-orange/30 border-t-yc-orange rounded-full animate-spin mb-3" />
+                        <div className="w-10 h-10 mx-auto border-3 border-yc-purple/30 border-t-yc-purple rounded-full animate-spin mb-3" />
                         <p className="text-gray-500 text-sm">Confirm in your wallet...</p>
                     </div>
                 )}
@@ -66,7 +66,7 @@ const WalletModal: React.FC<WalletModalProps> = ({
                             <button
                                 key={wallet.info.uuid}
                                 onClick={() => onSelectInjected(wallet.provider, wallet.info.rdns)}
-                                className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-[#2A2A2A] hover:border-yc-orange hover:bg-yc-orange/5 transition-all active:scale-[0.98]"
+                                className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-[#2A2A2A] hover:border-yc-purple hover:bg-yc-purple/5 transition-all active:scale-[0.98]"
                             >
                                 <img
                                     src={wallet.info.icon}
@@ -84,9 +84,9 @@ const WalletModal: React.FC<WalletModalProps> = ({
                         {wallets.length === 0 && hasInjected && (
                             <button
                                 onClick={() => onSelectInjected((window as any).ethereum, 'injected')}
-                                className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-[#2A2A2A] hover:border-yc-orange hover:bg-yc-orange/5 transition-all active:scale-[0.98]"
+                                className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-[#2A2A2A] hover:border-yc-purple hover:bg-yc-purple/5 transition-all active:scale-[0.98]"
                             >
-                                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-lg font-bold">
+                                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-lg font-bold">
                                     W
                                 </div>
                                 <span className="text-gray-900 dark:text-white font-bold text-sm flex-1 text-left">
@@ -135,7 +135,7 @@ const WalletModal: React.FC<WalletModalProps> = ({
                                     href="https://metamask.io/download/"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 text-yc-orange font-bold text-sm hover:underline"
+                                    className="inline-flex items-center gap-2 text-yc-purple font-bold text-sm hover:underline"
                                 >
                                     Install MetaMask <ExternalLink className="w-3.5 h-3.5" />
                                 </a>

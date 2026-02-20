@@ -63,14 +63,14 @@ const RARITY_BADGE: Record<string, string> = {
     'Common': 'bg-gray-700 text-gray-300',
     'Rare': 'bg-green-600 text-white',
     'Epic': 'bg-violet-600 text-white',
-    'Legendary': 'bg-orange-500 text-white',
+    'Legendary': 'bg-purple-500 text-white',
 };
 
 const RARITY_CHIP: Record<string, string> = {
     'Common': 'border-gray-400 dark:border-gray-600 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50',
     'Rare': 'border-green-500 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30',
     'Epic': 'border-violet-500 text-violet-700 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/30',
-    'Legendary': 'border-orange-500 text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30',
+    'Legendary': 'border-purple-500 text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30',
 };
 
 const STARTUP_ID_BY_NAME: Record<string, number> = {
@@ -421,7 +421,7 @@ const Leagues: React.FC = () => {
                 <div className="flex items-center justify-between mb-4 sm:mb-6">
                     <div>
                         <h2 className="text-xl sm:text-3xl font-black text-yc-text-primary dark:text-white uppercase tracking-tight flex items-center">
-                            <Shield className="mr-2 sm:mr-3 w-6 h-6 sm:w-8 sm:h-8 text-yc-orange" />
+                            <Shield className="mr-2 sm:mr-3 w-6 h-6 sm:w-8 sm:h-8 text-yc-purple" />
                             Assemble Your Squad
                         </h2>
                         <p className="text-gray-500 dark:text-gray-400 mt-1 text-xs sm:text-base">Select 5 NFT cards to compete. Cards will be locked during tournament.</p>
@@ -464,7 +464,7 @@ const Leagues: React.FC = () => {
                                         className={`
                                             flex-1 sm:flex-none aspect-square sm:aspect-auto sm:h-16 rounded-lg border-2 transition-all relative flex items-center justify-center sm:justify-start gap-2 sm:gap-3 sm:px-3 group
                                             ${slot
-                                                ? 'border-yc-orange bg-black/80 deck-slot-card'
+                                                ? 'border-yc-purple bg-black/80 deck-slot-card'
                                                 : 'border-dashed border-gray-600 bg-black/20 hover:border-gray-400'}
                                         `}
                                     >
@@ -502,8 +502,8 @@ const Leagues: React.FC = () => {
                                     ${deck.includes(null)
                                         ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
                                         : submissionState === 'submitting'
-                                            ? 'bg-yc-orange text-white cursor-wait opacity-80'
-                                            : 'bg-yc-orange hover:bg-orange-600 text-white shadow-lg active:scale-95'}
+                                            ? 'bg-yc-purple text-white cursor-wait opacity-80'
+                                            : 'bg-yc-purple hover:bg-purple-600 text-white shadow-lg active:scale-95'}
                                 `}
                             >
                                 {submissionState === 'submitting' ? (
@@ -556,29 +556,29 @@ const Leagues: React.FC = () => {
                                                 className={`
                                                     bg-[#0D0D0D] border rounded-lg p-2 transition-all duration-200 relative group
                                                     ${isSelected
-                                                        ? 'border-yc-orange/50 opacity-40 grayscale cursor-not-allowed'
+                                                        ? 'border-yc-purple/50 opacity-40 grayscale cursor-not-allowed'
                                                         : isAiPick && canAdd
-                                                            ? 'border-yc-orange/40 cursor-pointer hover:border-yc-orange hover:bg-[#1A1A1A] hover:-translate-y-1'
+                                                            ? 'border-yc-purple/40 cursor-pointer hover:border-yc-purple hover:bg-[#1A1A1A] hover:-translate-y-1'
                                                             : canAdd
-                                                                ? 'border-[#2A2A2A] cursor-pointer hover:border-yc-orange hover:bg-[#1A1A1A] hover:-translate-y-1'
+                                                                ? 'border-[#2A2A2A] cursor-pointer hover:border-yc-purple hover:bg-[#1A1A1A] hover:-translate-y-1'
                                                                 : 'border-[#2A2A2A] opacity-60 cursor-not-allowed'}
                                                 `}
                                             >
                                                 {isAiPick && !isSelected && (
-                                                    <div className="absolute -top-1 -right-1 z-10 px-1 py-0.5 rounded bg-yc-orange text-[8px] font-bold text-white uppercase tracking-wider">
+                                                    <div className="absolute -top-1 -right-1 z-10 px-1 py-0.5 rounded bg-yc-purple text-[8px] font-bold text-white uppercase tracking-wider">
                                                         AI
                                                     </div>
                                                 )}
                                                 <div className="aspect-square bg-black rounded overflow-hidden relative">
                                                     <img src={card.image} className="w-full h-full object-contain" alt={card.name} />
                                                     {!isSelected && canAdd && (
-                                                        <div className="absolute inset-0 bg-yc-orange/0 group-hover:bg-yc-orange/20 flex items-center justify-center transition-colors">
+                                                        <div className="absolute inset-0 bg-yc-purple/0 group-hover:bg-yc-purple/20 flex items-center justify-center transition-colors">
                                                             <span className="text-white text-lg font-bold opacity-0 group-hover:opacity-100 transition-opacity">+</span>
                                                         </div>
                                                     )}
                                                     {isSelected && (
                                                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                                            <CheckCircle className="w-6 h-6 text-yc-orange" />
+                                                            <CheckCircle className="w-6 h-6 text-yc-purple" />
                                                         </div>
                                                     )}
                                                 </div>
@@ -598,8 +598,8 @@ const Leagues: React.FC = () => {
                                 ${deck.includes(null)
                                     ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
                                     : submissionState === 'submitting'
-                                        ? 'bg-yc-orange text-white cursor-wait opacity-80'
-                                        : 'bg-yc-orange hover:bg-orange-600 text-white shadow-lg active:scale-95'}
+                                        ? 'bg-yc-purple text-white cursor-wait opacity-80'
+                                        : 'bg-yc-purple hover:bg-purple-600 text-white shadow-lg active:scale-95'}
                             `}
                         >
                             {submissionState === 'submitting' ? (
@@ -612,63 +612,63 @@ const Leagues: React.FC = () => {
                             )}
                         </button>
 
-                    {/* AttentionX AI — Overlay (open) */}
-                    {aiRecommendation && aiRecommendation.source !== 'insufficient_cards' && aiOverlayOpen && (
-                        <div className="absolute inset-0 z-40 flex items-end sm:items-center justify-center bg-black/60 dark:bg-black/80 backdrop-blur-sm rounded-2xl">
-                            <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-[#2A2A2A] rounded-t-xl sm:rounded-xl p-4 sm:p-5 max-w-md w-full sm:mx-4 shadow-2xl">
-                                <div className="flex items-center justify-between mb-3 sm:mb-4">
-                                    <h4 className="text-xs sm:text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">AttentionX AI</h4>
+                        {/* AttentionX AI — Overlay (open) */}
+                        {aiRecommendation && aiRecommendation.source !== 'insufficient_cards' && aiOverlayOpen && (
+                            <div className="absolute inset-0 z-40 flex items-end sm:items-center justify-center bg-black/60 dark:bg-black/80 backdrop-blur-sm rounded-2xl">
+                                <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-[#2A2A2A] rounded-t-xl sm:rounded-xl p-4 sm:p-5 max-w-md w-full sm:mx-4 shadow-2xl">
+                                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                        <h4 className="text-xs sm:text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">AttentionX AI</h4>
+                                        <button
+                                            onClick={() => setAiOverlayOpen(false)}
+                                            className="w-7 h-7 rounded-full bg-gray-100 dark:bg-[#1A1A1A] hover:bg-gray-200 dark:hover:bg-[#333] flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-3 sm:mb-4">{aiRecommendation.reasoning}</p>
+                                    {aiPickCards.length > 0 && (
+                                        <div className="flex flex-wrap gap-1.5 mb-3 sm:mb-4">
+                                            {aiPickCards.map(card => {
+                                                const inDeck = deck.some(d => d?.tokenId === card.tokenId);
+                                                return (
+                                                    <button
+                                                        key={card.tokenId}
+                                                        onClick={() => {
+                                                            if (inDeck) return;
+                                                            const emptyIdx = deck.findIndex(d => d === null);
+                                                            if (emptyIdx !== -1) {
+                                                                const newDeck = [...deck];
+                                                                newDeck[emptyIdx] = card;
+                                                                setDeck(newDeck);
+                                                            }
+                                                        }}
+                                                        disabled={inDeck}
+                                                        className={`px-2 py-1 rounded border text-[10px] sm:text-xs font-bold transition-all ${inDeck ? 'opacity-40 cursor-default' : 'hover:scale-105 active:scale-95 cursor-pointer'} ${RARITY_CHIP[card.rarity] || RARITY_CHIP.Common}`}
+                                                    >
+                                                        {card.name}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                     <button
-                                        onClick={() => setAiOverlayOpen(false)}
-                                        className="w-7 h-7 rounded-full bg-gray-100 dark:bg-[#1A1A1A] hover:bg-gray-200 dark:hover:bg-[#333] flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
+                                        onClick={() => {
+                                            const newDeck: (CardData | null)[] = [null, null, null, null, null];
+                                            aiRecommendation.recommended.forEach((tokenId, idx) => {
+                                                const card = availableCards.find(c => c.tokenId === tokenId);
+                                                if (card) newDeck[idx] = card;
+                                            });
+                                            setDeck(newDeck);
+                                            setAiOverlayOpen(false);
+                                        }}
+                                        className="w-full py-2.5 sm:py-3 rounded-lg font-black text-xs uppercase tracking-wider bg-yc-purple hover:bg-purple-600 text-white transition-all flex items-center justify-center active:scale-95"
                                     >
-                                        <X size={14} />
+                                        <Zap className="w-3.5 h-3.5 mr-1.5 fill-current" />
+                                        Apply All
                                     </button>
                                 </div>
-                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-3 sm:mb-4">{aiRecommendation.reasoning}</p>
-                                {aiPickCards.length > 0 && (
-                                    <div className="flex flex-wrap gap-1.5 mb-3 sm:mb-4">
-                                        {aiPickCards.map(card => {
-                                            const inDeck = deck.some(d => d?.tokenId === card.tokenId);
-                                            return (
-                                                <button
-                                                    key={card.tokenId}
-                                                    onClick={() => {
-                                                        if (inDeck) return;
-                                                        const emptyIdx = deck.findIndex(d => d === null);
-                                                        if (emptyIdx !== -1) {
-                                                            const newDeck = [...deck];
-                                                            newDeck[emptyIdx] = card;
-                                                            setDeck(newDeck);
-                                                        }
-                                                    }}
-                                                    disabled={inDeck}
-                                                    className={`px-2 py-1 rounded border text-[10px] sm:text-xs font-bold transition-all ${inDeck ? 'opacity-40 cursor-default' : 'hover:scale-105 active:scale-95 cursor-pointer'} ${RARITY_CHIP[card.rarity] || RARITY_CHIP.Common}`}
-                                                >
-                                                    {card.name}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                                <button
-                                    onClick={() => {
-                                        const newDeck: (CardData | null)[] = [null, null, null, null, null];
-                                        aiRecommendation.recommended.forEach((tokenId, idx) => {
-                                            const card = availableCards.find(c => c.tokenId === tokenId);
-                                            if (card) newDeck[idx] = card;
-                                        });
-                                        setDeck(newDeck);
-                                        setAiOverlayOpen(false);
-                                    }}
-                                    className="w-full py-2.5 sm:py-3 rounded-lg font-black text-xs uppercase tracking-wider bg-yc-orange hover:bg-orange-600 text-white transition-all flex items-center justify-center active:scale-95"
-                                >
-                                    <Zap className="w-3.5 h-3.5 mr-1.5 fill-current" />
-                                    Apply All
-                                </button>
                             </div>
-                        </div>
-                    )}
+                        )}
 
                     </div>
                 </div>
@@ -676,7 +676,7 @@ const Leagues: React.FC = () => {
                 {/* AttentionX AI — Collapsed bar (after overlay dismissed) */}
                 {aiRecommendation && aiRecommendation.source !== 'insufficient_cards' && !aiOverlayOpen && (
                     <div className="flex items-center gap-2 sm:gap-3 bg-white dark:bg-[#111] border border-gray-200 dark:border-[#2A2A2A] rounded-lg px-3 sm:px-4 py-2">
-                        <span className="text-[9px] font-black text-yc-orange bg-yc-orange/10 px-1.5 py-0.5 rounded uppercase shrink-0">AI</span>
+                        <span className="text-[9px] font-black text-yc-purple bg-yc-purple/10 px-1.5 py-0.5 rounded uppercase shrink-0">AI</span>
                         <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 flex-1 min-w-0 truncate">{aiRecommendation.reasoning}</p>
                         <button
                             onClick={() => {
@@ -687,7 +687,7 @@ const Leagues: React.FC = () => {
                                 });
                                 setDeck(newDeck);
                             }}
-                            className="shrink-0 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded font-bold text-[10px] uppercase tracking-wider bg-yc-orange hover:bg-orange-600 text-white transition-all active:scale-95"
+                            className="shrink-0 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded font-bold text-[10px] uppercase tracking-wider bg-yc-purple hover:bg-purple-600 text-white transition-all active:scale-95"
                         >
                             Apply
                         </button>
@@ -703,7 +703,7 @@ const Leagues: React.FC = () => {
                 {/* AI Loading indicator */}
                 {aiLoading && !aiRecommendation && (
                     <div className="flex items-center gap-2 bg-white dark:bg-[#111] border border-gray-200 dark:border-[#2A2A2A] rounded-lg px-3 sm:px-4 py-2">
-                        <Loader2 className="w-3.5 h-3.5 text-yc-orange animate-spin" />
+                        <Loader2 className="w-3.5 h-3.5 text-yc-purple animate-spin" />
                         <span className="text-[10px] sm:text-xs text-gray-500">AttentionX AI is analyzing startups...</span>
                     </div>
                 )}
@@ -720,7 +720,7 @@ const Leagues: React.FC = () => {
 
                 <div className="relative z-10 max-w-2xl">
                     <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4">
-                        <span className="px-2 py-0.5 bg-yc-orange text-white text-[10px] font-bold uppercase rounded">
+                        <span className="px-2 py-0.5 bg-yc-purple text-white text-[10px] font-bold uppercase rounded">
                             Tournament #{activeTournamentId}
                         </span>
                         <span className={`px-2 py-0.5 text-white text-[10px] font-bold uppercase rounded ${getPhaseColor()}`}>
@@ -744,7 +744,7 @@ const Leagues: React.FC = () => {
                     <div className="flex items-center gap-4 sm:gap-6 mb-6 sm:mb-8">
                         <div>
                             <p className="text-gray-500 dark:text-gray-500 text-[10px] sm:text-xs uppercase font-bold">Prize Pool</p>
-                            <p className="text-xl sm:text-2xl font-black text-yc-orange font-mono">
+                            <p className="text-xl sm:text-2xl font-black text-yc-purple font-mono">
                                 {activeTournament ? formatXTZ(activeTournament.prizePool) : '0'} {currencySymbol()}
                             </p>
                         </div>
@@ -761,7 +761,7 @@ const Leagues: React.FC = () => {
                     {!isConnected ? (
                         <button
                             onClick={connect}
-                            className="bg-yc-orange hover:bg-orange-600 text-white px-5 sm:px-8 py-2.5 sm:py-3 rounded-lg font-black text-xs sm:text-sm uppercase tracking-wide transition-all flex items-center shadow-lg"
+                            className="bg-yc-purple hover:bg-purple-600 text-white px-5 sm:px-8 py-2.5 sm:py-3 rounded-lg font-black text-xs sm:text-sm uppercase tracking-wide transition-all flex items-center shadow-lg"
                         >
                             <Wallet className="w-4 h-4 mr-2" /> Connect to Enter
                         </button>
@@ -796,7 +796,7 @@ const Leagues: React.FC = () => {
                     ) : (phase === 'registration' || phase === 'active') ? (
                         <button
                             onClick={() => setIsJoining(true)}
-                            className="bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-yc-orange hover:text-white px-5 sm:px-8 py-2.5 sm:py-3 rounded-lg font-black text-xs sm:text-sm uppercase tracking-wide transition-all flex items-center shadow-[0_0_20px_rgba(0,0,0,0.1)] dark:shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(242,101,34,0.4)]"
+                            className="bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-yc-purple hover:text-white px-5 sm:px-8 py-2.5 sm:py-3 rounded-lg font-black text-xs sm:text-sm uppercase tracking-wide transition-all flex items-center shadow-[0_0_20px_rgba(0,0,0,0.1)] dark:shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(147,51,234,0.4)]"
                         >
                             Enter League <ArrowRight className="w-4 h-4 ml-2" />
                         </button>
@@ -811,138 +811,137 @@ const Leagues: React.FC = () => {
             </div>
 
             {(phase === 'active' || phase === 'ended' || phase === 'finalized') && (
-            <div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-1">
-                <h3 className="font-bold text-lg sm:text-xl text-yc-text-primary dark:text-white flex items-center">
-                    Live Leaderboard
-                    {leaderboardLoading && <RefreshCw className="w-4 h-4 ml-2 animate-spin text-gray-400" />}
-                </h3>
-                {playerRank && (
-                    <div className="text-xs sm:text-sm">
-                        <span className="text-gray-500 dark:text-gray-400">Your Rank: </span>
-                        <span className="font-bold text-yc-orange">#{playerRank.rank}</span>
-                        <span className="text-gray-500 dark:text-gray-400 ml-2">Score: </span>
-                        <span className="font-mono font-bold text-yc-text-primary dark:text-white">{playerRank.score.toFixed(1)}</span>
+                <div>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-1">
+                        <h3 className="font-bold text-lg sm:text-xl text-yc-text-primary dark:text-white flex items-center">
+                            Live Leaderboard
+                            {leaderboardLoading && <RefreshCw className="w-4 h-4 ml-2 animate-spin text-gray-400" />}
+                        </h3>
+                        {playerRank && (
+                            <div className="text-xs sm:text-sm">
+                                <span className="text-gray-500 dark:text-gray-400">Your Rank: </span>
+                                <span className="font-bold text-yc-purple">#{playerRank.rank}</span>
+                                <span className="text-gray-500 dark:text-gray-400 ml-2">Score: </span>
+                                <span className="font-mono font-bold text-yc-text-primary dark:text-white">{playerRank.score.toFixed(1)}</span>
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
 
-            <div className="bg-white dark:bg-[#121212] border border-yc-light-border dark:border-[#2A2A2A] rounded-xl overflow-hidden shadow-sm dark:shadow-none">
-                {leaderboardError ? (
-                    <div className="p-8 text-center">
-                        <p className="text-red-500">Error loading leaderboard: {leaderboardError}</p>
-                    </div>
-                ) : leaderboardData.length === 0 && !leaderboardLoading ? (
-                    <div className="p-8 text-center">
-                        <Trophy className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-gray-600" />
-                        <p className="text-gray-500 dark:text-gray-400">No players yet. Be the first to enter!</p>
-                    </div>
-                ) : (
-                    <div className="divide-y divide-gray-200 dark:divide-[#2A2A2A]">
-                        {leaderboardData.map((player) => {
-                            const isCurrentUser = address && player.address.toLowerCase() === address.toLowerCase();
-                            const isExpanded = expandedPlayer === player.address;
-                            return (
-                                <div key={player.address}>
-                                    <div
-                                        onClick={() => togglePlayerSquad(player.address)}
-                                        className={`flex items-center px-3 sm:px-5 py-3 hover:bg-gray-50 dark:hover:bg-[#1A1A1A] transition-colors cursor-pointer ${isCurrentUser ? 'bg-yc-orange/5' : ''} ${isExpanded ? 'bg-gray-50 dark:bg-[#1A1A1A]' : ''}`}
-                                    >
-                                        {/* Rank */}
-                                        <div className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full font-bold text-xs sm:text-sm shrink-0 ${
-                                            player.rank === 1 ? 'bg-yellow-500/20 text-yellow-500' :
-                                            player.rank === 2 ? 'bg-gray-400/20 text-gray-400' :
-                                            player.rank === 3 ? 'bg-orange-700/20 text-orange-700' : 'text-gray-500 dark:text-gray-400'
-                                        }`}>
-                                            {player.rank}
-                                        </div>
-
-                                        {/* Avatar + Name */}
-                                        <div className="flex items-center ml-2 sm:ml-3 flex-1 min-w-0">
-                                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 dark:bg-[#333] border border-gray-300 dark:border-gray-700 overflow-hidden shrink-0">
-                                                <img
-                                                    src={player.avatar || generatePixelAvatar(player.address, 64)}
-                                                    alt=""
-                                                    className="w-full h-full object-cover"
-                                                    style={{ imageRendering: player.avatar ? 'auto' : 'pixelated' }}
-                                                />
-                                            </div>
-                                            <div className="ml-2 min-w-0">
-                                                <p className={`text-sm font-bold truncate ${isCurrentUser ? 'text-yc-orange' : 'text-yc-text-primary dark:text-white'}`}>
-                                                    {player.username || formatAddress(player.address)}
-                                                    {isCurrentUser && <span className="text-[10px] text-yc-orange ml-1">(You)</span>}
-                                                </p>
-                                                <p className="text-[10px] font-mono text-gray-400 truncate hidden sm:block">
-                                                    {formatAddress(player.address)}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Score + Chevron */}
-                                        <div className="text-right shrink-0 ml-2 flex items-center gap-2">
-                                            <div>
-                                                <p className="text-sm font-bold font-mono text-yc-text-primary dark:text-white">
-                                                    {player.score.toFixed(1)}
-                                                </p>
-                                                <p className="text-[10px] text-gray-400 font-mono hidden sm:block">
-                                                    {(() => {
-                                                        const d = new Date(player.lastUpdated);
-                                                        d.setDate(d.getDate() - 1);
-                                                        return d.toLocaleDateString();
-                                                    })()}
-                                                </p>
-                                            </div>
-                                            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                                        </div>
-                                    </div>
-
-                                    {/* Expanded Squad */}
-                                    {isExpanded && (
-                                        <div className="px-3 sm:px-5 py-3 bg-gray-50 dark:bg-[#0A0A0A] border-t border-gray-100 dark:border-[#1E1E1E]">
-                                            {squadLoading ? (
-                                                <div className="flex items-center justify-center py-4">
-                                                    <Loader2 className="w-5 h-5 animate-spin text-yc-orange" />
-                                                    <span className="ml-2 text-sm text-gray-400">Loading squad...</span>
+                    <div className="bg-white dark:bg-[#121212] border border-yc-light-border dark:border-[#2A2A2A] rounded-xl overflow-hidden shadow-sm dark:shadow-none">
+                        {leaderboardError ? (
+                            <div className="p-8 text-center">
+                                <p className="text-red-500">Error loading leaderboard: {leaderboardError}</p>
+                            </div>
+                        ) : leaderboardData.length === 0 && !leaderboardLoading ? (
+                            <div className="p-8 text-center">
+                                <Trophy className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-gray-600" />
+                                <p className="text-gray-500 dark:text-gray-400">No players yet. Be the first to enter!</p>
+                            </div>
+                        ) : (
+                            <div className="divide-y divide-gray-200 dark:divide-[#2A2A2A]">
+                                {leaderboardData.map((player) => {
+                                    const isCurrentUser = address && player.address.toLowerCase() === address.toLowerCase();
+                                    const isExpanded = expandedPlayer === player.address;
+                                    return (
+                                        <div key={player.address}>
+                                            <div
+                                                onClick={() => togglePlayerSquad(player.address)}
+                                                className={`flex items-center px-3 sm:px-5 py-3 hover:bg-gray-50 dark:hover:bg-[#1A1A1A] transition-colors cursor-pointer ${isCurrentUser ? 'bg-yc-purple/5' : ''} ${isExpanded ? 'bg-gray-50 dark:bg-[#1A1A1A]' : ''}`}
+                                            >
+                                                {/* Rank */}
+                                                <div className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full font-bold text-xs sm:text-sm shrink-0 ${player.rank === 1 ? 'bg-yellow-500/20 text-yellow-500' :
+                                                        player.rank === 2 ? 'bg-gray-400/20 text-gray-400' :
+                                                            player.rank === 3 ? 'bg-purple-700/20 text-purple-700' : 'text-gray-500 dark:text-gray-400'
+                                                    }`}>
+                                                    {player.rank}
                                                 </div>
-                                            ) : squadCards.length === 0 ? (
-                                                <p className="text-sm text-gray-400 text-center py-3">No squad data available</p>
-                                            ) : (
-                                                <div className="grid grid-cols-5 gap-1.5 sm:gap-3">
-                                                    {squadCards.map((card) => {
-                                                        const startupId = STARTUP_ID_BY_NAME[card.name] || 1;
-                                                        const scoreData = squadScores[card.name];
-                                                        return (
-                                                            <div key={card.tokenId} className="flex flex-col items-center">
-                                                                <div className="relative w-full aspect-[3/4] rounded-lg overflow-hidden border border-gray-200 dark:border-[#2A2A2A] bg-white dark:bg-[#121212]">
-                                                                    <img
-                                                                        src={`/images/${startupId}.png`}
-                                                                        alt={card.name}
-                                                                        className="w-full h-full object-contain"
-                                                                    />
-                                                                </div>
-                                                                <p className="text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 mt-1 text-center truncate w-full">{card.name}</p>
-                                                                <span className={`text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded mt-0.5 ${RARITY_BADGE[card.rarity] || RARITY_BADGE.Common}`}>
-                                                                    {card.rarity} {card.multiplier}x
-                                                                </span>
-                                                                {scoreData && (
-                                                                    <span className="text-[9px] sm:text-[10px] font-bold font-mono text-emerald-500 mt-0.5">
-                                                                        +{Math.round(scoreData.totalPoints)}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
+
+                                                {/* Avatar + Name */}
+                                                <div className="flex items-center ml-2 sm:ml-3 flex-1 min-w-0">
+                                                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 dark:bg-[#333] border border-gray-300 dark:border-gray-700 overflow-hidden shrink-0">
+                                                        <img
+                                                            src={player.avatar || generatePixelAvatar(player.address, 64)}
+                                                            alt=""
+                                                            className="w-full h-full object-cover"
+                                                            style={{ imageRendering: player.avatar ? 'auto' : 'pixelated' }}
+                                                        />
+                                                    </div>
+                                                    <div className="ml-2 min-w-0">
+                                                        <p className={`text-sm font-bold truncate ${isCurrentUser ? 'text-yc-purple' : 'text-yc-text-primary dark:text-white'}`}>
+                                                            {player.username || formatAddress(player.address)}
+                                                            {isCurrentUser && <span className="text-[10px] text-yc-purple ml-1">(You)</span>}
+                                                        </p>
+                                                        <p className="text-[10px] font-mono text-gray-400 truncate hidden sm:block">
+                                                            {formatAddress(player.address)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Score + Chevron */}
+                                                <div className="text-right shrink-0 ml-2 flex items-center gap-2">
+                                                    <div>
+                                                        <p className="text-sm font-bold font-mono text-yc-text-primary dark:text-white">
+                                                            {player.score.toFixed(1)}
+                                                        </p>
+                                                        <p className="text-[10px] text-gray-400 font-mono hidden sm:block">
+                                                            {(() => {
+                                                                const d = new Date(player.lastUpdated);
+                                                                d.setDate(d.getDate() - 1);
+                                                                return d.toLocaleDateString();
+                                                            })()}
+                                                        </p>
+                                                    </div>
+                                                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                                </div>
+                                            </div>
+
+                                            {/* Expanded Squad */}
+                                            {isExpanded && (
+                                                <div className="px-3 sm:px-5 py-3 bg-gray-50 dark:bg-[#0A0A0A] border-t border-gray-100 dark:border-[#1E1E1E]">
+                                                    {squadLoading ? (
+                                                        <div className="flex items-center justify-center py-4">
+                                                            <Loader2 className="w-5 h-5 animate-spin text-yc-purple" />
+                                                            <span className="ml-2 text-sm text-gray-400">Loading squad...</span>
+                                                        </div>
+                                                    ) : squadCards.length === 0 ? (
+                                                        <p className="text-sm text-gray-400 text-center py-3">No squad data available</p>
+                                                    ) : (
+                                                        <div className="grid grid-cols-5 gap-1.5 sm:gap-3">
+                                                            {squadCards.map((card) => {
+                                                                const startupId = STARTUP_ID_BY_NAME[card.name] || 1;
+                                                                const scoreData = squadScores[card.name];
+                                                                return (
+                                                                    <div key={card.tokenId} className="flex flex-col items-center">
+                                                                        <div className="relative w-full aspect-[3/4] rounded-lg overflow-hidden border border-gray-200 dark:border-[#2A2A2A] bg-white dark:bg-[#121212]">
+                                                                            <img
+                                                                                src={`/images/${startupId}.png`}
+                                                                                alt={card.name}
+                                                                                className="w-full h-full object-contain"
+                                                                            />
+                                                                        </div>
+                                                                        <p className="text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 mt-1 text-center truncate w-full">{card.name}</p>
+                                                                        <span className={`text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded mt-0.5 ${RARITY_BADGE[card.rarity] || RARITY_BADGE.Common}`}>
+                                                                            {card.rarity} {card.multiplier}x
+                                                                        </span>
+                                                                        {scoreData && (
+                                                                            <span className="text-[9px] sm:text-[10px] font-bold font-mono text-emerald-500 mt-0.5">
+                                                                                +{Math.round(scoreData.totalPoints)}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
-                                    )}
-                                </div>
-                            );
-                        })}
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
-            </div>
+                </div>
             )}
 
             {/* Onboarding Guide */}

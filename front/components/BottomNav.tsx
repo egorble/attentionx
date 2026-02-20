@@ -33,7 +33,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeSection, onNavigate }) => {
                 onClick={() => onNavigate(tab.id)}
                 className={`flex flex-col items-center justify-center px-3 py-1.5 rounded-2xl transition-all duration-300 ${
                   isActive
-                    ? 'bg-yc-orange text-white shadow-lg shadow-yc-orange/30'
+                    ? 'bg-yc-purple text-white shadow-lg shadow-yc-purple/30'
                     : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 active:scale-95'
                 }`}
               >

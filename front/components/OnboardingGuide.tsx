@@ -72,9 +72,9 @@ const OnboardingGuide: React.FC<OnboardingGuideProps> = ({ steps, currentStep, o
                                     key={i}
                                     className={`h-1.5 rounded-full transition-all duration-300 ${
                                         i === currentStep
-                                            ? 'w-6 bg-yc-orange'
+                                            ? 'w-6 bg-yc-purple'
                                             : i < currentStep
-                                                ? 'w-1.5 bg-yc-orange/40'
+                                                ? 'w-1.5 bg-yc-purple/40'
                                                 : 'w-1.5 bg-gray-300 dark:bg-gray-700'
                                     }`}
                                 />

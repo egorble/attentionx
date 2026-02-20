@@ -5,7 +5,7 @@
 
 // Color palettes - picked by first byte of address
 const PALETTES = [
-    ['#F26522', '#FF8A50', '#FFB74D'],  // Orange
+    ['#9333EA', '#A855F7', '#C084FC'],  // Purple/Rise
     ['#6C5CE7', '#A29BFE', '#DFE6E9'],  // Purple
     ['#00B894', '#55EFC4', '#81ECEC'],  // Green
     ['#E17055', '#FAB1A0', '#FFEAA7'],  // Coral
@@ -100,7 +100,7 @@ function generateFallbackAvatar(size: number): string {
     ctx.fillStyle = '#1A1A1A';
     ctx.fillRect(0, 0, size, size);
 
-    ctx.fillStyle = '#F26522';
+    ctx.fillStyle = '#9333EA';
     const pixelSize = size / 8;
     // Simple "?" pattern
     const pattern = [

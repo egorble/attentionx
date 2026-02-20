@@ -133,7 +133,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
             });
             if (flashRef.current) {
                 tl.to(flashRef.current, { opacity: 0.8, duration: 0.15, ease: 'power4.in' })
-                  .to(flashRef.current, { opacity: 0, duration: 0.5, ease: 'power2.out' });
+                    .to(flashRef.current, { opacity: 0, duration: 0.5, ease: 'power2.out' });
             } else {
                 setStage(isMultiPack ? 'finished' : 'dealing');
             }
@@ -248,7 +248,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                     <div className="relative w-full flex-1 min-h-0 max-h-[65%] shrink mb-2">
                         <ModelViewer3D mode="interactive" cameraZ={4.5} modelScale={1} paused={!isOpen} />
                         {packCount > 1 && (
-                            <div className="absolute top-2 right-2 w-9 h-9 bg-yc-orange rounded-full flex items-center justify-center text-white font-black text-base shadow-lg shadow-orange-500/30 z-10">
+                            <div className="absolute top-2 right-2 w-9 h-9 bg-yc-purple rounded-full flex items-center justify-center text-white font-black text-base shadow-lg shadow-purple-500/30 z-10">
                                 {packCount}x
                             </div>
                         )}
@@ -276,7 +276,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
 
                     {/* Price */}
                     <div className="text-center mb-3 shrink-0">
-                        <p className="text-yc-orange font-mono font-bold text-xl sm:text-2xl">{formatXTZ(totalPrice)} {currencySymbol()}</p>
+                        <p className="text-yc-purple font-mono font-bold text-xl sm:text-2xl">{formatXTZ(totalPrice)} {currencySymbol()}</p>
                         {packCount > 1 && (
                             <p className="text-gray-500 text-xs mt-1">{formatXTZ(packPrice)} per pack</p>
                         )}
@@ -292,7 +292,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                     {/* Buy button */}
                     <button
                         onClick={handleBuyAndOpen}
-                        className="bg-yc-orange hover:bg-orange-600 text-white px-8 sm:px-10 py-3 sm:py-3.5 rounded-xl font-black text-sm sm:text-base uppercase tracking-wider transition-all shadow-lg shadow-orange-500/20 active:scale-95 mb-3 shrink-0"
+                        className="bg-yc-purple hover:bg-purple-600 text-white px-8 sm:px-10 py-3 sm:py-3.5 rounded-xl font-black text-sm sm:text-base uppercase tracking-wider transition-all shadow-lg shadow-purple-500/20 active:scale-95 mb-3 shrink-0"
                     >
                         <Package className="w-4 h-4 sm:w-5 sm:h-5 inline-block mr-2 -mt-0.5" />
                         {packCount === 1 ? 'Buy & Open Pack' : `Buy & Open ${packCount} Packs`}
@@ -307,7 +307,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
             {/* --- STAGE: BUYING (waiting for tx) --- */}
             {stage === 'buying' && (
                 <div key="stage-buying" className="flex flex-col items-center justify-center w-full h-full relative">
-                    <div className="w-24 h-24 mb-8 border-4 border-yc-orange/30 border-t-yc-orange rounded-full animate-spin" />
+                    <div className="w-24 h-24 mb-8 border-4 border-yc-purple/30 border-t-yc-purple rounded-full animate-spin" />
                     <h2 className="text-2xl font-bold text-white mb-2">Confirm in Wallet</h2>
                     <p className="text-gray-400 text-sm mb-4">
                         {packCount === 1
@@ -315,7 +315,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                             : `Buying & opening ${packCount} packs (${packCount * 5} cards)`
                         }
                     </p>
-                    <div className="text-yc-orange font-mono font-bold text-lg mb-6">{formatXTZ(totalPrice)} {currencySymbol()}</div>
+                    <div className="text-yc-purple font-mono font-bold text-lg mb-6">{formatXTZ(totalPrice)} {currencySymbol()}</div>
                     <button onClick={onClose} className="text-gray-500 hover:text-white text-sm font-medium transition-colors">Cancel</button>
                 </div>
             )}
@@ -324,9 +324,9 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
             {stage === 'exploding' && (
                 <div key="stage-exploding-mega" className="flex flex-col items-center justify-center w-full h-full relative">
                     <div className="relative w-40 h-40">
-                        <div className="absolute inset-0 rounded-full border-2 border-yc-orange/60 animate-ping" />
-                        <div className="absolute inset-4 rounded-full border-2 border-yc-orange/40 animate-ping" style={{ animationDelay: '0.1s' }} />
-                        <div className="absolute inset-8 rounded-full border-2 border-yc-orange/20 animate-ping" style={{ animationDelay: '0.2s' }} />
+                        <div className="absolute inset-0 rounded-full border-2 border-yc-purple/60 animate-ping" />
+                        <div className="absolute inset-4 rounded-full border-2 border-yc-purple/40 animate-ping" style={{ animationDelay: '0.1s' }} />
+                        <div className="absolute inset-8 rounded-full border-2 border-yc-purple/20 animate-ping" style={{ animationDelay: '0.2s' }} />
                         <div className="absolute inset-0 flex items-center justify-center">
                             <span className="text-5xl">⚡</span>
                         </div>
@@ -346,23 +346,23 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                     </h2>
 
                     <div className="absolute top-[22%] sm:top-[32%] w-40 sm:w-48 h-1 bg-gray-800 rounded-full overflow-hidden pointer-events-none">
-                        <div className="h-full bg-yc-orange transition-all duration-100" style={{ width: `${(cuts.length / maxTaps) * 100}%` }} />
+                        <div className="h-full bg-yc-purple transition-all duration-100" style={{ width: `${(cuts.length / maxTaps) * 100}%` }} />
                     </div>
 
                     <div ref={packRef} className="relative w-52 h-[300px] sm:w-72 sm:h-[420px] shadow-2xl z-10 transition-transform">
                         <div className="absolute inset-0 rounded-xl overflow-hidden border bg-[#151515] border-white/20">
                             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 mix-blend-overlay" />
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <div className="w-16 h-16 sm:w-24 sm:h-24 border-2 border-yc-orange rounded-full flex items-center justify-center mb-3 sm:mb-4 backdrop-blur-sm bg-black/50">
+                                <div className="w-16 h-16 sm:w-24 sm:h-24 border-2 border-yc-purple rounded-full flex items-center justify-center mb-3 sm:mb-4 backdrop-blur-sm bg-black/50">
                                     <span className="text-white font-black text-2xl sm:text-3xl">YC</span>
                                 </div>
-                                <div className="px-3 py-1 bg-yc-orange text-white text-[10px] font-black uppercase tracking-[0.2em]">Season 4</div>
+                                <div className="px-3 py-1 bg-yc-purple text-white text-[10px] font-black uppercase tracking-[0.2em]">Season 4</div>
                             </div>
                             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
                         </div>
                         <svg className="absolute inset-0 w-full h-full pointer-events-none filter drop-shadow-[0_0_5px_rgba(255,200,0,0.8)]" viewBox="0 0 100 100" preserveAspectRatio="none">
                             {cuts.map((d, i) => (
-                                <path key={i} d={d} stroke="#F26522" strokeWidth={0.5 + (i * 0.3)} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                                <path key={i} d={d} stroke="#9333EA" strokeWidth={0.5 + (i * 0.3)} fill="none" strokeLinecap="round" strokeLinejoin="round" />
                             ))}
                         </svg>
                     </div>
@@ -387,7 +387,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20" />
                                         <div className="w-full h-full border-4 border-[#1a1a1a] m-1 rounded-lg flex items-center justify-center">
                                             <div className="text-center">
-                                                <div className="w-12 h-12 bg-yc-orange rounded flex items-center justify-center mx-auto mb-2 shadow-[0_0_15px_#F26522]">
+                                                <div className="w-12 h-12 bg-yc-purple rounded flex items-center justify-center mx-auto mb-2 shadow-[0_0_15px_#9333EA]">
                                                     <span className="text-white font-black text-xl">Y</span>
                                                 </div>
                                                 <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">ATTENTIONX</p>
@@ -405,7 +405,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                     >
                         <div className="flex flex-col items-center animate-pulse group-active:scale-95 transition-transform">
                             <p className="text-white/50 text-sm font-bold uppercase tracking-widest mb-2">Tap to Reveal</p>
-                            <Layers className="text-yc-orange opacity-80 w-8 h-8" />
+                            <Layers className="text-yc-purple opacity-80 w-8 h-8" />
                         </div>
                     </div>
                 </div>
@@ -458,7 +458,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                     <div className="fixed bottom-0 left-0 right-0 flex justify-center pb-4 sm:pb-6 pt-3 sm:pt-4 bg-gradient-to-t from-black via-black/80 to-transparent z-50" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
                         <button
                             onClick={onClose}
-                            className="px-8 sm:px-10 py-3 bg-yc-orange hover:bg-orange-600 text-white rounded-xl font-black text-sm sm:text-base uppercase tracking-wider transition-all shadow-lg shadow-orange-500/30 active:scale-95"
+                            className="px-8 sm:px-10 py-3 bg-yc-purple hover:bg-purple-600 text-white rounded-xl font-black text-sm sm:text-base uppercase tracking-wider transition-all shadow-lg shadow-purple-500/30 active:scale-95"
                         >
                             Collect All
                         </button>

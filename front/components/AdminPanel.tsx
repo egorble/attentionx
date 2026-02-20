@@ -423,7 +423,7 @@ const AdminPanel: React.FC = () => {
                     </div>
                     <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl p-4">
                         <p className="text-gray-500 text-xs uppercase mb-1">Pack Price</p>
-                        <p className="text-2xl font-bold text-yc-orange font-mono">{stats ? formatXTZ(stats.packPrice) : '5'} {currencySymbol()}</p>
+                        <p className="text-2xl font-bold text-yc-purple font-mono">{stats ? formatXTZ(stats.packPrice) : '5'} {currencySymbol()}</p>
                     </div>
                     <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl p-4">
                         <p className="text-gray-500 text-xs uppercase mb-1">Total NFTs</p>
@@ -457,7 +457,7 @@ const AdminPanel: React.FC = () => {
                                 <button
                                     onClick={handleEmergencyWithdraw}
                                     disabled={actionLoading === 'withdraw'}
-                                    className="w-full bg-yc-orange/10 dark:bg-yc-orange/20 hover:bg-yc-orange text-yc-orange hover:text-white py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                                    className="w-full bg-yc-purple/10 dark:bg-yc-purple/20 hover:bg-yc-purple text-yc-purple hover:text-white py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
                                 >
                                     {actionLoading === 'withdraw' ? 'Withdrawing...' : 'Withdraw'}
                                 </button>
@@ -478,7 +478,7 @@ const AdminPanel: React.FC = () => {
                     {/* PackOpener Controls */}
                     <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl p-6">
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                            <Settings className="w-5 h-5 text-yc-orange" />
+                            <Settings className="w-5 h-5 text-yc-purple" />
                             PackOpener Controls
                         </h3>
 
@@ -506,7 +506,7 @@ const AdminPanel: React.FC = () => {
                                 <button
                                     onClick={handleSetPackPrice}
                                     disabled={admin.isLoading}
-                                    className="bg-yc-orange hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-bold disabled:opacity-50"
+                                    className="bg-yc-purple hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-bold disabled:opacity-50"
                                 >
                                     Set
                                 </button>
@@ -527,7 +527,7 @@ const AdminPanel: React.FC = () => {
                                 <button
                                     onClick={handleSetActiveTournament}
                                     disabled={admin.isLoading}
-                                    className="bg-yc-orange hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-bold disabled:opacity-50"
+                                    className="bg-yc-purple hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-bold disabled:opacity-50"
                                 >
                                     Set
                                 </button>
@@ -715,7 +715,7 @@ const AdminPanel: React.FC = () => {
                                                 )}
                                             </div>
                                             <div className="flex items-center gap-4 text-sm">
-                                                <div className="flex items-center gap-1 text-yc-orange">
+                                                <div className="flex items-center gap-1 text-yc-purple">
                                                     <DollarSign className="w-4 h-4" />
                                                     <span className="font-mono">{formatXTZ(t.prizePool)} {currencySymbol()}</span>
                                                 </div>
@@ -744,7 +744,7 @@ const AdminPanel: React.FC = () => {
                                                 <p className={`font-mono ${isEnded ? 'text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}>
                                                     {formatDate(t.endTime)}
                                                     {!isEnded && t.endTime > now && (
-                                                        <span className="ml-2 text-xs text-yc-orange">
+                                                        <span className="ml-2 text-xs text-yc-purple">
                                                             ({Math.ceil((t.endTime - now) / 3600)}h left)
                                                         </span>
                                                     )}
@@ -775,7 +775,7 @@ const AdminPanel: React.FC = () => {
                                                         setPointsValues(Array(19).fill('0'));
                                                     }}
                                                     disabled={actionLoading?.startsWith('finalize')}
-                                                    className="flex-1 bg-orange-50 dark:bg-yc-orange/20 hover:bg-yc-orange text-yc-orange hover:text-white py-2 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                                                    className="flex-1 bg-purple-50 dark:bg-yc-purple/20 hover:bg-yc-purple text-yc-purple hover:text-white py-2 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
                                                 >
                                                     Finalize with Points
                                                 </button>
@@ -827,7 +827,7 @@ const AdminPanel: React.FC = () => {
                             <div className="p-6 space-y-3">
                                 {startupNames.map((name, i) => (
                                     <div key={i} className="flex items-center gap-4">
-                                        <div className="w-8 h-8 bg-yc-orange/10 dark:bg-yc-orange/20 rounded-lg flex items-center justify-center text-yc-orange font-bold text-sm">
+                                        <div className="w-8 h-8 bg-yc-purple/10 dark:bg-yc-purple/20 rounded-lg flex items-center justify-center text-yc-purple font-bold text-sm">
                                             {i + 1}
                                         </div>
                                         <span className="flex-1 text-gray-900 dark:text-white font-medium">{name}</span>
@@ -840,7 +840,7 @@ const AdminPanel: React.FC = () => {
                                                 newPoints[i] = e.target.value;
                                                 setPointsValues(newPoints);
                                             }}
-                                            className="w-24 px-3 py-2 bg-gray-50 dark:bg-black border border-gray-200 dark:border-[#2A2A2A] rounded-lg text-gray-900 dark:text-white font-mono text-right focus:border-yc-orange outline-none"
+                                            className="w-24 px-3 py-2 bg-gray-50 dark:bg-black border border-gray-200 dark:border-[#2A2A2A] rounded-lg text-gray-900 dark:text-white font-mono text-right focus:border-yc-purple outline-none"
                                             placeholder="0"
                                         />
                                     </div>
@@ -857,7 +857,7 @@ const AdminPanel: React.FC = () => {
                                 <button
                                     onClick={handleFinalizeWithPoints}
                                     disabled={actionLoading === 'finalize-points'}
-                                    className="flex-1 py-3 rounded-xl bg-yc-orange hover:bg-yc-orange/80 text-white font-bold transition-all disabled:opacity-50"
+                                    className="flex-1 py-3 rounded-xl bg-yc-purple hover:bg-yc-purple/80 text-white font-bold transition-all disabled:opacity-50"
                                 >
                                     {actionLoading === 'finalize-points' ? 'Finalizing...' : 'Finalize Tournament'}
                                 </button>

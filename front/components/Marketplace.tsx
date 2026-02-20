@@ -18,7 +18,7 @@ const RARITY_COLORS: Record<string, string> = {
     'Rare': 'bg-green-600 text-white border-green-500',
     'Epic': 'bg-violet-600 text-white border-violet-500',
     'EpicRare': 'bg-purple-600 text-white border-purple-500',
-    'Legendary': 'bg-orange-500 text-white border-orange-400',
+    'Legendary': 'bg-purple-500 text-white border-purple-400',
 };
 
 // Safe formatting helpers
@@ -642,7 +642,7 @@ const Marketplace: React.FC = () => {
                     {isConnected && (
                         <button
                             onClick={openListModal}
-                            className="flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2.5 bg-yc-orange hover:bg-yc-orange/80 text-white rounded-lg font-bold text-xs md:text-sm transition-all shrink-0"
+                            className="flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2.5 bg-yc-purple hover:bg-yc-purple/80 text-white rounded-lg font-bold text-xs md:text-sm transition-all shrink-0"
                         >
                             <Plus className="w-4 h-4" />
                             <span className="hidden sm:inline">List NFT</span>
@@ -656,7 +656,7 @@ const Marketplace: React.FC = () => {
                     <button
                         onClick={() => setActiveTab('listings')}
                         className={`flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'listings'
-                            ? 'bg-yc-orange text-white'
+                            ? 'bg-yc-purple text-white'
                             : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
                             }`}
                     >
@@ -667,7 +667,7 @@ const Marketplace: React.FC = () => {
                     <button
                         onClick={() => setActiveTab('auctions')}
                         className={`flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'auctions'
-                            ? 'bg-yc-orange text-white'
+                            ? 'bg-yc-purple text-white'
                             : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
                             }`}
                     >
@@ -678,7 +678,7 @@ const Marketplace: React.FC = () => {
                     <button
                         onClick={() => setActiveTab('activity')}
                         className={`flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-md text-xs md:text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'activity'
-                            ? 'bg-yc-orange text-white'
+                            ? 'bg-yc-purple text-white'
                             : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
                             }`}
                     >
@@ -698,7 +698,7 @@ const Marketplace: React.FC = () => {
                                 className={`
                                     whitespace-nowrap px-4 md:px-6 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 transform active:scale-95
                                     ${rarityFilter === tab
-                                        ? 'bg-yc-orange text-white shadow-lg shadow-yc-orange/30 scale-105'
+                                        ? 'bg-yc-purple text-white shadow-lg shadow-yc-purple/30 scale-105'
                                         : 'bg-gray-100 dark:bg-[#1A1A1A] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white'}
                                 `}
                             >
@@ -710,19 +710,19 @@ const Marketplace: React.FC = () => {
                     {/* Search & Sort */}
                     <div className="flex items-center gap-2 md:gap-3">
                         <div className="relative flex-1 min-w-0 group">
-                            <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-yc-orange transition-colors" />
+                            <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-yc-purple transition-colors" />
                             <input
                                 type="text"
                                 placeholder="Search cards..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 md:py-2.5 text-sm font-medium text-yc-text-primary dark:text-white focus:outline-none focus:border-yc-orange focus:ring-1 focus:ring-yc-orange transition-all placeholder-gray-400 shadow-sm"
+                                className="w-full bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 md:py-2.5 text-sm font-medium text-yc-text-primary dark:text-white focus:outline-none focus:border-yc-purple focus:ring-1 focus:ring-yc-purple transition-all placeholder-gray-400 shadow-sm"
                             />
                         </div>
                         <select
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value as any)}
-                            className="px-3 md:px-5 py-2 md:py-2.5 bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-full text-xs md:text-sm font-bold text-yc-text-primary dark:text-white hover:border-yc-orange transition-all shadow-sm cursor-pointer shrink-0"
+                            className="px-3 md:px-5 py-2 md:py-2.5 bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-full text-xs md:text-sm font-bold text-yc-text-primary dark:text-white hover:border-yc-purple transition-all shadow-sm cursor-pointer shrink-0"
                         >
                             <option value="recent">Recent</option>
                             <option value="price_asc">Price ↑</option>
@@ -737,7 +737,7 @@ const Marketplace: React.FC = () => {
                 <>
                     {loadingListings && (
                         <div className="flex flex-col items-center justify-center py-20">
-                            <Loader2 className="w-8 h-8 text-yc-orange animate-spin mb-4" />
+                            <Loader2 className="w-8 h-8 text-yc-purple animate-spin mb-4" />
                             <p className="text-gray-400">Loading listings...</p>
                         </div>
                     )}
@@ -759,7 +759,7 @@ const Marketplace: React.FC = () => {
                             {filteredListings.map((listing) => (
                                 <div
                                     key={listing.listingId}
-                                    className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl overflow-hidden hover:border-yc-orange/50 transition-all duration-300 group"
+                                    className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl overflow-hidden hover:border-yc-purple/50 transition-all duration-300 group"
                                 >
                                     <div
                                         className="relative overflow-hidden cursor-pointer"
@@ -799,7 +799,7 @@ const Marketplace: React.FC = () => {
                                                     w-full mt-1.5 md:mt-3 px-2 py-1 md:px-4 md:py-2 rounded-lg font-bold text-[10px] md:text-sm transition-all
                                                     ${buyingId === Number(listing.listingId)
                                                         ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                                                        : 'bg-yc-orange text-white hover:bg-yc-orange/80 active:scale-95'}
+                                                        : 'bg-yc-purple text-white hover:bg-yc-purple/80 active:scale-95'}
                                                 `}
                                             >
                                                 {buyingId === Number(listing.listingId) ? (
@@ -822,7 +822,7 @@ const Marketplace: React.FC = () => {
                 <>
                     {loadingAuctions && (
                         <div className="flex flex-col items-center justify-center py-20">
-                            <Loader2 className="w-8 h-8 text-yc-orange animate-spin mb-4" />
+                            <Loader2 className="w-8 h-8 text-yc-purple animate-spin mb-4" />
                             <p className="text-gray-400">Loading auctions...</p>
                         </div>
                     )}
@@ -842,7 +842,7 @@ const Marketplace: React.FC = () => {
                             {filteredAuctions.map((auction) => (
                                 <div
                                     key={auction.auctionId}
-                                    className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl overflow-hidden hover:border-yc-orange/50 transition-all duration-300 group"
+                                    className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl overflow-hidden hover:border-yc-purple/50 transition-all duration-300 group"
                                 >
                                     <div
                                         className="relative overflow-hidden cursor-pointer"
@@ -855,7 +855,7 @@ const Marketplace: React.FC = () => {
                                             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                                         />
                                         {/* Timer */}
-                                        <div className={`absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 text-xs font-bold rounded ${auction.isEnded ? 'bg-red-600 text-white' : 'bg-black/80 dark:bg-black/80 text-yc-orange'}`}>
+                                        <div className={`absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 text-xs font-bold rounded ${auction.isEnded ? 'bg-red-600 text-white' : 'bg-black/80 dark:bg-black/80 text-yc-purple'}`}>
                                             <Clock className="w-3 h-3" />
                                             {auction.timeLeft}
                                         </div>
@@ -888,7 +888,7 @@ const Marketplace: React.FC = () => {
                                         ) : (
                                             <button
                                                 onClick={() => { setBidModal({ auction }); setBidAmount(''); }}
-                                                className="w-full mt-1.5 md:mt-3 px-2 py-1 md:px-4 md:py-2 rounded-lg font-bold text-[10px] md:text-sm transition-all bg-yc-orange text-white hover:bg-yc-orange/80"
+                                                className="w-full mt-1.5 md:mt-3 px-2 py-1 md:px-4 md:py-2 rounded-lg font-bold text-[10px] md:text-sm transition-all bg-yc-purple text-white hover:bg-yc-purple/80"
                                             >
                                                 {'Bid'}
                                             </button>
@@ -919,7 +919,7 @@ const Marketplace: React.FC = () => {
                                             onClick={() => setActivityFilter(f.key)}
                                             className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${
                                                 activityFilter === f.key
-                                                    ? 'bg-yc-orange text-white shadow-lg shadow-yc-orange/30'
+                                                    ? 'bg-yc-purple text-white shadow-lg shadow-yc-purple/30'
                                                     : 'bg-gray-100 dark:bg-[#1A1A1A] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'
                                             }`}
                                         >
@@ -935,7 +935,7 @@ const Marketplace: React.FC = () => {
                                 <select
                                     value={sortBy}
                                     onChange={(e) => setSortBy(e.target.value as any)}
-                                    className="px-4 py-2 bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-full text-xs font-bold text-yc-text-primary dark:text-white hover:border-yc-orange focus:border-yc-orange focus:ring-1 focus:ring-yc-orange transition-all shadow-sm cursor-pointer shrink-0 w-full sm:w-auto"
+                                    className="px-4 py-2 bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-full text-xs font-bold text-yc-text-primary dark:text-white hover:border-yc-purple focus:border-yc-purple focus:ring-1 focus:ring-yc-purple transition-all shadow-sm cursor-pointer shrink-0 w-full sm:w-auto"
                                 >
                                     <option value="recent">Recent First</option>
                                     <option value="price_asc">Price: Low to High</option>
@@ -945,7 +945,7 @@ const Marketplace: React.FC = () => {
 
                             {loadingActivity ? (
                                 <div className="flex flex-col items-center justify-center py-20">
-                                    <Loader2 className="w-8 h-8 text-yc-orange animate-spin mb-4" />
+                                    <Loader2 className="w-8 h-8 text-yc-purple animate-spin mb-4" />
                                     <p className="text-gray-400">Loading your activity...</p>
                                 </div>
                             ) : (
@@ -956,10 +956,10 @@ const Marketplace: React.FC = () => {
                                             {activityFilter === 'all' && <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2"><Tag className="w-3.5 h-3.5" /> My Listings</h3>}
                                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1.5 md:gap-4">
                                                 {sortedMyListings.map(listing => (
-                                                    <div key={`l-${listing.listingId}`} className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl overflow-hidden hover:border-yc-orange/50 transition-all group">
+                                                    <div key={`l-${listing.listingId}`} className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl overflow-hidden hover:border-yc-purple/50 transition-all group">
                                                         <div className="relative overflow-hidden" style={{ aspectRatio: '591/1004' }}>
                                                             <img src={listing.cardImage || '/placeholder-card.png'} alt={listing.cardName} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
-                                                            <div className="absolute top-2 left-2 bg-yc-orange/90 text-white text-[9px] font-bold px-2 py-0.5 rounded">Listed</div>
+                                                            <div className="absolute top-2 left-2 bg-yc-purple/90 text-white text-[9px] font-bold px-2 py-0.5 rounded">Listed</div>
                                                         </div>
                                                         <div className="p-1.5 md:p-3">
                                                             <p className="text-gray-900 dark:text-white font-bold text-[11px] md:text-sm">{listing.priceFormatted} {currencySymbol()}</p>
@@ -983,10 +983,10 @@ const Marketplace: React.FC = () => {
                                             {activityFilter === 'all' && <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2"><Gavel className="w-3.5 h-3.5" /> My Auctions</h3>}
                                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1.5 md:gap-4">
                                                 {sortedMyAuctions.map(auction => (
-                                                    <div key={`a-${auction.auctionId}`} className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl overflow-hidden hover:border-yc-orange/50 transition-all group">
+                                                    <div key={`a-${auction.auctionId}`} className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl overflow-hidden hover:border-yc-purple/50 transition-all group">
                                                         <div className="relative overflow-hidden" style={{ aspectRatio: '591/1004' }}>
                                                             <img src={auction.cardImage || '/placeholder-card.png'} alt={auction.cardName} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
-                                                            <div className={`absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 text-[9px] font-bold rounded ${auction.isEnded ? 'bg-red-600 text-white' : 'bg-black/80 text-yc-orange'}`}>
+                                                            <div className={`absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 text-[9px] font-bold rounded ${auction.isEnded ? 'bg-red-600 text-white' : 'bg-black/80 text-yc-purple'}`}>
                                                                 <Clock className="w-2.5 h-2.5" />
                                                                 {auction.timeLeft}
                                                             </div>
@@ -1027,7 +1027,7 @@ const Marketplace: React.FC = () => {
                                             {activityFilter === 'all' && <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2"><DollarSign className="w-3.5 h-3.5" /> My Bids</h3>}
                                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1.5 md:gap-4">
                                                 {sortedMyBids.map(bid => (
-                                                    <div key={`b-${bid.bidId}`} className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl overflow-hidden hover:border-yc-orange/50 transition-all group">
+                                                    <div key={`b-${bid.bidId}`} className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl overflow-hidden hover:border-yc-purple/50 transition-all group">
                                                         <div className="relative overflow-hidden" style={{ aspectRatio: '591/1004' }}>
                                                             <img src={bid.cardImage || '/placeholder-card.png'} alt={bid.cardName} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
                                                             <div className="absolute top-2 left-2 bg-blue-600/90 text-white text-[9px] font-bold px-2 py-0.5 rounded">Bid</div>
@@ -1107,7 +1107,7 @@ const Marketplace: React.FC = () => {
                                             const min = hb === 0n ? bidModal.auction!.startPrice : hb + hb / 20n;
                                             return safeFormatXTZ(min);
                                         })()}
-                                        className="w-full bg-gray-50 dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-lg px-4 py-3 text-gray-900 dark:text-white font-bold text-lg focus:border-yc-orange focus:outline-none"
+                                        className="w-full bg-gray-50 dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-lg px-4 py-3 text-gray-900 dark:text-white font-bold text-lg focus:border-yc-purple focus:outline-none"
                                     />
                                     <p className="text-gray-500 dark:text-gray-500 text-xs mt-1">
                                         Min bid: {(() => {
@@ -1121,7 +1121,7 @@ const Marketplace: React.FC = () => {
                                 <button
                                     onClick={handleAuctionBid}
                                     disabled={!bidAmount || biddingId !== null}
-                                    className="w-full bg-yc-orange text-white font-bold py-3 rounded-lg hover:bg-yc-orange/80 disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-all"
+                                    className="w-full bg-yc-purple text-white font-bold py-3 rounded-lg hover:bg-yc-purple/80 disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-all"
                                 >
                                     {biddingId !== null ? (
                                         <Loader2 className="w-5 h-5 animate-spin mx-auto" />
@@ -1152,7 +1152,7 @@ const Marketplace: React.FC = () => {
                                         value={bidAmount}
                                         onChange={(e) => setBidAmount(e.target.value)}
                                         placeholder="0.00"
-                                        className="w-full bg-gray-50 dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-lg px-4 py-3 text-gray-900 dark:text-white font-bold text-lg focus:border-yc-orange focus:outline-none"
+                                        className="w-full bg-gray-50 dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-lg px-4 py-3 text-gray-900 dark:text-white font-bold text-lg focus:border-yc-purple focus:outline-none"
                                     />
                                     <p className="text-gray-500 dark:text-gray-500 text-xs mt-1">Offer valid for 7 days</p>
                                 </div>
@@ -1199,7 +1199,7 @@ const Marketplace: React.FC = () => {
                                 <button
                                     key={tab}
                                     onClick={() => setStatsTab(tab as any)}
-                                    className={`flex-1 py-3 text-sm font-bold transition-colors ${statsTab === tab ? 'text-yc-orange border-b-2 border-yc-orange' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+                                    className={`flex-1 py-3 text-sm font-bold transition-colors ${statsTab === tab ? 'text-yc-purple border-b-2 border-yc-purple' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
                                 >
                                     {tab === 'bids' && <><Activity className="w-4 h-4 inline mr-1" />Bids</>}
                                     {tab === 'sales' && <><History className="w-4 h-4 inline mr-1" />Sales</>}
@@ -1211,7 +1211,7 @@ const Marketplace: React.FC = () => {
                         {/* Content */}
                         <div className="p-4 max-h-64 overflow-y-auto">
                             {loadingStats ? (
-                                <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 text-yc-orange animate-spin" /></div>
+                                <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 text-yc-purple animate-spin" /></div>
                             ) : (
                                 <>
                                     {statsTab === 'bids' && (
@@ -1224,7 +1224,7 @@ const Marketplace: React.FC = () => {
                                                             <span className="text-gray-900 dark:text-white font-bold">{safeFormatXTZ((statsItem as AuctionWithMeta).highestBid)} {currencySymbol()}</span>
                                                             <span className="text-gray-500 dark:text-gray-500 text-xs">from</span>
                                                             <span className="text-gray-500 dark:text-gray-400 text-xs">{(statsItem as AuctionWithMeta).highestBidder?.slice(0, 6)}...{(statsItem as AuctionWithMeta).highestBidder?.slice(-4)}</span>
-                                                            <span className="text-xs bg-yc-orange/20 text-yc-orange px-2 py-0.5 rounded-full font-bold">Auction bid</span>
+                                                            <span className="text-xs bg-yc-purple/20 text-yc-purple px-2 py-0.5 rounded-full font-bold">Auction bid</span>
                                                         </div>
                                                     </div>
                                                 ) : (
@@ -1248,7 +1248,7 @@ const Marketplace: React.FC = () => {
                                                         {statsItem && 'seller' in statsItem && statsItem.seller?.toLowerCase() === address?.toLowerCase() && (
                                                             <button
                                                                 onClick={() => handleAcceptBid(bid.bidId)}
-                                                                className="ml-3 px-3 py-1.5 bg-yc-orange text-white rounded-lg text-xs font-bold hover:bg-yc-orange/80 transition-all"
+                                                                className="ml-3 px-3 py-1.5 bg-yc-purple text-white rounded-lg text-xs font-bold hover:bg-yc-purple/80 transition-all"
                                                             >
                                                                 Accept
                                                             </button>
@@ -1298,7 +1298,7 @@ const Marketplace: React.FC = () => {
 
                         <div className="p-4 max-h-[calc(85vh-120px)] overflow-y-auto">
                             {loadingNFTs ? (
-                                <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 text-yc-orange animate-spin" /></div>
+                                <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 text-yc-purple animate-spin" /></div>
                             ) : !selectedNFT ? (
                                 <>
                                     <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">Select an NFT to list:</p>
@@ -1308,7 +1308,7 @@ const Marketplace: React.FC = () => {
                                                 <div
                                                     key={nft.tokenId}
                                                     onClick={() => setSelectedNFT(nft)}
-                                                    className="cursor-pointer rounded-xl border border-gray-200 dark:border-[#2A2A2A] overflow-hidden hover:border-yc-orange transition-colors bg-white dark:bg-[#121212]"
+                                                    className="cursor-pointer rounded-xl border border-gray-200 dark:border-[#2A2A2A] overflow-hidden hover:border-yc-purple transition-colors bg-white dark:bg-[#121212]"
                                                 >
                                                     <img src={nft.image} alt={nft.name} className="w-full object-contain" style={{ aspectRatio: '591/1004' }} />
                                                 </div>
@@ -1323,16 +1323,16 @@ const Marketplace: React.FC = () => {
                                         <div>
                                             <h4 className="text-gray-900 dark:text-white font-bold">{selectedNFT.name}</h4>
                                             <p className="text-gray-500 dark:text-gray-400 text-sm">#{selectedNFT.tokenId}</p>
-                                            <button onClick={() => setSelectedNFT(null)} className="text-yc-orange text-xs hover:underline">Change</button>
+                                            <button onClick={() => setSelectedNFT(null)} className="text-yc-purple text-xs hover:underline">Change</button>
                                         </div>
                                     </div>
 
                                     {/* Sale Mode Tabs */}
                                     <div className="flex bg-gray-100 dark:bg-[#121212] rounded-lg p-1 mb-4">
-                                        <button onClick={() => setSellMode('fixed')} className={`flex-1 py-2 rounded text-sm font-bold ${sellMode === 'fixed' ? 'bg-yc-orange text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+                                        <button onClick={() => setSellMode('fixed')} className={`flex-1 py-2 rounded text-sm font-bold ${sellMode === 'fixed' ? 'bg-yc-purple text-white' : 'text-gray-500 dark:text-gray-400'}`}>
                                             <Tag className="w-4 h-4 inline mr-1" />Fixed Price
                                         </button>
-                                        <button onClick={() => setSellMode('auction')} className={`flex-1 py-2 rounded text-sm font-bold ${sellMode === 'auction' ? 'bg-yc-orange text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+                                        <button onClick={() => setSellMode('auction')} className={`flex-1 py-2 rounded text-sm font-bold ${sellMode === 'auction' ? 'bg-yc-purple text-white' : 'text-gray-500 dark:text-gray-400'}`}>
                                             <Gavel className="w-4 h-4 inline mr-1" />Auction
                                         </button>
                                     </div>
@@ -1340,21 +1340,21 @@ const Marketplace: React.FC = () => {
                                     {sellMode === 'fixed' ? (
                                         <div>
                                             <label className="text-gray-500 dark:text-gray-400 text-sm mb-2 block">Price ({currencySymbol()})</label>
-                                            <input type="number" step="0.01" value={sellPrice} onChange={e => setSellPrice(e.target.value)} placeholder="0.00" className="w-full bg-gray-50 dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-lg px-4 py-3 text-gray-900 dark:text-white font-bold focus:border-yc-orange focus:outline-none" />
+                                            <input type="number" step="0.01" value={sellPrice} onChange={e => setSellPrice(e.target.value)} placeholder="0.00" className="w-full bg-gray-50 dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-lg px-4 py-3 text-gray-900 dark:text-white font-bold focus:border-yc-purple focus:outline-none" />
                                         </div>
                                     ) : (
                                         <div className="space-y-3">
                                             <div>
                                                 <label className="text-gray-500 dark:text-gray-400 text-sm mb-1 block">Start Price ({currencySymbol()})</label>
-                                                <input type="number" step="0.01" value={auctionStartPrice} onChange={e => setAuctionStartPrice(e.target.value)} placeholder="0.00" className="w-full bg-gray-50 dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-lg px-4 py-3 text-gray-900 dark:text-white font-bold focus:border-yc-orange focus:outline-none" />
+                                                <input type="number" step="0.01" value={auctionStartPrice} onChange={e => setAuctionStartPrice(e.target.value)} placeholder="0.00" className="w-full bg-gray-50 dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-lg px-4 py-3 text-gray-900 dark:text-white font-bold focus:border-yc-purple focus:outline-none" />
                                             </div>
                                             <div>
                                                 <label className="text-gray-500 dark:text-gray-400 text-sm mb-1 block">Reserve Price ({currencySymbol()}, optional)</label>
-                                                <input type="number" step="0.01" value={auctionReservePrice} onChange={e => setAuctionReservePrice(e.target.value)} placeholder="0.00" className="w-full bg-gray-50 dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-lg px-4 py-3 text-gray-900 dark:text-white font-bold focus:border-yc-orange focus:outline-none" />
+                                                <input type="number" step="0.01" value={auctionReservePrice} onChange={e => setAuctionReservePrice(e.target.value)} placeholder="0.00" className="w-full bg-gray-50 dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-lg px-4 py-3 text-gray-900 dark:text-white font-bold focus:border-yc-purple focus:outline-none" />
                                             </div>
                                             <div>
                                                 <label className="text-gray-400 text-sm mb-1 block">Duration (days)</label>
-                                                <select value={auctionDuration} onChange={e => setAuctionDuration(e.target.value)} className="w-full bg-[#121212] border border-[#2A2A2A] rounded-lg px-4 py-3 text-white font-bold focus:border-yc-orange focus:outline-none">
+                                                <select value={auctionDuration} onChange={e => setAuctionDuration(e.target.value)} className="w-full bg-[#121212] border border-[#2A2A2A] rounded-lg px-4 py-3 text-white font-bold focus:border-yc-purple focus:outline-none">
                                                     <option value="1">1 day</option>
                                                     <option value="3">3 days</option>
                                                     <option value="7">7 days</option>
@@ -1367,7 +1367,7 @@ const Marketplace: React.FC = () => {
                                     <button
                                         onClick={handleListNFT}
                                         disabled={isSelling || (sellMode === 'fixed' ? !sellPrice : !auctionStartPrice)}
-                                        className="w-full mt-4 bg-yc-orange text-white font-bold py-3 rounded-lg hover:bg-yc-orange/80 disabled:bg-gray-700 disabled:text-gray-400 transition-all"
+                                        className="w-full mt-4 bg-yc-purple text-white font-bold py-3 rounded-lg hover:bg-yc-purple/80 disabled:bg-gray-700 disabled:text-gray-400 transition-all"
                                     >
                                         {isSelling ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : sellMode === 'fixed' ? 'List for Sale' : 'Create Auction'}
                                     </button>

@@ -97,7 +97,7 @@ const LiveFeed: React.FC = () => {
             <div className="flex items-center gap-3">
                 {/* Fixed label */}
                 <div className="flex items-center shrink-0 pr-3 border-r border-gray-200 dark:border-yc-dark-border">
-                    <Activity className="w-4 h-4 text-yc-orange mr-2" />
+                    <Activity className="w-4 h-4 text-yc-purple mr-2" />
                     <span className="text-xs font-bold text-gray-500 dark:text-[#888888] uppercase tracking-widest whitespace-nowrap">Live</span>
                     {loading && <RefreshCw className="w-3 h-3 text-gray-400 animate-spin ml-2" />}
                 </div>
@@ -111,7 +111,7 @@ const LiveFeed: React.FC = () => {
 
                             const content = (
                                 <div className="inline-flex items-center mr-10 shrink-0">
-                                    <span className="text-xs font-bold text-yc-orange mr-1.5">{event.startup}</span>
+                                    <span className="text-xs font-bold text-yc-purple mr-1.5">{event.startup}</span>
                                     <span className="text-sm text-gray-700 dark:text-gray-300 mr-2">{headline}</span>
                                     <span className="text-xs font-mono font-bold text-green-500 shrink-0">
                                         +{event.points}

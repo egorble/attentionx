@@ -239,7 +239,7 @@ const AppContent: React.FC = () => {
                         {/* 5. NFT Marketplace */}
                         <div className="mt-8">
                             <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4 flex items-center">
-                                <span className="w-1.5 h-5 bg-yc-orange rounded-full mr-2"></span>
+                                <span className="w-1.5 h-5 bg-yc-purple rounded-full mr-2"></span>
                                 NFT Marketplace
                             </h3>
 
@@ -251,7 +251,7 @@ const AppContent: React.FC = () => {
                                                 key={filter}
                                                 onClick={() => setActiveFilter(filter)}
                                                 className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all duration-300 transform active:scale-95 ${activeFilter === filter
-                                                    ? 'bg-yc-orange text-white shadow-lg shadow-yc-orange/30 scale-105'
+                                                    ? 'bg-yc-purple text-white shadow-lg shadow-yc-purple/30 scale-105'
                                                     : 'bg-gray-100 dark:bg-[#1A1A1A] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white'
                                                     }`}
                                             >
@@ -264,9 +264,9 @@ const AppContent: React.FC = () => {
                                 <div className="flex items-center space-x-3 self-end md:self-auto">
                                     <span className="text-xs font-bold text-gray-400 uppercase">Sort by:</span>
                                     <div className="relative group">
-                                        <button className="flex items-center text-sm font-bold text-yc-text-primary dark:text-white hover:text-yc-orange transition-colors">
+                                        <button className="flex items-center text-sm font-bold text-yc-text-primary dark:text-white hover:text-yc-purple transition-colors">
                                             {sortBy === 'price' ? 'Price' : sortBy === 'rarity' ? 'Rarity' : 'Recent'}
-                                            <Filter className="w-3 h-3 ml-1 text-gray-400 group-hover:text-yc-orange transition-colors" />
+                                            <Filter className="w-3 h-3 ml-1 text-gray-400 group-hover:text-yc-purple transition-colors" />
                                         </button>
                                         <div className="absolute right-0 top-full mt-2 bg-white dark:bg-[#09090b] border border-gray-200 dark:border-[#27272a] rounded-lg shadow-lg py-2 min-w-[120px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                                             <button
@@ -294,7 +294,7 @@ const AppContent: React.FC = () => {
 
                             {isLoadingDashboard ? (
                                 <div className="flex items-center justify-center py-20">
-                                    <Loader2 className="w-8 h-8 animate-spin text-yc-orange" />
+                                    <Loader2 className="w-8 h-8 animate-spin text-yc-purple" />
                                     <span className="ml-3 text-lg font-bold text-gray-400">Loading marketplace...</span>
                                 </div>
                             ) : (
@@ -303,7 +303,7 @@ const AppContent: React.FC = () => {
                                         filteredAndSortedListings.map(({ listing, card }) => (
                                             <div
                                                 key={`${listing.listingId}-${card.tokenId}`}
-                                                className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl overflow-hidden hover:border-yc-orange/50 transition-all duration-300 group cursor-pointer"
+                                                className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl overflow-hidden hover:border-yc-purple/50 transition-all duration-300 group cursor-pointer"
                                                 onClick={() => {
                                                     setDashboardSelectedCard(card);
                                                     setDashboardSelectedStartup({
@@ -323,7 +323,7 @@ const AppContent: React.FC = () => {
                                                 </div>
                                                 <div className="p-1.5 md:p-3">
                                                     <p className="text-gray-900 dark:text-white font-bold text-[11px] md:text-sm leading-tight truncate">{card.name}</p>
-                                                    <p className="text-yc-orange font-bold text-[11px] md:text-base mt-0.5">{formatXTZ(listing.price)} {currencySymbol()}</p>
+                                                    <p className="text-yc-purple font-bold text-[11px] md:text-base mt-0.5">{formatXTZ(listing.price)} {currencySymbol()}</p>
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
@@ -336,7 +336,7 @@ const AppContent: React.FC = () => {
                                                                 .finally(() => setBuyingId(null));
                                                         }}
                                                         disabled={buyingId === Number(listing.listingId)}
-                                                        className="w-full mt-1.5 md:mt-2 px-2 py-1 md:px-4 md:py-2 rounded-lg font-bold text-[10px] md:text-sm bg-yc-orange hover:bg-orange-600 text-white transition-all active:scale-95 disabled:opacity-50"
+                                                        className="w-full mt-1.5 md:mt-2 px-2 py-1 md:px-4 md:py-2 rounded-lg font-bold text-[10px] md:text-sm bg-yc-purple hover:bg-purple-600 text-white transition-all active:scale-95 disabled:opacity-50"
                                                     >
                                                         {buyingId === Number(listing.listingId) ? 'Buying...' : 'Buy Now'}
                                                     </button>
@@ -383,7 +383,7 @@ const AppContent: React.FC = () => {
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Search..."
-                                className="w-full bg-gray-100 dark:bg-[#121212] border-none rounded-2xl pl-10 md:pl-12 pr-4 py-2.5 md:py-3.5 text-sm font-medium text-yc-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-yc-orange/20 transition-all placeholder-gray-400"
+                                className="w-full bg-gray-100 dark:bg-[#121212] border-none rounded-2xl pl-10 md:pl-12 pr-4 py-2.5 md:py-3.5 text-sm font-medium text-yc-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-yc-purple/20 transition-all placeholder-gray-400"
                             />
                         </div>
 
@@ -395,12 +395,12 @@ const AppContent: React.FC = () => {
                                         <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Balance</p>
                                         {balanceLoading ? (
                                             <div className="flex items-center gap-2 mt-0.5">
-                                                <span className="text-yc-orange text-sm">◈</span>
+                                                <span className="text-yc-purple text-sm">◈</span>
                                                 <div className="h-5 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                                             </div>
                                         ) : (
                                             <p className="text-lg font-black font-mono flex items-center">
-                                                <span className="text-yc-orange text-sm mr-2">◈</span>
+                                                <span className="text-yc-purple text-sm mr-2">◈</span>
                                                 {Number(ethers.formatEther(balance)).toFixed(2)} {activeNetwork.nativeCurrency.symbol}
                                             </p>
                                         )}
@@ -408,7 +408,7 @@ const AppContent: React.FC = () => {
 
                                     <div className="text-right hidden lg:block border-l border-gray-200 dark:border-gray-800 pl-6">
                                         <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Network</p>
-                                        <p className={`text-sm font-bold ${isCorrectChain ? 'text-yc-green' : 'text-yc-orange'}`}>
+                                        <p className={`text-sm font-bold ${isCorrectChain ? 'text-yc-green' : 'text-yc-purple'}`}>
                                             {isCorrectChain ? activeNetwork.shortName : 'Wrong Chain'}
                                         </p>
                                     </div>
@@ -424,8 +424,8 @@ const AppContent: React.FC = () => {
                                     ${isConnected
                                         ? isCorrectChain
                                             ? 'bg-yc-green/20 text-yc-green border border-yc-green/30 hover:bg-yc-green/30'
-                                            : 'bg-yc-orange hover:bg-orange-600 text-white shadow-orange-500/20'
-                                        : 'bg-yc-orange hover:bg-orange-600 text-white shadow-orange-500/20'
+                                            : 'bg-yc-purple hover:bg-purple-600 text-white shadow-purple-500/20'
+                                        : 'bg-yc-purple hover:bg-purple-600 text-white shadow-purple-500/20'
                                     }
                                 `}
                             >
@@ -490,7 +490,7 @@ const AppContent: React.FC = () => {
                                                         <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                                                     ) : (
                                                         <span className="text-sm font-black font-mono text-gray-900 dark:text-white">
-                                                            <span className="text-yc-orange mr-1">◈</span>
+                                                            <span className="text-yc-purple mr-1">◈</span>
                                                             {Number(ethers.formatEther(balance)).toFixed(2)} {activeNetwork.nativeCurrency.symbol}
                                                         </span>
                                                     )}
@@ -501,7 +501,7 @@ const AppContent: React.FC = () => {
                                             {!isConnected ? (
                                                 <button
                                                     onClick={() => { setIsMobileMenuOpen(false); connect(); }}
-                                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-yc-orange text-white font-bold text-sm active:scale-95 transition-transform"
+                                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-yc-purple text-white font-bold text-sm active:scale-95 transition-transform"
                                                 >
                                                     <Wallet className="w-4 h-4" />
                                                     Connect Wallet
@@ -509,7 +509,7 @@ const AppContent: React.FC = () => {
                                             ) : !isCorrectChain ? (
                                                 <button
                                                     onClick={() => { setIsMobileMenuOpen(false); switchChain(); }}
-                                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-yc-orange text-white font-bold text-sm active:scale-95 transition-transform"
+                                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-yc-purple text-white font-bold text-sm active:scale-95 transition-transform"
                                                 >
                                                     <Wallet className="w-4 h-4" />
                                                     Switch Network
@@ -526,7 +526,7 @@ const AppContent: React.FC = () => {
                                                             onClick={() => { setIsMobileMenuOpen(false); handleNetworkSwitch(net.id); }}
                                                             className={`flex items-center gap-1 px-2 py-1.5 rounded-full text-xs font-bold transition-all ${
                                                                 networkId === net.id
-                                                                    ? 'bg-yc-orange text-white shadow'
+                                                                    ? 'bg-yc-purple text-white shadow'
                                                                     : 'text-gray-400'
                                                             }`}
                                                         >
@@ -542,7 +542,7 @@ const AppContent: React.FC = () => {
                                                 <div className="flex bg-gray-200 dark:bg-[#121212] rounded-full p-0.5">
                                                     <button
                                                         onClick={() => theme === 'dark' && toggleTheme()}
-                                                        className={`p-1.5 rounded-full transition-all ${theme === 'light' ? 'bg-white shadow text-orange-500' : 'text-gray-400'}`}
+                                                        className={`p-1.5 rounded-full transition-all ${theme === 'light' ? 'bg-white shadow text-purple-500' : 'text-gray-400'}`}
                                                     >
                                                         <Sun size={14} />
                                                     </button>

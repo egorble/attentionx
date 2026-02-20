@@ -128,7 +128,7 @@ sleep 2
 
 # Kill any leftover node processes on our ports
 fuser -k 3005/tcp 2>/dev/null || true
-fuser -k 3003/tcp 2>/dev/null || true
+fuser -k 3006/tcp 2>/dev/null || true
 sleep 1
 
 systemctl daemon-reload
@@ -181,7 +181,7 @@ echo -e "  ${CYAN}Contract verification:${NC}"
 DEPLOY_FILE="${APP_DIR}/deployment-rise.json"
 if [ -f "$DEPLOY_FILE" ]; then
     EXPECTED_ADDR=$(node -e "console.log(JSON.parse(require('fs').readFileSync('${DEPLOY_FILE}','utf8')).proxies.UnicornX_NFT || '')" 2>/dev/null || echo "")
-    ACTUAL_ADDR=$(curl -s --max-time 5 "http://127.0.0.1:3003/" 2>/dev/null | node -e "process.stdin.on('data',d=>{try{console.log(JSON.parse(d).contract)}catch{console.log('?')}})" 2>/dev/null || echo "?")
+    ACTUAL_ADDR=$(curl -s --max-time 5 "http://127.0.0.1:3006/" 2>/dev/null | node -e "process.stdin.on('data',d=>{try{console.log(JSON.parse(d).contract)}catch{console.log('?')}})" 2>/dev/null || echo "?")
 
     if [ "$ACTUAL_ADDR" = "$EXPECTED_ADDR" ]; then
         echo -e "  RISE metadata:       ${GREEN}OK${NC} (${ACTUAL_ADDR})"

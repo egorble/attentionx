@@ -39,7 +39,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ onOpenPack }) => {
           <ModelViewer3D mode="gentle" cameraZ={2.8} modelScale={0.8} />
           {/* Subtle glow behind model */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-24 h-24 bg-yc-orange/10 rounded-full blur-2xl" />
+            <div className="w-24 h-24 bg-yc-purple/10 rounded-full blur-2xl" />
           </div>
         </div>
         {/* Bottom bar */}
@@ -50,7 +50,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ onOpenPack }) => {
           </div>
           <button
             onClick={onOpenPack}
-            className="w-full bg-yc-orange hover:bg-orange-600 text-white py-2.5 rounded-lg font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center active:scale-95 shadow-md shadow-orange-500/20"
+            className="w-full bg-yc-purple hover:bg-purple-600 text-white py-2.5 rounded-lg font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center active:scale-95 shadow-md shadow-purple-500/20"
           >
             Buy Pack
           </button>
@@ -70,11 +70,11 @@ const RightPanel: React.FC<RightPanelProps> = ({ onOpenPack }) => {
                 <div key={startup.name} className="flex items-center justify-between group hover:bg-gray-100 dark:hover:bg-white/5 px-1 py-1 rounded transition-colors">
                     <div className="flex items-center min-w-0">
                         <span className={`text-[10px] font-black shrink-0 mr-2 w-4 text-center ${
-                          i === 0 ? 'text-yc-orange' : 'text-gray-400'
+                          i === 0 ? 'text-yc-purple' : 'text-gray-400'
                         }`}>
                             {i + 1}
                         </span>
-                        <p className="text-[11px] font-semibold text-gray-900 dark:text-white group-hover:text-yc-orange transition-colors truncate">
+                        <p className="text-[11px] font-semibold text-gray-900 dark:text-white group-hover:text-yc-purple transition-colors truncate">
                           {startup.name}
                         </p>
                     </div>
@@ -90,24 +90,24 @@ const RightPanel: React.FC<RightPanelProps> = ({ onOpenPack }) => {
       </div>
 
       {/* Referral */}
-      <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-gray-900 dark:to-black border border-orange-200 dark:border-gray-800 rounded-lg p-3">
+      <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-gray-900 dark:to-black border border-purple-200 dark:border-gray-800 rounded-lg p-3">
         <div className="flex items-center justify-between mb-1.5">
             <h3 className="text-gray-900 dark:text-white font-bold text-xs">Referral Program</h3>
-            <UserPlus className="w-3.5 h-3.5 text-yc-orange" />
+            <UserPlus className="w-3.5 h-3.5 text-yc-purple" />
         </div>
         <p className="text-gray-600 dark:text-gray-400 text-[10px] mb-2">
-            Earn <span className="text-yc-orange font-bold">10%</span> from every pack your friends buy.
+            Earn <span className="text-yc-purple font-bold">10%</span> from every pack your friends buy.
         </p>
 
         {isConnected && (
             <div className="flex gap-2 mb-2">
-                <div className="flex-1 bg-white/80 dark:bg-black/50 rounded p-1.5 border border-orange-200/50 dark:border-gray-700 text-center">
+                <div className="flex-1 bg-white/80 dark:bg-black/50 rounded p-1.5 border border-purple-200/50 dark:border-gray-700 text-center">
                     <p className="text-[9px] text-gray-500 uppercase font-bold">Refs</p>
                     <p className="text-gray-900 dark:text-white font-bold font-mono text-xs">{referralStats.count}</p>
                 </div>
-                <div className="flex-1 bg-white/80 dark:bg-black/50 rounded p-1.5 border border-orange-200/50 dark:border-gray-700 text-center">
+                <div className="flex-1 bg-white/80 dark:bg-black/50 rounded p-1.5 border border-purple-200/50 dark:border-gray-700 text-center">
                     <p className="text-[9px] text-gray-500 uppercase font-bold">Earned</p>
-                    <p className="text-yc-orange font-bold font-mono text-xs">{referralStats.totalEarned}</p>
+                    <p className="text-yc-purple font-bold font-mono text-xs">{referralStats.totalEarned}</p>
                 </div>
             </div>
         )}
@@ -117,7 +117,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ onOpenPack }) => {
                 type="text"
                 value={isConnected ? referralLink : 'Connect wallet first'}
                 readOnly
-                className="w-full bg-white/80 dark:bg-black/50 border border-orange-200/50 dark:border-gray-700 text-gray-600 dark:text-gray-400 text-[9px] px-2 py-1.5 pr-12 rounded font-mono focus:outline-none truncate"
+                className="w-full bg-white/80 dark:bg-black/50 border border-purple-200/50 dark:border-gray-700 text-gray-600 dark:text-gray-400 text-[9px] px-2 py-1.5 pr-12 rounded font-mono focus:outline-none truncate"
             />
             <button
                 onClick={handleCopy}
@@ -126,7 +126,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ onOpenPack }) => {
                     copied
                         ? 'bg-green-500'
                         : isConnected
-                            ? 'bg-yc-orange hover:bg-orange-600'
+                            ? 'bg-yc-purple hover:bg-purple-600'
                             : 'bg-gray-400 cursor-not-allowed'
                 }`}
             >

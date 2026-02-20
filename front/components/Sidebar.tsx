@@ -66,7 +66,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user
             >
               <item.icon
                 className={`w-6 h-6 mr-4 transition-colors duration-300 
-                  ${isActive ? 'text-yc-orange' : 'text-gray-400 group-hover:text-yc-orange'}`}
+                  ${isActive ? 'text-yc-purple' : 'text-gray-400 group-hover:text-yc-purple'}`}
                 strokeWidth={isActive ? 2.5 : 2}
               />
               <span className="tracking-tight">{item.label}</span>
@@ -80,7 +80,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user
 
         {/* User Profile - Large Card Style */}
         <div
-          className="flex items-center p-3 rounded-xl bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-[#2A2A2A] shadow-sm cursor-pointer hover:border-yc-orange transition-colors group"
+          className="flex items-center p-3 rounded-xl bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-[#2A2A2A] shadow-sm cursor-pointer hover:border-yc-purple transition-colors group"
           onClick={onSettingsClick}
         >
           <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-[#333] overflow-hidden shrink-0">
@@ -92,10 +92,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user
             />
           </div>
           <div className="ml-3 flex-1 min-w-0">
-            <p className="text-sm font-bold text-yc-text-primary dark:text-white truncate group-hover:text-yc-orange transition-colors">{user.name}</p>
+            <p className="text-sm font-bold text-yc-text-primary dark:text-white truncate group-hover:text-yc-purple transition-colors">{user.name}</p>
             <p className="text-xs text-gray-400 font-mono font-medium">Pro League</p>
           </div>
-          <Settings className="w-5 h-5 text-gray-300 group-hover:text-yc-orange transition-colors shrink-0" />
+          <Settings className="w-5 h-5 text-gray-300 group-hover:text-yc-purple transition-colors shrink-0" />
         </div>
 
         {/* Network Toggle */}
@@ -106,7 +106,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user
               onClick={() => handleNetworkSwitch(net.id)}
               className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-full text-xs font-bold transition-all ${
                 networkId === net.id
-                  ? 'bg-yc-orange text-white shadow'
+                  ? 'bg-yc-purple text-white shadow'
                   : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
               }`}
             >
@@ -121,7 +121,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user
           <div className="flex bg-gray-200 dark:bg-[#1A1A1A] rounded-full p-1">
             <button
               onClick={() => theme === 'dark' && toggleTheme()}
-              className={`p-2 rounded-full transition-all ${theme === 'light' ? 'bg-white shadow text-orange-500' : 'text-gray-400'}`}
+              className={`p-2 rounded-full transition-all ${theme === 'light' ? 'bg-white shadow text-purple-500' : 'text-gray-400'}`}
             >
               <Sun size={16} />
             </button>

@@ -200,7 +200,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({ data, cardData, onClo
                                         {fundingHistory.map((round, i) => (
                                             <div key={i} className="relative pl-8">
                                                 <div className={`absolute left-0 top-1.5 w-3.5 h-3.5 rounded-full border-[3px] border-white dark:border-[#0c0c0e] z-10
-                                                    ${i === 0 ? 'bg-yc-orange ring-1 ring-yc-orange' : 'bg-gray-300 dark:bg-gray-700'}`}></div>
+                                                    ${i === 0 ? 'bg-yc-purple ring-1 ring-yc-purple' : 'bg-gray-300 dark:bg-gray-700'}`}></div>
 
                                                 <div className="flex justify-between items-start mb-1">
                                                     <span className="font-bold text-sm text-gray-900 dark:text-white">{round.round}</span>
@@ -225,7 +225,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({ data, cardData, onClo
                                         href={`${getActiveNetwork().explorerUrl}/token/${getActiveContracts().UnicornX_NFT}/instance/${tokenId}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="w-full py-3.5 px-4 bg-gray-900 dark:bg-white text-white dark:text-black rounded-lg font-bold text-sm hover:bg-yc-orange dark:hover:bg-yc-orange dark:hover:text-white transition-colors flex items-center justify-center"
+                                        className="w-full py-3.5 px-4 bg-gray-900 dark:bg-white text-white dark:text-black rounded-lg font-bold text-sm hover:bg-yc-purple dark:hover:bg-yc-purple dark:hover:text-white transition-colors flex items-center justify-center"
                                     >
                                         <ExternalLink className="w-4 h-4 mr-2" /> View on Explorer
                                     </a>

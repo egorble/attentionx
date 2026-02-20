@@ -153,7 +153,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
                         <div className="flex items-center gap-2 mt-3">
                             <button
                                 onClick={() => fileInputRef.current?.click()}
-                                className="text-xs font-bold text-yc-orange hover:text-orange-600 transition-colors flex items-center gap-1"
+                                className="text-xs font-bold text-yc-purple hover:text-purple-600 transition-colors flex items-center gap-1"
                             >
                                 <Upload className="w-3 h-3" />
                                 Upload Photo
@@ -194,7 +194,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
                             onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                             placeholder="Enter your username..."
                             maxLength={20}
-                            className="w-full bg-gray-50 dark:bg-[#050505] border border-gray-200 dark:border-[#2A2A2A] rounded-lg px-4 py-3 text-gray-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-yc-orange/30 focus:border-yc-orange transition-all placeholder-gray-400"
+                            className="w-full bg-gray-50 dark:bg-[#050505] border border-gray-200 dark:border-[#2A2A2A] rounded-lg px-4 py-3 text-gray-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-yc-purple/30 focus:border-yc-purple transition-all placeholder-gray-400"
                             autoFocus
                         />
                         <div className="flex justify-between mt-1.5">
@@ -221,7 +221,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
                             className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
                                 loading || username.trim().length < 3
                                     ? 'bg-gray-200 dark:bg-[#1A1A1A] text-gray-400 cursor-not-allowed'
-                                    : 'bg-yc-orange hover:bg-orange-600 text-white shadow-lg shadow-orange-500/20 active:scale-95'
+                                    : 'bg-yc-purple hover:bg-purple-600 text-white shadow-lg shadow-purple-500/20 active:scale-95'
                             }`}
                         >
                             {loading ? (

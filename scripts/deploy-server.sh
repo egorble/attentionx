@@ -325,7 +325,7 @@ systemctl stop fantasyyc-api 2>/dev/null || true
 systemctl stop fantasyyc-metadata 2>/dev/null || true
 sleep 2
 fuser -k 3005/tcp 2>/dev/null || true
-fuser -k 3003/tcp 2>/dev/null || true
+fuser -k 3006/tcp 2>/dev/null || true
 sleep 1
 
 # Start services
@@ -382,7 +382,7 @@ echo ""
 
 # Quick health check
 API_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://127.0.0.1:3005/health" 2>/dev/null || echo "000")
-META_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://127.0.0.1:3003/metadata/1" 2>/dev/null || echo "000")
+META_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://127.0.0.1:3006/metadata/1" 2>/dev/null || echo "000")
 
 echo -e "  ${CYAN}RISE Testnet:${NC}"
 echo -e "  API health:           ${API_STATUS} $([ "$API_STATUS" = "200" ] && echo "${GREEN}OK${NC}" || echo "${RED}FAIL${NC}")"

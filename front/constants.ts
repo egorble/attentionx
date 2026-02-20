@@ -262,7 +262,7 @@ export const RARITY_COLORS: Record<Rarity, { bg: string; text: string; border: s
   [Rarity.RARE]: { bg: 'bg-green-600', text: 'text-white', border: 'border-green-500' },
   [Rarity.EPIC]: { bg: 'bg-violet-600', text: 'text-white', border: 'border-violet-500' },
   [Rarity.EPIC_RARE]: { bg: 'bg-purple-600', text: 'text-white', border: 'border-purple-500' },
-  [Rarity.LEGENDARY]: { bg: 'bg-orange-500', text: 'text-white', border: 'border-orange-400' },
+  [Rarity.LEGENDARY]: { bg: 'bg-purple-500', text: 'text-white', border: 'border-purple-400' },
 };
 
 // Rarity multipliers

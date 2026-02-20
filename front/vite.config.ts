@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
       server: {
-        port: 3000,
+        port: 3007,
         host: '0.0.0.0',
         hmr: false,
         proxy: {
@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
             changeOrigin: true,
           },
           '/metadata': {
-            target: 'http://localhost:3003',
+            target: 'http://localhost:3006',
             changeOrigin: true,
           },
           '/health': {

@@ -187,8 +187,8 @@ const Feed: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-yc-orange/10 rounded-xl">
-                        <Newspaper className="w-6 h-6 text-yc-orange" />
+                    <div className="p-2 bg-yc-purple/10 rounded-xl">
+                        <Newspaper className="w-6 h-6 text-yc-purple" />
                     </div>
                     <div>
                         <h2 className="text-2xl font-black text-yc-text-primary dark:text-white tracking-tight">News Feed</h2>
@@ -200,7 +200,7 @@ const Feed: React.FC = () => {
                 <button
                     onClick={() => fetchFeed()}
                     disabled={loading}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-500 hover:text-yc-orange transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-500 hover:text-yc-purple transition-colors disabled:opacity-50"
                 >
                     <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                     Refresh
@@ -215,7 +215,7 @@ const Feed: React.FC = () => {
                             onClick={() => setFilterStartup(null)}
                             className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${
                                 filterStartup === null
-                                    ? 'bg-yc-orange text-white shadow-lg shadow-yc-orange/30'
+                                    ? 'bg-yc-purple text-white shadow-lg shadow-yc-purple/30'
                                     : 'bg-gray-100 dark:bg-[#1A1A1A] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'
                             }`}
                         >
@@ -227,7 +227,7 @@ const Feed: React.FC = () => {
                                 onClick={() => setFilterStartup(filterStartup === name ? null : name)}
                                 className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${
                                     filterStartup === name
-                                        ? 'bg-yc-orange text-white shadow-lg shadow-yc-orange/30'
+                                        ? 'bg-yc-purple text-white shadow-lg shadow-yc-purple/30'
                                         : 'bg-gray-100 dark:bg-[#1A1A1A] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'
                                 }`}
                             >
@@ -241,7 +241,7 @@ const Feed: React.FC = () => {
             {/* Loading */}
             {loading && (
                 <div className="flex items-center justify-center py-20">
-                    <Loader2 className="w-8 h-8 animate-spin text-yc-orange" />
+                    <Loader2 className="w-8 h-8 animate-spin text-yc-purple" />
                     <span className="ml-3 text-lg font-bold text-gray-400">Loading feed...</span>
                 </div>
             )}
@@ -271,7 +271,7 @@ const Feed: React.FC = () => {
                             >
                                 {/* Source line */}
                                 <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                    <span className="text-xs font-extrabold uppercase tracking-wider text-yc-orange">{event.startup}</span>
+                                    <span className="text-xs font-extrabold uppercase tracking-wider text-yc-purple">{event.startup}</span>
                                     <span className="text-gray-300 dark:text-[#333]">|</span>
                                     <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">{typeLabel}</span>
                                     <span className="text-gray-300 dark:text-[#333]">|</span>
@@ -299,7 +299,7 @@ const Feed: React.FC = () => {
                                             href={tweetUrl}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-yc-orange transition-colors shrink-0"
+                                            className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-yc-purple transition-colors shrink-0"
                                         >
                                             Source <ExternalLink className="w-3 h-3" />
                                         </a>

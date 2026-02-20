@@ -133,7 +133,7 @@ const Analytics: React.FC = () => {
                 <button
                     onClick={refresh}
                     disabled={isLoading}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-500 hover:text-yc-orange transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-500 hover:text-yc-purple transition-colors disabled:opacity-50"
                 >
                     <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
                     Refresh
@@ -144,7 +144,7 @@ const Analytics: React.FC = () => {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <div className="bg-white dark:bg-[#121212] border border-yc-light-border dark:border-[#2A2A2A] rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-2">
-                        <Wallet className="w-4 h-4 text-yc-orange" />
+                        <Wallet className="w-4 h-4 text-yc-purple" />
                         <span className="text-gray-500 text-xs uppercase font-bold">Portfolio Value</span>
                     </div>
                     <p className="text-xl font-bold text-yc-text-primary dark:text-white">
@@ -155,7 +155,7 @@ const Analytics: React.FC = () => {
 
                 <div className="bg-white dark:bg-[#121212] border border-yc-light-border dark:border-[#2A2A2A] rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-2">
-                        <Trophy className="w-4 h-4 text-yc-orange" />
+                        <Trophy className="w-4 h-4 text-yc-purple" />
                         <span className="text-gray-500 text-xs uppercase font-bold">Tournament Rank</span>
                     </div>
                     <p className="text-xl font-bold text-yc-text-primary dark:text-white">
@@ -201,8 +201,8 @@ const Analytics: React.FC = () => {
                                 <AreaChart data={dailyHistory}>
                                     <defs>
                                         <linearGradient id="colorPoints" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#F26522" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#F26522" stopOpacity={0} />
+                                            <stop offset="5%" stopColor="#9333EA" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#9333EA" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
                                     <XAxis
@@ -226,7 +226,7 @@ const Analytics: React.FC = () => {
                                         labelFormatter={(val) => `Date: ${val}`}
                                         formatter={(value: number) => [`${value.toFixed(1)} pts`, 'Score']}
                                     />
-                                    <Area type="monotone" dataKey="points" stroke="#F26522" fillOpacity={1} fill="url(#colorPoints)" />
+                                    <Area type="monotone" dataKey="points" stroke="#9333EA" fillOpacity={1} fill="url(#colorPoints)" />
                                 </AreaChart>
                             </ResponsiveContainer>
                         </div>

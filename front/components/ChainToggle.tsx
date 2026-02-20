@@ -31,7 +31,7 @@ const ChainToggle: React.FC = () => {
                     className={`
                         flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 active:scale-95
                         ${networkId === net.id
-                            ? 'bg-yc-orange text-white shadow-md shadow-yc-orange/20'
+                            ? 'bg-yc-purple text-white shadow-md shadow-yc-purple/20'
                             : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-700 dark:hover:text-gray-200'
                         }
                     `}

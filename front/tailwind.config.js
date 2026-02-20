@@ -9,7 +9,7 @@ export default {
     extend: {
       colors: {
         yc: {
-          orange: '#F26522',
+          purple: '#9333EA',
           green: '#10B981',
           red: '#EF4444',
           dark: '#050505',

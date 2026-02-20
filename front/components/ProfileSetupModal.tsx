@@ -101,7 +101,7 @@ const ProfileSetupModal: React.FC<ProfileSetupModalProps> = ({ isOpen, address, 
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
             <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-[fadeIn_0.3s_ease-out]">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-yc-orange to-orange-600 p-6 text-center">
+                <div className="bg-gradient-to-r from-yc-purple to-purple-600 p-6 text-center">
                     <h2 className="text-white text-xl font-black">Welcome to AttentionX</h2>
                     <p className="text-white/80 text-sm mt-1">Set up your profile to get started</p>
                 </div>
@@ -129,7 +129,7 @@ const ProfileSetupModal: React.FC<ProfileSetupModalProps> = ({ isOpen, address, 
                         <div className="flex items-center gap-2 mt-3">
                             <button
                                 onClick={() => fileInputRef.current?.click()}
-                                className="text-xs font-bold text-yc-orange hover:text-orange-600 transition-colors flex items-center gap-1"
+                                className="text-xs font-bold text-yc-purple hover:text-purple-600 transition-colors flex items-center gap-1"
                             >
                                 <Upload className="w-3 h-3" />
                                 Upload Photo
@@ -173,7 +173,7 @@ const ProfileSetupModal: React.FC<ProfileSetupModalProps> = ({ isOpen, address, 
                             onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                             placeholder="Enter your username..."
                             maxLength={20}
-                            className="w-full bg-gray-50 dark:bg-[#050505] border border-gray-200 dark:border-[#2A2A2A] rounded-lg px-4 py-3 text-gray-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-yc-orange/30 focus:border-yc-orange transition-all placeholder-gray-400"
+                            className="w-full bg-gray-50 dark:bg-[#050505] border border-gray-200 dark:border-[#2A2A2A] rounded-lg px-4 py-3 text-gray-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-yc-purple/30 focus:border-yc-purple transition-all placeholder-gray-400"
                             autoFocus
                         />
                         <div className="flex justify-between mt-1.5">
@@ -199,7 +199,7 @@ const ProfileSetupModal: React.FC<ProfileSetupModalProps> = ({ isOpen, address, 
                         className={`w-full py-3.5 rounded-xl font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
                             loading || username.trim().length < 3
                                 ? 'bg-gray-200 dark:bg-[#1A1A1A] text-gray-400 cursor-not-allowed'
-                                : 'bg-yc-orange hover:bg-orange-600 text-white shadow-lg shadow-orange-500/20 active:scale-95'
+                                : 'bg-yc-purple hover:bg-purple-600 text-white shadow-lg shadow-purple-500/20 active:scale-95'
                         }`}
                     >
                         {loading ? (
