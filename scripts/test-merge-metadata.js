@@ -11,7 +11,7 @@ require("dotenv").config({ path: path.join(__dirname, ".env") });
 const NETWORKS = {
     rise: {
         rpc: "https://testnet.riselabs.xyz",
-        metadataUrl: "https://attentionx.fun/metadata-rise",
+        metadataUrl: "https://attnx.fun/metadata-rise",
     },
 };
 

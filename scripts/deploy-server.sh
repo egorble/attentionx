@@ -1,7 +1,7 @@
 #!/bin/bash
 ###############################################################################
 # FantasyYC — Production Deployment Script
-# Domain: attentionx.fun
+# Domain: attnx.fun
 #
 # First deploy:
 #   1. Create .env:  sudo mkdir -p /opt/fantasyyc && sudo nano /opt/fantasyyc/.env
@@ -24,7 +24,7 @@
 set -euo pipefail
 
 # ─── Configuration ───
-DOMAIN="attentionx.fun"
+DOMAIN="attnx.fun"
 APP_DIR="/opt/fantasyyc"
 APP_USER="fantasyyc"
 ENV_FILE="${APP_DIR}/.env"
@@ -278,7 +278,7 @@ else
         --domain "$DOMAIN" \
         --non-interactive \
         --agree-tos \
-        --email "admin@attentionx.fun" \
+        --email "admin@attnx.fun" \
         --no-eff-email
 
     if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then

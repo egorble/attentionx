@@ -140,7 +140,7 @@ systemctl start fantasyyc-metadata
 # ─── Reload nginx config (picks up burst/rate limit changes) ───
 if [ -f "${APP_DIR}/deploy/nginx.conf" ]; then
     log "Updating nginx config..."
-    DOMAIN="attentionx.fun"
+    DOMAIN="attnx.fun"
     NGINX_TARGET="/etc/nginx/sites-available/${DOMAIN}"
 
     # Clean up old 'fantasyyc' config that conflicts with the canonical name

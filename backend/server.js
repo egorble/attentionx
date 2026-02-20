@@ -18,7 +18,7 @@ const NETWORKS = {
         rpc: "https://testnet.riselabs.xyz",
         port: 3003,
         deploymentFile: "deployment-rise.json",
-        imageBase: "https://attentionx.fun/metadata/images",
+        imageBase: "https://attnx.fun/metadata/images",
     },
 };
 
@@ -204,7 +204,7 @@ function buildMetadata(tokenId, tokenData) {
         name: `${startup.name} #${edition}`,
         description: `${effectiveRarity} YC startup card - ${startup.description}. Edition ${edition} of ${totalMinted} minted.`,
         image: imageUrl,
-        external_url: `https://attentionx.fun/card/${tokenId}`,
+        external_url: `https://attnx.fun/card/${tokenId}`,
         fundraising: startup.fundraising || null,
         attributes: [
             { trait_type: "Startup", value: startup.name },
