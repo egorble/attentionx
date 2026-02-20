@@ -10,6 +10,10 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onReady }) => {
     const [fadeOut, setFadeOut] = useState(false);
 
     useEffect(() => {
+        // Remove the pre-React HTML splash overlay
+        const preSplash = document.getElementById('pre-splash');
+        if (preSplash) preSplash.remove();
+
         const t1 = setTimeout(() => setProgress(30), 100);
         const t2 = setTimeout(() => setProgress(55), 300);
         const t3 = setTimeout(() => setProgress(70), 600);
