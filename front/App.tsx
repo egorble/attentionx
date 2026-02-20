@@ -70,7 +70,7 @@ const AppContent: React.FC = () => {
     const handleNetworkSwitch = (id: string) => {
         if (id === networkId) return;
         switchNetwork(id);
-        if (isConnected) { switchChain().catch(() => {}); refreshBalance(); }
+        if (isConnected) { switchChain().catch(() => { }); refreshBalance(); }
     };
 
     // User profile hook
@@ -107,7 +107,7 @@ const AppContent: React.FC = () => {
     // Cards get cached in blockchainCache + localStorage → Portfolio loads instantly
     useEffect(() => {
         if (isConnected && address) {
-            getCards(address).catch(() => {}); // fire-and-forget
+            getCards(address).catch(() => { }); // fire-and-forget
         }
     }, [isConnected, address, getCards, networkId]);
 
@@ -459,7 +459,7 @@ const AppContent: React.FC = () => {
                                 {isMobileMenuOpen && (
                                     <>
                                         <div className="fixed inset-0 z-40" onClick={() => setIsMobileMenuOpen(false)} />
-                                        <div className="absolute right-0 top-12 z-50 w-64 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#2a2a2a] rounded-2xl shadow-2xl p-4 space-y-3">
+                                        <div className="absolute right-0 top-12 z-50 w-64 glass-nav rounded-2xl shadow-2xl p-4 space-y-3">
 
                                             {/* User info */}
                                             {isConnected && (
@@ -524,11 +524,10 @@ const AppContent: React.FC = () => {
                                                         <button
                                                             key={net.id}
                                                             onClick={() => { setIsMobileMenuOpen(false); handleNetworkSwitch(net.id); }}
-                                                            className={`flex items-center gap-1 px-2 py-1.5 rounded-full text-xs font-bold transition-all ${
-                                                                networkId === net.id
+                                                            className={`flex items-center gap-1 px-2 py-1.5 rounded-full text-xs font-bold transition-all ${networkId === net.id
                                                                     ? 'bg-yc-purple text-white shadow'
                                                                     : 'text-gray-400'
-                                                            }`}
+                                                                }`}
                                                         >
                                                             <span>{net.shortName}</span>
                                                         </button>

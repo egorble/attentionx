@@ -93,10 +93,10 @@ const LiveFeed: React.FC = () => {
     if (!loading && displayEvents.length === 0) return null;
 
     return (
-        <div className="w-full bg-white dark:bg-yc-dark-panel border border-gray-200 dark:border-yc-dark-border rounded-xl py-3 px-4 mb-8 overflow-hidden">
+        <div className="w-full glass-panel rounded-xl py-3 px-4 mb-8 overflow-hidden">
             <div className="flex items-center gap-3">
                 {/* Fixed label */}
-                <div className="flex items-center shrink-0 pr-3 border-r border-gray-200 dark:border-yc-dark-border">
+                <div className="flex items-center shrink-0 pr-3 border-r border-purple-500/20">
                     <Activity className="w-4 h-4 text-yc-purple mr-2" />
                     <span className="text-xs font-bold text-gray-500 dark:text-[#888888] uppercase tracking-widest whitespace-nowrap">Live</span>
                     {loading && <RefreshCw className="w-3 h-3 text-gray-400 animate-spin ml-2" />}

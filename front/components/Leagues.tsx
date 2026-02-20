@@ -436,7 +436,7 @@ const Leagues: React.FC = () => {
                 </div>
 
                 {/* Deck Builder Area */}
-                <div className="relative bg-yc-light-panel dark:bg-[#0A0A0A] border border-yc-light-border dark:border-[#2A2A2A] rounded-2xl p-4 sm:p-8 mb-4 overflow-hidden shadow-2xl">
+                <div className="relative glass-panel rounded-2xl p-4 sm:p-8 mb-4 overflow-hidden shadow-2xl">
 
                     {/* Submission Success Overlay */}
                     {submissionState === 'success' && (
@@ -615,7 +615,7 @@ const Leagues: React.FC = () => {
                         {/* AttentionX AI — Overlay (open) */}
                         {aiRecommendation && aiRecommendation.source !== 'insufficient_cards' && aiOverlayOpen && (
                             <div className="absolute inset-0 z-40 flex items-end sm:items-center justify-center bg-black/60 dark:bg-black/80 backdrop-blur-sm rounded-2xl">
-                                <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-[#2A2A2A] rounded-t-xl sm:rounded-xl p-4 sm:p-5 max-w-md w-full sm:mx-4 shadow-2xl">
+                                <div className="glass-panel rounded-t-xl sm:rounded-xl p-4 sm:p-5 max-w-md w-full sm:mx-4 shadow-2xl">
                                     <div className="flex items-center justify-between mb-3 sm:mb-4">
                                         <h4 className="text-xs sm:text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">AttentionX AI</h4>
                                         <button
@@ -675,7 +675,7 @@ const Leagues: React.FC = () => {
 
                 {/* AttentionX AI — Collapsed bar (after overlay dismissed) */}
                 {aiRecommendation && aiRecommendation.source !== 'insufficient_cards' && !aiOverlayOpen && (
-                    <div className="flex items-center gap-2 sm:gap-3 bg-white dark:bg-[#111] border border-gray-200 dark:border-[#2A2A2A] rounded-lg px-3 sm:px-4 py-2">
+                    <div className="flex items-center gap-2 sm:gap-3 glass-panel rounded-lg px-3 sm:px-4 py-2">
                         <span className="text-[9px] font-black text-yc-purple bg-yc-purple/10 px-1.5 py-0.5 rounded uppercase shrink-0">AI</span>
                         <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 flex-1 min-w-0 truncate">{aiRecommendation.reasoning}</p>
                         <button
@@ -702,7 +702,7 @@ const Leagues: React.FC = () => {
 
                 {/* AI Loading indicator */}
                 {aiLoading && !aiRecommendation && (
-                    <div className="flex items-center gap-2 bg-white dark:bg-[#111] border border-gray-200 dark:border-[#2A2A2A] rounded-lg px-3 sm:px-4 py-2">
+                    <div className="flex items-center gap-2 glass-panel rounded-lg px-3 sm:px-4 py-2">
                         <Loader2 className="w-3.5 h-3.5 text-yc-purple animate-spin" />
                         <span className="text-[10px] sm:text-xs text-gray-500">AttentionX AI is analyzing startups...</span>
                     </div>
@@ -713,7 +713,7 @@ const Leagues: React.FC = () => {
 
     return (
         <div className="overflow-x-hidden">
-            <div className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-black dark:to-[#121212] border border-gray-300 dark:border-[#2A2A2A] rounded-2xl p-4 md:p-8 mb-8 relative overflow-hidden group">
+            <div className="glass-panel rounded-2xl p-4 md:p-8 mb-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none text-gray-900 dark:text-white">
                     <Trophy size={200} />
                 </div>
@@ -827,7 +827,7 @@ const Leagues: React.FC = () => {
                         )}
                     </div>
 
-                    <div className="bg-white dark:bg-[#121212] border border-yc-light-border dark:border-[#2A2A2A] rounded-xl overflow-hidden shadow-sm dark:shadow-none">
+                    <div className="glass-panel rounded-xl overflow-hidden">
                         {leaderboardError ? (
                             <div className="p-8 text-center">
                                 <p className="text-red-500">Error loading leaderboard: {leaderboardError}</p>
@@ -846,12 +846,12 @@ const Leagues: React.FC = () => {
                                         <div key={player.address}>
                                             <div
                                                 onClick={() => togglePlayerSquad(player.address)}
-                                                className={`flex items-center px-3 sm:px-5 py-3 hover:bg-gray-50 dark:hover:bg-[#1A1A1A] transition-colors cursor-pointer ${isCurrentUser ? 'bg-yc-purple/5' : ''} ${isExpanded ? 'bg-gray-50 dark:bg-[#1A1A1A]' : ''}`}
+                                                className={`flex items-center px-3 sm:px-5 py-3 hover:bg-white/5 transition-colors cursor-pointer ${isCurrentUser ? 'bg-yc-purple/5' : ''} ${isExpanded ? 'bg-white/5' : ''}`}
                                             >
                                                 {/* Rank */}
                                                 <div className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full font-bold text-xs sm:text-sm shrink-0 ${player.rank === 1 ? 'bg-yellow-500/20 text-yellow-500' :
-                                                        player.rank === 2 ? 'bg-gray-400/20 text-gray-400' :
-                                                            player.rank === 3 ? 'bg-purple-700/20 text-purple-700' : 'text-gray-500 dark:text-gray-400'
+                                                    player.rank === 2 ? 'bg-gray-400/20 text-gray-400' :
+                                                        player.rank === 3 ? 'bg-purple-700/20 text-purple-700' : 'text-gray-500 dark:text-gray-400'
                                                     }`}>
                                                     {player.rank}
                                                 </div>
@@ -897,7 +897,7 @@ const Leagues: React.FC = () => {
 
                                             {/* Expanded Squad */}
                                             {isExpanded && (
-                                                <div className="px-3 sm:px-5 py-3 bg-gray-50 dark:bg-[#0A0A0A] border-t border-gray-100 dark:border-[#1E1E1E]">
+                                                <div className="px-3 sm:px-5 py-3 bg-white/5 border-t border-purple-500/10">
                                                     {squadLoading ? (
                                                         <div className="flex items-center justify-center py-4">
                                                             <Loader2 className="w-5 h-5 animate-spin text-yc-purple" />

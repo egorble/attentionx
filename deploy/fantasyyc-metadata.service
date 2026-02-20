@@ -1,5 +1,5 @@
 [Unit]
-Description=FantasyYC RISE Metadata Server (port 3006)
+Description=FantasyYC RISE Metadata Server (port 3003)
 After=network.target
 Wants=network-online.target
 

@@ -36,7 +36,7 @@ const DashboardLeaderboard: React.FC<DashboardLeaderboardProps> = ({ onNavigate 
                         Leaderboard
                     </h3>
                 </div>
-                <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl p-8">
+                <div className="glass-panel rounded-xl p-8">
                     <div className="flex items-center justify-center">
                         <div className="w-6 h-6 border-2 border-yc-purple border-t-transparent rounded-full animate-spin"></div>
                         <span className="ml-3 text-gray-400 text-sm">Loading leaderboard...</span>
@@ -55,7 +55,7 @@ const DashboardLeaderboard: React.FC<DashboardLeaderboardProps> = ({ onNavigate 
                         Leaderboard
                     </h3>
                 </div>
-                <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl p-8 text-center">
+                <div className="glass-panel rounded-xl p-8 text-center">
                     <Trophy className="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
                     <p className="text-gray-400 text-sm">No players yet. Be the first to enter the tournament!</p>
                 </div>
@@ -79,7 +79,7 @@ const DashboardLeaderboard: React.FC<DashboardLeaderboardProps> = ({ onNavigate 
                 </button>
             </div>
 
-            <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl overflow-hidden shadow-sm dark:shadow-none">
+            <div className="glass-panel rounded-xl overflow-hidden shadow-sm dark:shadow-none">
                 <div className="divide-y divide-gray-100 dark:divide-[#1E1E1E]">
                     {players.map((player) => {
                         const isCurrentUser = address && player.address.toLowerCase() === address.toLowerCase();
@@ -87,16 +87,14 @@ const DashboardLeaderboard: React.FC<DashboardLeaderboardProps> = ({ onNavigate 
                         return (
                             <div
                                 key={player.address}
-                                className={`flex items-center px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors ${
-                                    isCurrentUser ? 'bg-yc-purple/5' : ''
-                                }`}
+                                className={`flex items-center px-4 py-3 hover:bg-white/5 transition-colors ${isCurrentUser ? 'bg-yc-purple/5' : ''
+                                    }`}
                             >
                                 {/* Rank */}
-                                <div className={`w-8 h-8 flex items-center justify-center rounded-full shrink-0 ${
-                                    player.rank === 1 ? 'bg-yellow-500/10' :
-                                    player.rank === 2 ? 'bg-gray-400/10' :
-                                    player.rank === 3 ? 'bg-purple-700/10' : ''
-                                }`}>
+                                <div className={`w-8 h-8 flex items-center justify-center rounded-full shrink-0 ${player.rank === 1 ? 'bg-yellow-500/10' :
+                                        player.rank === 2 ? 'bg-gray-400/10' :
+                                            player.rank === 3 ? 'bg-purple-700/10' : ''
+                                    }`}>
                                     {getRankIcon(player.rank)}
                                 </div>
 
@@ -111,9 +109,8 @@ const DashboardLeaderboard: React.FC<DashboardLeaderboardProps> = ({ onNavigate 
                                         />
                                     </div>
                                     <div className="ml-2 min-w-0">
-                                        <p className={`text-sm font-bold truncate ${
-                                            isCurrentUser ? 'text-yc-purple' : 'text-gray-900 dark:text-white'
-                                        }`}>
+                                        <p className={`text-sm font-bold truncate ${isCurrentUser ? 'text-yc-purple' : 'text-gray-900 dark:text-white'
+                                            }`}>
                                             {player.username || formatAddress(player.address)}
                                             {isCurrentUser && <span className="text-[10px] text-yc-purple ml-1">(You)</span>}
                                         </p>

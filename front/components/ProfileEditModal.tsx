@@ -218,11 +218,10 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
                         <button
                             onClick={handleSubmit}
                             disabled={loading || username.trim().length < 3}
-                            className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
-                                loading || username.trim().length < 3
+                            className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${loading || username.trim().length < 3
                                     ? 'bg-gray-200 dark:bg-[#1A1A1A] text-gray-400 cursor-not-allowed'
                                     : 'bg-yc-purple hover:bg-purple-600 text-white shadow-lg shadow-purple-500/20 active:scale-95'
-                            }`}
+                                }`}
                         >
                             {loading ? (
                                 <>

@@ -23,7 +23,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeSection, onNavigate }) => {
   ];
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex justify-center" style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}>
-      <nav className="mx-4 mb-3 px-3 py-2 rounded-[28px] bg-white/70 dark:bg-[#1a1a1a]/80 backdrop-blur-xl border border-gray-200/50 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+      <nav className="mx-4 mb-3 px-3 py-2 rounded-[28px] glass-nav">
         <div className="flex items-center gap-1">
           {tabs.map((tab) => {
             const isActive = activeSection === tab.id;
@@ -31,11 +31,10 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeSection, onNavigate }) => {
               <button
                 key={tab.id}
                 onClick={() => onNavigate(tab.id)}
-                className={`flex flex-col items-center justify-center px-3 py-1.5 rounded-2xl transition-all duration-300 ${
-                  isActive
+                className={`flex flex-col items-center justify-center px-3 py-1.5 rounded-2xl transition-all duration-300 ${isActive
                     ? 'bg-yc-purple text-white shadow-lg shadow-yc-purple/30'
                     : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 active:scale-95'
-                }`}
+                  }`}
               >
                 <tab.icon className="w-5 h-5" strokeWidth={isActive ? 2.2 : 1.8} />
                 <span className={`text-[9px] mt-0.5 leading-tight ${isActive ? 'font-bold' : 'font-medium'}`}>

@@ -257,7 +257,7 @@ const Feed: React.FC = () => {
 
             {/* News Cards */}
             {!loading && filteredEvents.length > 0 && (
-                <div className="space-y-px bg-gray-200 dark:bg-[#2A2A2A] rounded-xl overflow-hidden">
+                <div className="space-y-2 rounded-xl overflow-hidden">
                     {filteredEvents.map(event => {
                         const tweetUrl = getTweetUrl(event);
                         const typeLabel = EVENT_TYPE_LABELS[event.eventType] || event.eventType;
@@ -267,7 +267,7 @@ const Feed: React.FC = () => {
                         return (
                             <article
                                 key={event.id}
-                                className="bg-white dark:bg-[#0E0E0E] p-4 sm:p-5 hover:bg-gray-50 dark:hover:bg-[#141414] transition-colors"
+                                className="glass-panel glass-panel-hover p-4 sm:p-5 transition-colors"
                             >
                                 {/* Source line */}
                                 <div className="flex items-center gap-2 mb-2 flex-wrap">

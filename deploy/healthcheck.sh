@@ -45,7 +45,7 @@ check_service() {
 
 # Check RISE services
 check_service "API" "http://127.0.0.1:3005/health" "fantasyyc-api"
-check_service "Metadata" "http://127.0.0.1:3006/metadata/1" "fantasyyc-metadata"
+check_service "Metadata" "http://127.0.0.1:3003/metadata/1" "fantasyyc-metadata"
 
 # Check nginx
 if ! systemctl is-active --quiet nginx; then
