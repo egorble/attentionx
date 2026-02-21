@@ -1,11 +1,9 @@
 import React from 'react';
 import { NavSection, UserProfile } from '../types';
-import { Flame, Store, Wallet, Swords, Newspaper, Settings, Sun, Moon, ShieldCheck, LogOut } from 'lucide-react';
+import { Flame, Store, Wallet, Swords, Newspaper, Settings, Sun, Moon, ShieldCheck } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { isAdmin } from '../hooks/useAdmin';
 import { useWalletContext } from '../context/WalletContext';
-import { useNetwork } from '../context/NetworkContext';
-import { ethers } from 'ethers';
 
 interface SidebarProps {
   activeSection: NavSection;
@@ -18,15 +16,8 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user, isOpen = false, onClose, onSettingsClick }) => {
   const { theme, toggleTheme } = useTheme();
-  const { connect, isConnecting, disconnect, isConnected, switchChain, refreshBalance, balance, balanceLoading } = useWalletContext();
-  const { networkId, allNetworks, switchNetwork, activeNetwork } = useNetwork();
+  const { connect, isConnecting, isConnected } = useWalletContext();
   const userIsAdmin = isAdmin(user.address || null);
-
-  const handleNetworkSwitch = (id: string) => {
-    if (id === networkId) return;
-    switchNetwork(id);
-    if (isConnected) { switchChain().catch(() => { }); refreshBalance(); }
-  };
 
   const navItems = [
     { id: NavSection.HOME, icon: Flame, label: 'Dashboard' },
@@ -66,7 +57,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user
               `}
             >
               <item.icon
-                className={`w-6 h-6 mr-4 transition-colors duration-300 
+                className={`w-6 h-6 mr-4 transition-colors duration-300
                   ${isActive ? 'text-yc-purple' : 'text-gray-400 group-hover:text-yc-purple'}`}
                 strokeWidth={isActive ? 2.5 : 2}
               />
@@ -76,100 +67,79 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user
         })}
       </nav>
 
-      {/* Footer Controls */}
-      <div className="p-6 border-t border-yc-light-border dark:border-yc-dark-border space-y-6 bg-transparent">
+      {/* Footer */}
+      <div className="p-6 border-t border-yc-light-border dark:border-[rgba(147,51,234,0.15)] space-y-4 bg-transparent">
 
-        {/* User Profile - Large Card Style */}
-        <div
-          className="flex items-center p-3 rounded-xl glass-panel shadow-sm cursor-pointer hover:border-yc-purple transition-colors group"
-          onClick={onSettingsClick}
-        >
-          <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-[#333] overflow-hidden shrink-0">
-            <img
-              src={user.avatar}
-              alt="User"
-              className="w-full h-full object-cover"
-              style={{ imageRendering: user.avatar?.startsWith('data:') ? 'pixelated' : 'auto' }}
-            />
-          </div>
-          <div className="ml-3 flex-1 min-w-0">
-            <p className="text-sm font-bold text-yc-text-primary dark:text-white truncate group-hover:text-yc-purple transition-colors">{user.name}</p>
-            <p className="text-xs text-gray-400 font-mono font-medium">Pro League</p>
-          </div>
-          <Settings className="w-5 h-5 text-gray-300 group-hover:text-yc-purple transition-colors shrink-0" />
-        </div>
-
-        {/* Balance Display */}
-        {isConnected && (
-          <div className="flex items-center justify-between px-2">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Balance</span>
-            {balanceLoading ? (
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-yc-purple text-sm">◈</span>
-                <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+        {isConnected ? (
+          /* Connected: show profile card + theme toggle */
+          <>
+            <div
+              className="flex items-center p-3 rounded-xl glass-panel shadow-sm cursor-pointer hover:border-yc-purple transition-colors group"
+              onClick={onSettingsClick}
+            >
+              <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-[#333] overflow-hidden shrink-0">
+                <img
+                  src={user.avatar}
+                  alt="User"
+                  className="w-full h-full object-cover"
+                  style={{ imageRendering: user.avatar?.startsWith('data:') ? 'pixelated' : 'auto' }}
+                />
               </div>
-            ) : (
-              <p className="text-sm font-black font-mono flex items-center text-gray-900 dark:text-white">
-                <span className="text-yc-purple text-xs mr-1">◈</span>
-                {Number(ethers.formatEther(balance)).toFixed(2)} {activeNetwork?.nativeCurrency.symbol}
-              </p>
-            )}
-          </div>
-        )}
+              <div className="ml-3 flex-1 min-w-0">
+                <p className="text-sm font-bold text-yc-text-primary dark:text-white truncate group-hover:text-yc-purple transition-colors">{user.name}</p>
+                <p className="text-xs text-gray-400 font-mono font-medium">Pro League</p>
+              </div>
+              <Settings className="w-5 h-5 text-gray-300 group-hover:text-yc-purple transition-colors shrink-0" />
+            </div>
 
-        {/* Network Toggle */}
-        <div className="flex bg-gray-200 dark:bg-white/5 rounded-full p-1 gap-0.5">
-          {allNetworks.map((net) => (
-            <button
-              key={net.id}
-              onClick={() => handleNetworkSwitch(net.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-full text-xs font-bold transition-all ${networkId === net.id
-                ? 'bg-yc-purple text-white shadow'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
-                }`}
-            >
-              <span>{net.shortName}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Theme Toggle - Minimal */}
-        <div className="flex items-center justify-between px-2">
-          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Mode</span>
-          <div className="flex bg-gray-200 dark:bg-white/5 rounded-full p-1">
-            <button
-              onClick={() => theme === 'dark' && toggleTheme()}
-              className={`p-2 rounded-full transition-all ${theme === 'light' ? 'bg-white dark:bg-white/10 shadow text-purple-500 dark:text-purple-400' : 'text-gray-400'}`}
-            >
-              <Sun size={16} />
-            </button>
-            <button
-              onClick={() => theme === 'light' && toggleTheme()}
-              className={`p-2 rounded-full transition-all ${theme === 'dark' ? 'bg-purple-500/20 text-white shadow' : 'text-gray-400'}`}
-            >
-              <Moon size={16} />
-            </button>
-          </div>
-        </div>
-
-        {/* Wallet Connection */}
-        {!isConnected ? (
-          <button
-            onClick={connect}
-            disabled={isConnecting}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-yc-purple hover:bg-purple-600 text-white font-bold text-sm transition-all shadow-purple-500/20 active:scale-95"
-          >
-            <Wallet size={16} />
-            {isConnecting ? 'Connecting...' : 'Connect Wallet'}
-          </button>
+            {/* Theme Toggle */}
+            <div className="flex justify-center">
+              <div className="flex bg-gray-200 dark:bg-white/5 rounded-full p-1">
+                <button
+                  onClick={() => theme === 'dark' && toggleTheme()}
+                  className={`p-2 rounded-full transition-all ${theme === 'light' ? 'bg-white dark:bg-white/10 shadow text-purple-500 dark:text-purple-400' : 'text-gray-400'}`}
+                >
+                  <Sun size={16} />
+                </button>
+                <button
+                  onClick={() => theme === 'light' && toggleTheme()}
+                  className={`p-2 rounded-full transition-all ${theme === 'dark' ? 'bg-purple-500/20 text-white shadow' : 'text-gray-400'}`}
+                >
+                  <Moon size={16} />
+                </button>
+              </div>
+            </div>
+          </>
         ) : (
-          <button
-            onClick={disconnect}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-bold text-sm transition-all"
-          >
-            <LogOut size={16} />
-            Disconnect Wallet
-          </button>
+          /* Not connected: show Connect button + theme toggle */
+          <>
+            <button
+              onClick={connect}
+              disabled={isConnecting}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-yc-purple hover:bg-purple-600 text-white font-bold text-sm transition-all shadow-lg shadow-purple-500/20 active:scale-95 neon-glow"
+            >
+              <Wallet size={18} />
+              {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+            </button>
+
+            {/* Theme Toggle */}
+            <div className="flex justify-center">
+              <div className="flex bg-gray-200 dark:bg-white/5 rounded-full p-1">
+                <button
+                  onClick={() => theme === 'dark' && toggleTheme()}
+                  className={`p-2 rounded-full transition-all ${theme === 'light' ? 'bg-white dark:bg-white/10 shadow text-purple-500 dark:text-purple-400' : 'text-gray-400'}`}
+                >
+                  <Sun size={16} />
+                </button>
+                <button
+                  onClick={() => theme === 'light' && toggleTheme()}
+                  className={`p-2 rounded-full transition-all ${theme === 'dark' ? 'bg-purple-500/20 text-white shadow' : 'text-gray-400'}`}
+                >
+                  <Moon size={16} />
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </aside>
