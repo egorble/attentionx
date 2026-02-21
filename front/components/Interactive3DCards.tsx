@@ -127,18 +127,16 @@ const Interactive3DCards: React.FC = () => {
                             }}
                         >
                             {/* Card Container - Intense Glassmorphism imitating the reference */}
-                            <div className={`w-full h-full relative rounded-[1.25rem] overflow-hidden flex flex-col justify-end p-4
-                border-2 ${isCenter ? 'border-indigo-400/60 dark:border-yc-purple/60 shadow-[0_0_25px_rgba(99,102,241,0.4)] dark:shadow-[0_0_35px_rgba(147,51,234,0.4)]' : 'border-white/30 dark:border-white/20 shadow-xl'}
-                bg-white/5 dark:bg-[#0a0a16]/40 backdrop-blur-xl`}
+                            <div className={`w-full h-full relative rounded-[1.25rem] overflow-hidden
+                border-2 ${isCenter ? 'border-indigo-400/60 dark:border-yc-purple/60' : 'border-white/30 dark:border-white/20 shadow-xl'}`}
                                 style={{
-                                    boxShadow: isCenter ? '0 0 30px rgba(139, 92, 246, 0.4), inset 0 0 15px rgba(139, 92, 246, 0.2)' : '0 8px 25px rgba(0,0,0,0.5), inset 0 0 8px rgba(255,255,255,0.1)',
+                                    boxShadow: isCenter ? '0 0 30px rgba(139, 92, 246, 0.4)' : '0 8px 25px rgba(0,0,0,0.3)',
                                 }}
                             >
-                                {/* Card image */}
                                 <img
                                     src={card.image}
                                     alt={card.name}
-                                    className="absolute inset-0 w-full h-full object-contain rounded-[1.25rem]"
+                                    className="w-full h-full object-cover rounded-[1.25rem]"
                                     draggable={false}
                                 />
                             </div>
