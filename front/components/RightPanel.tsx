@@ -33,9 +33,9 @@ const RightPanel: React.FC<RightPanelProps> = ({ onOpenPack }) => {
     <aside className="w-64 h-screen fixed right-0 top-0 bg-white dark:bg-yc-dark-panel border-l border-gray-200 dark:border-yc-dark-border p-3 hidden xl:flex flex-col space-y-3 z-40 overflow-y-auto transition-colors duration-300">
 
       {/* Buy Pack CTA */}
-      <div className="rounded-xl relative overflow-hidden shadow-lg shrink-0 bg-[#0a0a0a] border border-[#1a1a1a]">
+      <div className="rounded-xl relative overflow-hidden shadow-lg shrink-0 glass-panel">
         {/* 3D model area */}
-        <div className="relative h-40 bg-gradient-to-b from-[#111] to-[#0a0a0a]">
+        <div className="relative h-40 bg-gradient-to-b from-gray-100 to-gray-50 dark:from-[#111] dark:to-[#0a0a0a]">
           <ModelViewer3D mode="gentle" cameraZ={2.8} modelScale={0.8} />
           {/* Subtle glow behind model */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
