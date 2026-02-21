@@ -118,7 +118,7 @@ const Interactive3DCards: React.FC = () => {
                     return (
                         <div
                             key={card.id}
-                            className="absolute w-[150px] md:w-[170px] h-[255px] md:h-[290px] rounded-[1.25rem] cursor-pointer"
+                            className="absolute w-[150px] md:w-[170px] h-[254px] md:h-[288px] rounded-[1.25rem] cursor-pointer"
                             style={style}
                             onClick={() => {
                                 if (!isCenter) {
@@ -136,7 +136,7 @@ const Interactive3DCards: React.FC = () => {
                                 <img
                                     src={card.image}
                                     alt={card.name}
-                                    className="w-full h-full object-cover rounded-[1.25rem]"
+                                    className="w-full h-full object-fill rounded-[1.25rem]"
                                     draggable={false}
                                 />
                             </div>
