@@ -3,7 +3,7 @@ import Interactive3DCards from './Interactive3DCards';
 
 const HeroBanner: React.FC = () => {
   return (
-    <div className="relative w-full h-auto min-h-[22rem] md:min-h-[26rem] rounded-2xl border border-yc-light-border dark:border-yc-dark-border group mb-4 md:mb-8 bg-white dark:bg-[#030014] overflow-hidden">
+    <div className="relative w-full h-auto min-h-[24rem] md:min-h-[28rem] rounded-2xl border border-yc-light-border dark:border-yc-dark-border group mb-4 md:mb-8 bg-white dark:bg-[#030014] overflow-hidden">
       {/* Background - Pattern adapted for themes */}
       <div className="absolute inset-0 rounded-2xl overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://picsum.photos/1200/400?grayscale')] opacity-5 bg-cover bg-center"></div>

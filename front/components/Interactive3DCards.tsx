@@ -99,7 +99,7 @@ const Interactive3DCards: React.FC = () => {
     };
 
     return (
-        <div className="relative w-full h-[280px] md:h-[340px] flex items-center justify-center py-2 my-0" style={{ perspective: '1000px' }}>
+        <div className="relative w-full h-[300px] md:h-[350px] flex items-center justify-center py-2 my-0" style={{ perspective: '1000px' }}>
             {/* Background glow behind cards */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[20rem] h-[20rem] bg-indigo-500/10 dark:bg-yc-purple/20 rounded-full blur-[80px] pointer-events-none"></div>
 
@@ -110,7 +110,7 @@ const Interactive3DCards: React.FC = () => {
                 <ChevronLeft className="w-8 h-8 md:w-10 md:h-10 group-hover:-translate-x-1 transition-transform" />
             </button>
 
-            <div className="relative w-full max-w-[220px] sm:max-w-[260px] md:max-w-[240px] h-64 md:h-80 flex justify-center items-center" style={{ transformStyle: 'preserve-3d' }}>
+            <div className="relative w-full max-w-[200px] sm:max-w-[220px] md:max-w-[220px] h-72 md:h-80 flex justify-center items-center" style={{ transformStyle: 'preserve-3d' }}>
                 {mockCards.map((card, index) => {
                     const style = getCardStyle(index);
                     const isCenter = style.opacity === 1 && style.zIndex === 50;
@@ -118,7 +118,7 @@ const Interactive3DCards: React.FC = () => {
                     return (
                         <div
                             key={card.id}
-                            className="absolute w-[180px] md:w-[210px] h-[240px] md:h-[280px] rounded-[1.25rem] cursor-pointer"
+                            className="absolute w-[150px] md:w-[170px] h-[255px] md:h-[290px] rounded-[1.25rem] cursor-pointer"
                             style={style}
                             onClick={() => {
                                 if (!isCenter) {
@@ -138,7 +138,7 @@ const Interactive3DCards: React.FC = () => {
                                 <img
                                     src={card.image}
                                     alt={card.name}
-                                    className="absolute inset-0 w-full h-full object-cover rounded-[1.25rem]"
+                                    className="absolute inset-0 w-full h-full object-contain rounded-[1.25rem]"
                                     draggable={false}
                                 />
                             </div>
