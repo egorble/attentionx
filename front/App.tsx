@@ -566,6 +566,7 @@ const AppContent: React.FC = () => {
                 currentUsername={profile?.username || ''}
                 currentAvatar={profile?.avatar || null}
                 onSave={updateProfile}
+                onDisconnect={disconnect}
             />
 
             {/* Bottom Navigation (mobile only) */}

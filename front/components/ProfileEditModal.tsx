@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Upload, Loader2, X } from 'lucide-react';
+import { User, Upload, Loader2, X, LogOut } from 'lucide-react';
 import { generatePixelAvatar } from '../lib/pixelAvatar';
 
 interface ProfileEditModalProps {
@@ -9,6 +9,7 @@ interface ProfileEditModalProps {
     currentUsername: string;
     currentAvatar: string | null;
     onSave: (username: string, avatarDataUrl?: string) => Promise<boolean>;
+    onDisconnect?: () => void;
 }
 
 const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
@@ -18,6 +19,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
     currentUsername,
     currentAvatar,
     onSave,
+    onDisconnect,
 }) => {
     const [username, setUsername] = useState(currentUsername);
     const [customAvatar, setCustomAvatar] = useState<string | null>(null);
@@ -211,7 +213,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
                     <div className="flex gap-3">
                         <button
                             onClick={onClose}
-                            className="flex-1 py-3 rounded-xl font-bold text-sm border border-gray-200 dark:border-[#2A2A2A] text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#1A1A1A] transition-all"
+                            className="flex-1 py-3 rounded-xl font-bold text-sm border border-gray-200 dark:border-[#2A2A2A] text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 transition-all"
                         >
                             Cancel
                         </button>
@@ -233,6 +235,17 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
                             )}
                         </button>
                     </div>
+
+                    {/* Disconnect Wallet */}
+                    {onDisconnect && (
+                        <button
+                            onClick={() => { onDisconnect(); onClose(); }}
+                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-red-500 hover:bg-red-500/10 font-bold text-xs transition-all"
+                        >
+                            <LogOut size={14} />
+                            Disconnect Wallet
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
