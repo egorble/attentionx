@@ -373,67 +373,17 @@ const AppContent: React.FC = () => {
             <main className="w-full md:pl-72 xl:pr-64 min-h-screen pb-24 md:pb-6 overflow-x-hidden">
                 <div className="w-full mx-auto p-4 md:p-6 max-w-full overflow-hidden">
 
-                    {/* Top Bar */}
-                    <div className="flex items-center justify-between mb-4 md:mb-8 py-2 md:py-4">
+                    {/* Top Bar (Mobile Only now) */}
+                    <div className="flex md:hidden items-center justify-between mb-4 py-2">
 
-                        <div className="relative flex-1 max-w-md">
-                            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 md:w-5 md:h-5" />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search..."
-                                className="w-full bg-gray-100 dark:bg-[#121212] border-none rounded-2xl pl-10 md:pl-12 pr-4 py-2.5 md:py-3.5 text-sm font-medium text-yc-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-yc-purple/20 transition-all placeholder-gray-400"
-                            />
+                        <div className="relative flex-1 max-w-md flex items-center h-full">
+                            {/* Spacer */}
                         </div>
 
                         <div className="flex items-center space-x-2 md:space-x-6 ml-2 md:ml-6">
-                            {/* Balance Display - desktop */}
-                            {isConnected && (
-                                <>
-                                    <div className="text-right hidden lg:block">
-                                        <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Balance</p>
-                                        {balanceLoading ? (
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                                <span className="text-yc-purple text-sm">◈</span>
-                                                <div className="h-5 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                                            </div>
-                                        ) : (
-                                            <p className="text-lg font-black font-mono flex items-center">
-                                                <span className="text-yc-purple text-sm mr-2">◈</span>
-                                                {Number(ethers.formatEther(balance)).toFixed(2)} {activeNetwork.nativeCurrency.symbol}
-                                            </p>
-                                        )}
-                                    </div>
+                            {/* Balance Display - desktop removed and moved to Sidebar */}
 
-                                    <div className="text-right hidden lg:block border-l border-gray-200 dark:border-gray-800 pl-6">
-                                        <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Network</p>
-                                        <p className={`text-sm font-bold ${isCorrectChain ? 'text-yc-green' : 'text-yc-purple'}`}>
-                                            {isCorrectChain ? activeNetwork.shortName : 'Wrong Chain'}
-                                        </p>
-                                    </div>
-                                </>
-                            )}
-
-                            {/* Wallet Button - desktop */}
-                            <button
-                                onClick={handleWalletClick}
-                                disabled={isConnecting}
-                                className={`
-                                    hidden md:flex items-center px-6 py-3 rounded-xl font-bold text-sm transition-all shadow-lg active:scale-95
-                                    ${isConnected
-                                        ? isCorrectChain
-                                            ? 'bg-yc-green/20 text-yc-green border border-yc-green/30 hover:bg-yc-green/30'
-                                            : 'bg-yc-purple hover:bg-purple-600 text-white shadow-purple-500/20'
-                                        : 'bg-yc-purple hover:bg-purple-600 text-white shadow-purple-500/20'
-                                    }
-                                `}
-                            >
-                                <Wallet className="w-4 h-4 mr-2" />
-                                {isConnecting ? 'Connecting...' :
-                                    isConnected ? (isCorrectChain ? formatAddress(address!) : 'Switch Network') :
-                                        'Connect'}
-                            </button>
+                            {/* Wallet Button - desktop removed and moved to Sidebar */}
 
                             {/* Mobile: Profile avatar button */}
                             <div className="relative md:hidden">
@@ -525,8 +475,8 @@ const AppContent: React.FC = () => {
                                                             key={net.id}
                                                             onClick={() => { setIsMobileMenuOpen(false); handleNetworkSwitch(net.id); }}
                                                             className={`flex items-center gap-1 px-2 py-1.5 rounded-full text-xs font-bold transition-all ${networkId === net.id
-                                                                    ? 'bg-yc-purple text-white shadow'
-                                                                    : 'text-gray-400'
+                                                                ? 'bg-yc-purple text-white shadow'
+                                                                : 'text-gray-400'
                                                                 }`}
                                                         >
                                                             <span>{net.shortName}</span>

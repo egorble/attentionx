@@ -5,6 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { isAdmin } from '../hooks/useAdmin';
 import { useWalletContext } from '../context/WalletContext';
 import { useNetwork } from '../context/NetworkContext';
+import { ethers } from 'ethers';
 
 interface SidebarProps {
   activeSection: NavSection;
@@ -17,8 +18,8 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user, isOpen = false, onClose, onSettingsClick }) => {
   const { theme, toggleTheme } = useTheme();
-  const { disconnect, isConnected, switchChain, refreshBalance } = useWalletContext();
-  const { networkId, allNetworks, switchNetwork } = useNetwork();
+  const { connect, isConnecting, disconnect, isConnected, switchChain, refreshBalance, balance, balanceLoading } = useWalletContext();
+  const { networkId, allNetworks, switchNetwork, activeNetwork } = useNetwork();
   const userIsAdmin = isAdmin(user.address || null);
 
   const handleNetworkSwitch = (id: string) => {
@@ -98,6 +99,24 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user
           <Settings className="w-5 h-5 text-gray-300 group-hover:text-yc-purple transition-colors shrink-0" />
         </div>
 
+        {/* Balance Display */}
+        {isConnected && (
+          <div className="flex items-center justify-between px-2">
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Balance</span>
+            {balanceLoading ? (
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-yc-purple text-sm">◈</span>
+                <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+            ) : (
+              <p className="text-sm font-black font-mono flex items-center text-gray-900 dark:text-white">
+                <span className="text-yc-purple text-xs mr-1">◈</span>
+                {Number(ethers.formatEther(balance)).toFixed(2)} {activeNetwork?.nativeCurrency.symbol}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Network Toggle */}
         <div className="flex bg-gray-200 dark:bg-white/5 rounded-full p-1 gap-0.5">
           {allNetworks.map((net) => (
@@ -105,8 +124,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user
               key={net.id}
               onClick={() => handleNetworkSwitch(net.id)}
               className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-full text-xs font-bold transition-all ${networkId === net.id
-                  ? 'bg-yc-purple text-white shadow'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+                ? 'bg-yc-purple text-white shadow'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
                 }`}
             >
               <span>{net.shortName}</span>
@@ -133,8 +152,17 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user
           </div>
         </div>
 
-        {/* Disconnect Button */}
-        {isConnected && (
+        {/* Wallet Connection */}
+        {!isConnected ? (
+          <button
+            onClick={connect}
+            disabled={isConnecting}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-yc-purple hover:bg-purple-600 text-white font-bold text-sm transition-all shadow-purple-500/20 active:scale-95"
+          >
+            <Wallet size={16} />
+            {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+          </button>
+        ) : (
           <button
             onClick={disconnect}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-bold text-sm transition-all"

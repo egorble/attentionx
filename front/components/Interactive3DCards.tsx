@@ -1,0 +1,214 @@
+import React, { useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+const mockCards = [
+    { id: 6, name: 'Browser Use', rarity: 'Epic', image: '/images/6.png', color: 'from-blue-500 to-cyan-400' },
+    { id: 1, name: 'Openclaw', rarity: 'Legendary', image: '/images/1.png', color: 'from-yc-purple to-pink-500' },
+    { id: 4, name: 'OpenAI', rarity: 'Legendary', image: '/images/4.png', color: 'from-amber-400 to-yellow-500' },
+    { id: 5, name: 'Anthropic', rarity: 'Legendary', image: '/images/5.png', color: 'from-indigo-500 to-purple-500' },
+    { id: 7, name: 'Dedalus Labs', rarity: 'Epic', image: '/images/7.png', color: 'from-green-500 to-emerald-400' },
+];
+
+const Interactive3DCards: React.FC = () => {
+    const [currentIndex, setCurrentIndex] = useState(2); // Center on OpenAI initially
+
+    const nextCard = () => {
+        setCurrentIndex((prev) => (prev + 1) % mockCards.length);
+    };
+
+    const prevCard = () => {
+        setCurrentIndex((prev) => (prev === 0 ? mockCards.length - 1 : prev - 1));
+    };
+
+    const getCardStyle = (index: number) => {
+        const diff = (index - currentIndex + mockCards.length) % mockCards.length;
+
+        // Normalize index: -2, -1, 0, 1, 2
+        let relativeIndex = diff;
+        if (diff > Math.floor(mockCards.length / 2)) {
+            relativeIndex = diff - mockCards.length;
+        }
+
+        const absIndex = Math.abs(relativeIndex);
+
+        // Z-index calculation (center is highest)
+        const zIndex = 50 - absIndex * 10;
+
+        let translateX: string | number = '0%';
+        let translateZ = 0;
+        let rotateY = 0;
+        let rotateX = 8; // Slight tilt back
+        let rotateZ = 0;
+        let scale = 1;
+        let opacity = 1;
+
+        if (absIndex === 0) {
+            // Center
+            translateX = '0%';
+            translateZ = 60;
+            rotateY = 0;
+            rotateX = 0;
+            rotateZ = 0;
+            scale = 1.15;
+            opacity = 1;
+        } else if (relativeIndex === 1) {
+            // Right 1
+            translateX = 'calc(55% + 5vw)';
+            translateZ = -40;
+            rotateY = -30;
+            rotateX = 5;
+            rotateZ = 2;
+            scale = 0.85;
+            opacity = 0.85;
+        } else if (relativeIndex === -1) {
+            // Left 1
+            translateX = 'calc(-55% - 5vw)';
+            translateZ = -40;
+            rotateY = 30;
+            rotateX = 5;
+            rotateZ = -2;
+            scale = 0.85;
+            opacity = 0.85;
+        } else if (relativeIndex === 2) {
+            // Right 2
+            translateX = 'calc(95% + 10vw)';
+            translateZ = -100;
+            rotateY = -40;
+            rotateX = 10;
+            rotateZ = 4;
+            scale = 0.65;
+            opacity = 0.5;
+        } else if (relativeIndex === -2) {
+            // Left 2
+            translateX = 'calc(-95% - 10vw)';
+            translateZ = -100;
+            rotateY = 40;
+            rotateX = 10;
+            rotateZ = -4;
+            scale = 0.65;
+            opacity = 0.5;
+        }
+
+        return {
+            zIndex,
+            transform: `translateX(${translateX}) translateZ(${translateZ}px) rotateY(${rotateY}deg) rotateX(${rotateX}deg) rotateZ(${rotateZ}deg) scale(${scale})`,
+            opacity,
+            transition: 'all 0.7s cubic-bezier(0.2, 0.8, 0.2, 1)',
+            transformStyle: 'preserve-3d' as const,
+        };
+    };
+
+    return (
+        <div className="relative w-full h-[260px] md:h-[300px] flex items-center justify-center py-2 my-0" style={{ perspective: '1000px' }}>
+            {/* Background glow behind cards */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[20rem] h-[20rem] bg-indigo-500/10 dark:bg-yc-purple/20 rounded-full blur-[80px] pointer-events-none"></div>
+
+            <button
+                onClick={prevCard}
+                className="absolute left-2 md:left-8 z-[60] p-2 md:p-2.5 rounded-full bg-transparent hover:bg-white/10 dark:hover:bg-white/5 border border-transparent hover:border-white/20 text-indigo-400/70 hover:text-indigo-300 dark:text-gray-400 dark:hover:text-white transition-all active:scale-95 group"
+            >
+                <ChevronLeft className="w-8 h-8 md:w-10 md:h-10 group-hover:-translate-x-1 transition-transform" />
+            </button>
+
+            <div className="relative w-full max-w-[200px] sm:max-w-[240px] md:max-w-[220px] h-64 flex justify-center items-center" style={{ transformStyle: 'preserve-3d' }}>
+                {mockCards.map((card, index) => {
+                    const style = getCardStyle(index);
+                    const isCenter = style.opacity === 1 && style.zIndex === 50;
+
+                    return (
+                        <div
+                            key={card.id}
+                            className="absolute w-[160px] md:w-[180px] h-[230px] md:h-[260px] rounded-[1.25rem] cursor-pointer"
+                            style={style}
+                            onClick={() => {
+                                if (!isCenter) {
+                                    setCurrentIndex(index);
+                                }
+                            }}
+                        >
+                            {/* Card Container - Intense Glassmorphism imitating the reference */}
+                            <div className={`w-full h-full relative rounded-[1.25rem] overflow-hidden flex flex-col justify-end p-4
+                border-2 ${isCenter ? 'border-indigo-400/60 dark:border-yc-purple/60 shadow-[0_0_25px_rgba(99,102,241,0.4)] dark:shadow-[0_0_35px_rgba(147,51,234,0.4)]' : 'border-white/30 dark:border-white/20 shadow-xl'}
+                bg-white/5 dark:bg-[#0a0a16]/40 backdrop-blur-xl`}
+                                style={{
+                                    boxShadow: isCenter ? '0 0 30px rgba(139, 92, 246, 0.4), inset 0 0 15px rgba(139, 92, 246, 0.2)' : '0 8px 25px rgba(0,0,0,0.5), inset 0 0 8px rgba(255,255,255,0.1)',
+                                }}
+                            >
+                                {/* Internal highlight ring for depth */}
+                                <div className="absolute inset-0 rounded-[1.25rem] border border-white/20 pointer-events-none mix-blend-overlay"></div>
+
+                                {/* Background Image / Pattern */}
+
+                                <div
+                                    className="absolute inset-0 bg-cover bg-center transition-transform duration-700 ease-out mix-blend-screen opacity-50 dark:opacity-40"
+                                    style={{ backgroundImage: `url(${card.image})` }}
+                                ></div>
+
+                                {/* Inner Glow/Gradient */}
+                                <div className={`absolute inset-0 bg-gradient-to-t ${card.color} opacity-30 dark:opacity-40 mix-blend-color-dodge`}></div>
+                                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/95 via-gray-900/50 to-transparent dark:from-black/95 dark:via-black/50"></div>
+
+                                {/* Techy lines / dots detail (mockup style) */}
+                                <div className="absolute top-3 right-3 z-20 flex space-x-1 opacity-70">
+                                    <div className="w-1.5 h-1.5 rounded-full border border-cyan-400/60 shadow-[0_0_5px_rgba(34,211,238,0.5)]"></div>
+                                    <div className="w-1.5 h-1.5 rounded-full border border-cyan-400/30"></div>
+                                </div>
+
+                                {/* Mock abstract graph or shapes on the card */}
+                                {isCenter && (
+                                    <div className="absolute top-1/3 left-0 w-full h-1/3 opacity-30 pointer-events-none">
+                                        <div className="absolute inset-x-0 bottom-0 h-[1px] bg-cyan-400/50"></div>
+                                        <div className="absolute bottom-0 left-1/4 w-1/2 h-full bg-gradient-to-t from-cyan-400/20 to-transparent"></div>
+                                    </div>
+                                )}
+
+                                {/* Card Content */}
+                                <div className="relative z-20 w-full flex flex-col items-start transform transition-transform duration-500 mb-1.5">
+                                    <div className={`text-[9px] md:text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-sm flex items-center mb-2.5 backdrop-blur-md
+                    ${card.rarity === 'Legendary' ? 'bg-gradient-to-r from-yellow-400/20 to-amber-600/20 border border-yellow-500/50 text-yellow-300 shadow-[0_0_15px_rgba(245,158,11,0.3)]' :
+                                            'bg-gradient-to-r from-cyan-400/20 to-blue-600/20 border border-cyan-500/50 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.3)]'}`}>
+                                        {card.rarity}
+                                    </div>
+
+                                    <h3 className="text-lg md:text-xl font-black text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{card.name}</h3>
+
+                                    {isCenter && (
+                                        <div className="w-full flex justify-between items-center mt-3 border-t border-white/20 pt-2.5">
+                                            <span className="text-[11px] font-mono text-cyan-300/80">VAL</span>
+                                            <span className="text-xs font-black text-white">$1.2M</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Shine effect overlay */}
+                                {isCenter && (
+                                    <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 opacity-0 hover:opacity-100 transition-opacity duration-700 z-30 pointer-events-none transform -skew-x-12 translate-x-[-100%] hover:translate-x-[100%] transition-transform"></div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            <button
+                onClick={nextCard}
+                className="absolute right-2 md:right-8 z-[60] p-2 md:p-2.5 rounded-full bg-transparent hover:bg-white/10 dark:hover:bg-white/5 border border-transparent hover:border-white/20 text-indigo-400/70 hover:text-indigo-300 dark:text-gray-400 dark:hover:text-white transition-all active:scale-95 group"
+            >
+                <ChevronRight className="w-8 h-8 md:w-10 md:h-10 group-hover:translate-x-1 transition-transform" />
+            </button>
+
+            {/* Navigation Dots */}
+            <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex space-x-2.5 z-[60]">
+                {mockCards.map((card, index) => (
+                    <div
+                        key={card.id}
+                        onClick={() => setCurrentIndex(index)}
+                        className={`h-1.5 rounded-full cursor-pointer transition-all duration-300 ${index === currentIndex ? 'bg-cyan-400 dark:bg-yc-purple w-4 shadow-[0_0_8px_rgba(34,211,238,0.6)]' : 'bg-white/20 hover:bg-white/40 w-1.5'}`}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+};
+
+export default Interactive3DCards;

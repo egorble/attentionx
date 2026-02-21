@@ -1,73 +1,35 @@
 import React from 'react';
-import { Play } from 'lucide-react';
+import Interactive3DCards from './Interactive3DCards';
 
 const HeroBanner: React.FC = () => {
-  const scrollToGrid = () => {
-      window.scrollTo({ top: 500, behavior: 'smooth' });
-  };
-
   return (
-    <div className="relative w-full h-auto min-h-[16rem] md:h-64 rounded-2xl overflow-hidden border border-yc-light-border dark:border-yc-dark-border group mb-8 bg-white dark:bg-[#121212]">
+    <div className="relative w-full h-auto min-h-[20rem] md:min-h-[24rem] rounded-2xl border border-yc-light-border dark:border-yc-dark-border group mb-4 md:mb-8 bg-white dark:bg-[#030014] overflow-hidden">
       {/* Background - Pattern adapted for themes */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-[url('https://picsum.photos/1200/400?grayscale')] opacity-10 bg-cover bg-center"></div>
+      <div className="absolute inset-0 rounded-2xl overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://picsum.photos/1200/400?grayscale')] opacity-5 bg-cover bg-center"></div>
         {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-gray-100 via-gray-100/90 to-transparent dark:from-[#050505] dark:via-[#050505]/90"></div>
-        
+        <div className="absolute inset-0 bg-gradient-to-r from-gray-100 via-gray-100/90 to-transparent dark:from-[#030014] dark:via-[#030014]/90"></div>
+
         {/* Decorative Grid Lines */}
-        <div className="absolute inset-0 opacity-[0.05] dark:opacity-10" style={{ 
-            backgroundImage: 'linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)', 
-            backgroundSize: '40px 40px',
+        <div className="absolute inset-0 opacity-[0.05] dark:opacity-[0.03]" style={{
+          backgroundImage: 'linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)',
+          backgroundSize: '40px 40px',
         }}></div>
       </div>
 
-      {/* Content */}
-      <div className="relative md:absolute inset-0 p-6 md:p-8 flex flex-col justify-center max-w-2xl z-10">
-        <div className="inline-flex items-center space-x-2 mb-4">
-            <span className="w-2 h-2 rounded-full bg-yc-green animate-pulse-fast"></span>
-            <span className="text-yc-green font-mono text-xs uppercase tracking-widest font-bold">Season 4 is Live</span>
-        </div>
-        
-        <h2 className="text-3xl md:text-5xl font-black text-yc-text-primary dark:text-white mb-6 leading-tight tracking-tight">
-          BUILD YOUR <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-yc-purple to-red-500 dark:to-white">STARTUP PORTFOLIO</span>
-        </h2>
-        
-        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
-            <button 
-                onClick={scrollToGrid}
-                className="w-full sm:w-auto bg-yc-purple hover:bg-purple-600 text-white px-8 py-3 rounded-lg font-bold text-sm uppercase tracking-wide flex items-center justify-center transition-all shadow-lg shadow-purple-500/30 active:scale-95"
-            >
-                <Play className="w-4 h-4 mr-2 fill-current" />
-                Play Now
-            </button>
-            <button 
-                onClick={() => alert("Redirecting to documentation...")}
-                className="w-full sm:w-auto bg-white/50 dark:bg-[#1A1A1A] hover:bg-white dark:hover:bg-[#252525] text-yc-text-primary dark:text-white border border-yc-light-border dark:border-yc-dark-border px-6 py-3 rounded-lg font-bold text-sm uppercase tracking-wide flex items-center justify-center transition-all active:scale-95"
-            >
-                Learn More
-            </button>
+      {/* Left Aligned Header */}
+      <div className="absolute top-6 left-6 md:top-8 md:left-8 z-20 pointer-events-none">
+        <div className="flex flex-col items-start text-left">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 dark:bg-white/10 border border-gray-200/50 dark:border-white/10 backdrop-blur-md shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-yc-purple animate-pulse"></span>
+            <span className="text-[10px] font-bold tracking-widest uppercase text-gray-800 dark:text-gray-200">Season 1: Live</span>
+          </div>
         </div>
       </div>
 
-      {/* 3D Abstract Element - YC Logo Animation - Hidden on Mobile */}
-      <div className="absolute right-0 top-0 bottom-0 w-1/3 hidden lg:flex items-center justify-center pointer-events-none">
-        {/* Outer Ring */}
-        <div className="w-48 h-48 border-[1px] border-gray-300 dark:border-[#333] rounded-full absolute"></div>
-        
-        {/* Spinning Orange Ring Segment */}
-        <div className="w-40 h-40 border-4 border-transparent rounded-full absolute animate-spin-slow border-t-yc-purple border-r-yc-purple/30"></div>
-        
-        {/* Counter-Spinning Green Ring Segment */}
-        <div className="w-32 h-32 border-4 border-transparent rounded-full absolute animate-spin-reverse-slow border-b-yc-green border-l-yc-green/30"></div>
-        
-        {/* Center Logo */}
-         <div className="w-20 h-20 bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-[#333] rounded-full absolute flex items-center justify-center z-10 shadow-xl">
-            <span className="text-yc-purple font-black text-2xl">YC</span>
-         </div>
-         
-         {/* Pulse Effect behind Logo */}
-         <div className="w-20 h-20 bg-yc-purple/10 rounded-full absolute animate-ping opacity-20"></div>
+      {/* 3D Interactive Cards */}
+      <div className="relative z-10 w-full h-full flex flex-col items-center justify-center pt-8 pb-4">
+        <Interactive3DCards />
       </div>
     </div>
   );
