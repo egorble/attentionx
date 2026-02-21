@@ -99,7 +99,7 @@ const Interactive3DCards: React.FC = () => {
     };
 
     return (
-        <div className="relative w-full h-[340px] md:h-[420px] flex items-center justify-center py-2 my-0" style={{ perspective: '1000px' }}>
+        <div className="relative w-full h-[280px] md:h-[340px] flex items-center justify-center py-2 my-0" style={{ perspective: '1000px' }}>
             {/* Background glow behind cards */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[20rem] h-[20rem] bg-indigo-500/10 dark:bg-yc-purple/20 rounded-full blur-[80px] pointer-events-none"></div>
 
@@ -110,7 +110,7 @@ const Interactive3DCards: React.FC = () => {
                 <ChevronLeft className="w-8 h-8 md:w-10 md:h-10 group-hover:-translate-x-1 transition-transform" />
             </button>
 
-            <div className="relative w-full max-w-[260px] sm:max-w-[300px] md:max-w-[280px] h-80 md:h-96 flex justify-center items-center" style={{ transformStyle: 'preserve-3d' }}>
+            <div className="relative w-full max-w-[220px] sm:max-w-[260px] md:max-w-[240px] h-64 md:h-80 flex justify-center items-center" style={{ transformStyle: 'preserve-3d' }}>
                 {mockCards.map((card, index) => {
                     const style = getCardStyle(index);
                     const isCenter = style.opacity === 1 && style.zIndex === 50;
@@ -118,7 +118,7 @@ const Interactive3DCards: React.FC = () => {
                     return (
                         <div
                             key={card.id}
-                            className="absolute w-[200px] md:w-[240px] h-[290px] md:h-[350px] rounded-[1.25rem] cursor-pointer"
+                            className="absolute w-[180px] md:w-[210px] h-[240px] md:h-[280px] rounded-[1.25rem] cursor-pointer"
                             style={style}
                             onClick={() => {
                                 if (!isCenter) {
