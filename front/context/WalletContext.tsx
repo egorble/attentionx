@@ -193,7 +193,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
                     name: 'AttentionX',
                     description: 'Fantasy YC Trading Card Game',
                     url: window.location.origin,
-                    icons: [`${window.location.origin}/icon.png`],
+                    icons: [`${window.location.origin}/attentionx.png`],
                 },
             });
 
@@ -329,7 +329,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
                     name: 'AttentionX',
                     description: 'Fantasy YC Trading Card Game',
                     url: window.location.origin,
-                    icons: [`${window.location.origin}/icon.png`],
+                    icons: [`${window.location.origin}/attentionx.png`],
                 },
             }).then(wcProvider => {
                 if (wcProvider.session) {
@@ -364,11 +364,39 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             if (!provider) return;
 
             provider.request({ method: 'eth_accounts' })
-                .then((accounts: string[]) => {
+                .then(async (accounts: string[]) => {
                     if (accounts.length > 0) {
                         setupListeners(provider);
                         handleAccounts(accounts);
-                        readChainId(provider);
+                        await readChainId(provider);
+                        // Auto-switch to correct chain if wallet is on wrong network
+                        const net = getActiveNetwork();
+                        try {
+                            const currentHex = await provider.request({ method: 'eth_chainId' });
+                            if (parseInt(currentHex, 16) !== net.chainId) {
+                                const hexChainId = '0x' + net.chainId.toString(16);
+                                try {
+                                    await provider.request({
+                                        method: 'wallet_switchEthereumChain',
+                                        params: [{ chainId: hexChainId }],
+                                    });
+                                } catch (switchErr: any) {
+                                    if (switchErr.code === 4902 || switchErr?.data?.originalError?.code === 4902) {
+                                        await provider.request({
+                                            method: 'wallet_addEthereumChain',
+                                            params: [{
+                                                chainId: hexChainId,
+                                                chainName: net.name,
+                                                nativeCurrency: net.nativeCurrency,
+                                                rpcUrls: [net.rpcUrl],
+                                                blockExplorerUrls: [net.explorerUrl],
+                                            }],
+                                        }).catch(() => {});
+                                    }
+                                }
+                                await readChainId(provider);
+                            }
+                        } catch { /* ignore */ }
                     } else {
                         localStorage.removeItem(STORAGE_KEY);
                         localStorage.removeItem(WALLET_TYPE_KEY);

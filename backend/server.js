@@ -2,7 +2,7 @@
 // Serves dynamic NFT metadata for OpenSea and other marketplaces
 //
 // Usage:
-//   node server.js                    → RISE Testnet (port 3003)
+//   node server.js                    → RISE Testnet (port 3006)
 
 const express = require("express");
 const cors = require("cors");
@@ -16,7 +16,7 @@ const NETWORKS = {
     rise: {
         name: "RISE Testnet",
         rpc: "https://testnet.riselabs.xyz",
-        port: 3003,
+        port: 3006,
         deploymentFile: "deployment-rise.json",
         imageBase: "https://attnx.fun/metadata/images",
     },

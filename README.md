@@ -28,7 +28,7 @@ fantasyyc/
 │   ├── lib/                       # Contracts, utils, cache
 │   └── context/                   # Wallet & auth context
 │
-├── server/                 # Express.js backend (port 3003)
+├── server/                 # Express.js backend (port 3007)
 │   ├── index.js                   # API server
 │   ├── db/                        # SQLite database (sql.js)
 │   ├── jobs/                      # Daily scorer & tournament finalizer
@@ -113,7 +113,7 @@ cd server
 # Initialize database
 npm run init-db
 
-# Start API server (port 3003)
+# Start API server (port 3007)
 npm start
 
 # Or run with auto-reload

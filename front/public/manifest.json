@@ -9,13 +9,13 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/unicornx.png",
+      "src": "/attentionx.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/unicornx.png",
+      "src": "/attentionx.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

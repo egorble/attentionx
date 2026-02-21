@@ -61,7 +61,7 @@ const CHAIN_CONFIGS = {
         RPC_URL: 'https://testnet.riselabs.xyz',
         CHAIN_ID: 11155931,
         EXPLORER: 'https://explorer.testnet.riselabs.xyz',
-        SERVER_PORT: 3005,
+        SERVER_PORT: 3007,
     },
 };
 

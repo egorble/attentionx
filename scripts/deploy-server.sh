@@ -172,7 +172,7 @@ Create it manually before running this script:
 
 Required variables:
   NODE_ENV=production
-  PORT=3005
+  PORT=3007
   PRIVATE_KEY=<your_blockchain_signing_key>
   ADMIN_API_KEY=<your_admin_api_key>
   SCORE_HMAC_SECRET=<your_hmac_secret>
@@ -324,8 +324,8 @@ systemctl enable fantasyyc-metadata
 systemctl stop fantasyyc-api 2>/dev/null || true
 systemctl stop fantasyyc-metadata 2>/dev/null || true
 sleep 2
-fuser -k 3005/tcp 2>/dev/null || true
-fuser -k 3003/tcp 2>/dev/null || true
+fuser -k 3007/tcp 2>/dev/null || true
+fuser -k 3006/tcp 2>/dev/null || true
 sleep 1
 
 # Start services
@@ -381,8 +381,8 @@ log "Meta:   https://${DOMAIN}/metadata/1"
 echo ""
 
 # Quick health check
-API_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://127.0.0.1:3005/health" 2>/dev/null || echo "000")
-META_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://127.0.0.1:3003/metadata/1" 2>/dev/null || echo "000")
+API_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://127.0.0.1:3007/health" 2>/dev/null || echo "000")
+META_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://127.0.0.1:3006/metadata/1" 2>/dev/null || echo "000")
 
 echo -e "  ${CYAN}RISE Testnet:${NC}"
 echo -e "  API health:           ${API_STATUS} $([ "$API_STATUS" = "200" ] && echo "${GREEN}OK${NC}" || echo "${RED}FAIL${NC}")"

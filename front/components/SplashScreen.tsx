@@ -57,7 +57,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onReady }) => {
             {/* Logo */}
             <div className="relative mb-8">
                 <img
-                    src="/unicornx.png"
+                    src="/attentionx.png"
                     alt="AttentionX"
                     className="w-20 h-20 md:w-24 md:h-24 animate-pulse"
                     style={{ filter: 'drop-shadow(0 0 30px rgba(242, 101, 34, 0.3))' }}

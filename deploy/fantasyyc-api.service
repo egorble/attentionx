@@ -1,5 +1,5 @@
 [Unit]
-Description=FantasyYC API Server (Express.js on port 3005)
+Description=FantasyYC API Server (Express.js on port 3007)
 Documentation=https://github.com/attentionx/fantasyyc
 After=network.target
 Wants=network-online.target
@@ -12,7 +12,7 @@ WorkingDirectory=/opt/fantasyyc/server
 ExecStart=/usr/bin/node index.js
 EnvironmentFile=/opt/fantasyyc/.env
 Environment=NODE_ENV=production
-Environment=PORT=3005
+Environment=PORT=3007
 
 # Restart policy
 Restart=always

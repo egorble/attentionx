@@ -36,7 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user
       {/* Logo Area */}
       <div className="px-8 py-10 flex items-center justify-between">
         <div className="flex items-center gap-3 text-yc-text-primary dark:text-white">
-          <img src="/unicornx.png" alt="AttentionX" className="h-9 w-auto" />
+          <img src={theme === 'dark' ? '/attentionx.png' : '/attentionx_black.png'} alt="AttentionX" className="h-9 w-auto" />
           <h1 className="text-2xl font-black tracking-tighter">
             AttentionX
           </h1>

@@ -6,20 +6,20 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
       server: {
-        port: 3000,
+        port: 3005,
         host: '0.0.0.0',
         hmr: false,
         proxy: {
           '/api': {
-            target: 'http://localhost:3005',
+            target: 'http://localhost:3007',
             changeOrigin: true,
           },
           '/metadata': {
-            target: 'http://localhost:3003',
+            target: 'http://localhost:3006',
             changeOrigin: true,
           },
           '/health': {
-            target: 'http://localhost:3005',
+            target: 'http://localhost:3007',
             changeOrigin: true,
           },
         },

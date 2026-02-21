@@ -8,14 +8,14 @@
  *
  * Requires:
  *   - scripts/.env with PRIVATE_KEY
- *   - Server running on port 3005
+ *   - Server running on port 3007
  */
 
 import { ethers } from 'ethers';
 import 'dotenv/config';
 
 const RPC_URL = 'https://testnet.riselabs.xyz';
-const API_URL = 'http://localhost:3005/api';
+const API_URL = 'http://localhost:3007/api';
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 if (!PRIVATE_KEY) {

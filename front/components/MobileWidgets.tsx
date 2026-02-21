@@ -41,8 +41,8 @@ const MobileWidgets: React.FC<MobileWidgetsProps> = ({ onOpenPack }) => {
                     </div>
                     <div className="p-3 border-t border-[#1a1a1a] flex items-center justify-between">
                         <div>
-                            <span className="text-gray-500 text-[10px] font-medium">5 cards per pack</span>
-                            <p className="text-white font-mono font-black text-lg">{packPrice} <span className="text-gray-400 text-sm font-bold">{currencySymbol()}</span></p>
+                            <span className="text-gray-500 dark:text-gray-500 text-[10px] font-medium">5 cards per pack</span>
+                            <p className="text-yc-text-primary dark:text-white font-mono font-black text-lg">{packPrice} <span className="text-gray-500 dark:text-gray-400 text-sm font-bold">{currencySymbol()}</span></p>
                         </div>
                         <button
                             onClick={onOpenPack}
