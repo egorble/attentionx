@@ -134,41 +134,13 @@ const Interactive3DCards: React.FC = () => {
                                     boxShadow: isCenter ? '0 0 30px rgba(139, 92, 246, 0.4), inset 0 0 15px rgba(139, 92, 246, 0.2)' : '0 8px 25px rgba(0,0,0,0.5), inset 0 0 8px rgba(255,255,255,0.1)',
                                 }}
                             >
-                                {/* Internal highlight ring for depth */}
-                                <div className="absolute inset-0 rounded-[1.25rem] border border-white/20 pointer-events-none mix-blend-overlay"></div>
-
-                                {/* Background Image / Pattern */}
-
-                                <div
-                                    className="absolute inset-0 bg-cover bg-center transition-transform duration-700 ease-out mix-blend-screen opacity-50 dark:opacity-40"
-                                    style={{ backgroundImage: `url(${card.image})` }}
-                                ></div>
-
-                                {/* Inner Glow/Gradient */}
-                                <div className={`absolute inset-0 bg-gradient-to-t ${card.color} opacity-30 dark:opacity-40 mix-blend-color-dodge`}></div>
-                                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/95 via-gray-900/50 to-transparent dark:from-black/95 dark:via-black/50"></div>
-
-                                {/* Techy lines / dots detail (mockup style) */}
-                                <div className="absolute top-3 right-3 z-20 flex space-x-1 opacity-70">
-                                    <div className="w-1.5 h-1.5 rounded-full border border-cyan-400/60 shadow-[0_0_5px_rgba(34,211,238,0.5)]"></div>
-                                    <div className="w-1.5 h-1.5 rounded-full border border-cyan-400/30"></div>
-                                </div>
-
-                                {/* Mock abstract graph or shapes on the card */}
-                                {isCenter && (
-                                    <div className="absolute top-1/3 left-0 w-full h-1/3 opacity-30 pointer-events-none">
-                                        <div className="absolute inset-x-0 bottom-0 h-[1px] bg-cyan-400/50"></div>
-                                        <div className="absolute bottom-0 left-1/4 w-1/2 h-full bg-gradient-to-t from-cyan-400/20 to-transparent"></div>
-                                    </div>
-                                )}
-
-                                {/* Card Content - empty, image only */}
-                                <div className="relative z-20 w-full"></div>
-
-                                {/* Shine effect overlay */}
-                                {isCenter && (
-                                    <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 opacity-0 hover:opacity-100 transition-opacity duration-700 z-30 pointer-events-none transform -skew-x-12 translate-x-[-100%] hover:translate-x-[100%] transition-transform"></div>
-                                )}
+                                {/* Card image */}
+                                <img
+                                    src={card.image}
+                                    alt={card.name}
+                                    className="absolute inset-0 w-full h-full object-cover rounded-[1.25rem]"
+                                    draggable={false}
+                                />
                             </div>
                         </div>
                     );
