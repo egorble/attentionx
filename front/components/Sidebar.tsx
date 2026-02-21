@@ -4,6 +4,7 @@ import { Flame, Store, Wallet, Swords, Newspaper, Settings, Sun, Moon, ShieldChe
 import { useTheme } from '../context/ThemeContext';
 import { isAdmin } from '../hooks/useAdmin';
 import { useWalletContext } from '../context/WalletContext';
+import { ethers } from 'ethers';
 
 interface SidebarProps {
   activeSection: NavSection;
@@ -16,7 +17,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user, isOpen = false, onClose, onSettingsClick }) => {
   const { theme, toggleTheme } = useTheme();
-  const { connect, isConnecting, isConnected } = useWalletContext();
+  const { connect, isConnecting, isConnected, balance, balanceLoading } = useWalletContext();
   const userIsAdmin = isAdmin(user.address || null);
 
   const navItems = [
@@ -87,7 +88,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user
               </div>
               <div className="ml-3 flex-1 min-w-0">
                 <p className="text-sm font-bold text-yc-text-primary dark:text-white truncate group-hover:text-yc-purple transition-colors">{user.name}</p>
-                <p className="text-xs text-gray-400 font-mono font-medium">Pro League</p>
+                <p className="text-xs text-gray-400 font-mono font-medium">
+                  {balanceLoading ? '...' : `${Number(ethers.formatEther(balance)).toFixed(3)} ETH`}
+                </p>
               </div>
               <Settings className="w-5 h-5 text-gray-300 group-hover:text-yc-purple transition-colors shrink-0" />
             </div>
