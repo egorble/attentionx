@@ -162,23 +162,8 @@ const Interactive3DCards: React.FC = () => {
                                     </div>
                                 )}
 
-                                {/* Card Content */}
-                                <div className="relative z-20 w-full flex flex-col items-start transform transition-transform duration-500 mb-1.5">
-                                    <div className={`text-[9px] md:text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-sm flex items-center mb-2.5 backdrop-blur-md
-                    ${card.rarity === 'Legendary' ? 'bg-gradient-to-r from-yellow-400/20 to-amber-600/20 border border-yellow-500/50 text-yellow-300 shadow-[0_0_15px_rgba(245,158,11,0.3)]' :
-                                            'bg-gradient-to-r from-cyan-400/20 to-blue-600/20 border border-cyan-500/50 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.3)]'}`}>
-                                        {card.rarity}
-                                    </div>
-
-                                    <h3 className="text-lg md:text-xl font-black text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{card.name}</h3>
-
-                                    {isCenter && (
-                                        <div className="w-full flex justify-between items-center mt-3 border-t border-white/20 pt-2.5">
-                                            <span className="text-[11px] font-mono text-cyan-300/80">VAL</span>
-                                            <span className="text-xs font-black text-white">$1.2M</span>
-                                        </div>
-                                    )}
-                                </div>
+                                {/* Card Content - empty, image only */}
+                                <div className="relative z-20 w-full"></div>
 
                                 {/* Shine effect overlay */}
                                 {isCenter && (
