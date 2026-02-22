@@ -1,4 +1,4 @@
-# FantasyYC Backend Server
+# AttentionX Backend Server
 
 Бекенд сервер для турнірної системи з підрахунком очок на основі Twitter активності стартапів.
 
@@ -10,7 +10,7 @@ server/
 │   ├── schema.sql          # SQL схема
 │   ├── init.js             # Ініціалізація БД
 │   ├── database.js         # ORM функції
-│   └── fantasyyc.db        # SQLite база (створюється автоматично)
+│   └── attentionx.db        # SQLite база (створюється автоматично)
 ├── jobs/
 │   └── daily-scorer.js     # Щоденний скрипт підрахунку очок
 ├── index.js                # API сервер
@@ -121,7 +121,7 @@ crontab -e
 
 Додати:
 ```
-0 2 * * * cd /path/to/server && npm run score >> /var/log/fantasyyc-scorer.log 2>&1
+0 2 * * * cd /path/to/server && npm run score >> /var/log/attentionx-scorer.log 2>&1
 ```
 
 ### Windows (Task Scheduler)

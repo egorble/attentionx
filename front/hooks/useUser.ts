@@ -7,7 +7,7 @@ import { apiUrl } from '../lib/api';
 import { getActiveNetworkId } from '../lib/networks';
 
 function profileCacheKey(): string {
-    return `fantasyyc_profile_${getActiveNetworkId()}`;
+    return `attentionx_profile_${getActiveNetworkId()}`;
 }
 
 export interface UserProfileData {
@@ -110,7 +110,7 @@ export function useUser() {
             const { message, signature } = await createSignedAuth(signer, address);
 
             // Check for stored referrer to send with registration
-            let referrer = localStorage.getItem(`fantasyyc_referrer_${getActiveNetworkId()}`);
+            let referrer = localStorage.getItem(`attentionx_referrer_${getActiveNetworkId()}`);
             if (!referrer) {
                 const params = new URLSearchParams(window.location.search);
                 const ref = params.get('ref');

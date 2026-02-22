@@ -171,16 +171,16 @@ npm run finalize
 
 ### Option 1: systemd (Linux)
 
-Create `/etc/systemd/system/fantasyyc-scheduler.service`:
+Create `/etc/systemd/system/attentionx-scheduler.service`:
 ```ini
 [Unit]
-Description=FantasyYC Tournament Scheduler
+Description=AttentionX Tournament Scheduler
 After=network.target
 
 [Service]
 Type=simple
 User=www-data
-WorkingDirectory=/path/to/fantasyyc/server
+WorkingDirectory=/path/to/attentionx/server
 ExecStart=/usr/bin/node jobs/scheduler.js
 Restart=always
 
@@ -190,13 +190,13 @@ WantedBy=multi-user.target
 
 Start:
 ```bash
-sudo systemctl enable fantasyyc-scheduler
-sudo systemctl start fantasyyc-scheduler
+sudo systemctl enable attentionx-scheduler
+sudo systemctl start attentionx-scheduler
 ```
 
 ### Option 2: PM2
 ```bash
-pm2 start jobs/scheduler.js --name fantasyyc-scheduler
+pm2 start jobs/scheduler.js --name attentionx-scheduler
 pm2 save
 pm2 startup
 ```

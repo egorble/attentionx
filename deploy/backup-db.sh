@@ -1,13 +1,13 @@
 #!/bin/bash
-# FantasyYC — Daily database backup
-# Runs via cron: 0 3 * * * /opt/fantasyyc/deploy/backup-db.sh
+# AttentionX — Daily database backup
+# Runs via cron: 0 3 * * * /opt/attentionx/deploy/backup-db.sh
 
 set -euo pipefail
 
-BACKUP_DIR="/opt/fantasyyc/backups"
+BACKUP_DIR="/opt/attentionx/backups"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 KEEP_DAYS=30
-LOG_FILE="/opt/fantasyyc/logs/backup.log"
+LOG_FILE="/opt/attentionx/logs/backup.log"
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
@@ -44,10 +44,10 @@ backup_db() {
 }
 
 # Backup RISE DB
-backup_db "/opt/fantasyyc/server/db/fantasyyc.db" "fantasyyc"
+backup_db "/opt/attentionx/server/db/attentionx.db" "attentionx"
 
 # Delete old backups (older than KEEP_DAYS)
-DELETED=$(find "$BACKUP_DIR" -name "fantasyyc*.db.gz" -mtime +${KEEP_DAYS} -delete -print | wc -l)
+DELETED=$(find "$BACKUP_DIR" -name "attentionx*.db.gz" -mtime +${KEEP_DAYS} -delete -print | wc -l)
 if [ "$DELETED" -gt 0 ]; then
     log "Cleaned up $DELETED old backups (>${KEEP_DAYS} days)"
 fi

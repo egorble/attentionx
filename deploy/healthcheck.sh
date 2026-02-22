@@ -1,10 +1,10 @@
 #!/bin/bash
-# FantasyYC — Health check & auto-restart
-# Runs via cron: */5 * * * * /opt/fantasyyc/deploy/healthcheck.sh
+# AttentionX — Health check & auto-restart
+# Runs via cron: */5 * * * * /opt/attentionx/deploy/healthcheck.sh
 
 set -uo pipefail
 
-LOG_FILE="/opt/fantasyyc/logs/healthcheck.log"
+LOG_FILE="/opt/attentionx/logs/healthcheck.log"
 MAX_RETRIES=3
 RETRY_DELAY=5
 
@@ -44,8 +44,8 @@ check_service() {
 }
 
 # Check RISE services
-check_service "API" "http://127.0.0.1:3007/health" "fantasyyc-api"
-check_service "Metadata" "http://127.0.0.1:3006/metadata/1" "fantasyyc-metadata"
+check_service "API" "http://127.0.0.1:3007/health" "attentionx-api"
+check_service "Metadata" "http://127.0.0.1:3006/metadata/1" "attentionx-metadata"
 
 # Check nginx
 if ! systemctl is-active --quiet nginx; then

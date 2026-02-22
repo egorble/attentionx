@@ -1,4 +1,4 @@
-$srcDir = 'c:\Users\Admin\Documents\trae_projects\fantasyyc\backend\public\images'
+$srcDir = 'c:\Users\Admin\Documents\trae_projects\attentionx\backend\public\images'
 $tempDir = Join-Path $srcDir 'temp'
 New-Item -ItemType Directory -Force -Path $tempDir | Out-Null
 

@@ -1,4 +1,4 @@
-# FantasyYC - AttentionX Dashboard
+# AttentionX - AttentionX Dashboard
 
 A blockchain-based fantasy sports game for Y Combinator startups on the RISE Testnet. Collect NFT cards, compete in tournaments, and earn rewards based on real-time Twitter/X engagement scores.
 
@@ -15,7 +15,7 @@ A blockchain-based fantasy sports game for Y Combinator startups on the RISE Tes
 ## 📁 Project Structure
 
 ```
-fantasyyc/
+attentionx/
 ├── contracts/              # Solidity smart contracts (UUPS upgradeable)
 │   ├── UnicornX_NFT.sol           # ERC-721 NFT with rarity system
 │   ├── PackOpener.sol             # Pack purchases & card generation
@@ -206,7 +206,7 @@ Anthropic gets 1000 Twitter engagements today
 
 ### Authentication
 
-- **Wallet Signature Auth**: Message format `fantasyyc:<address>:<timestamp>`
+- **Wallet Signature Auth**: Message format `attentionx:<address>:<timestamp>`
 - **5-minute window** for signature validity
 - **Admin API Key** for protected operations
 - **HMAC Integrity**: All scores signed with HMAC-SHA256
@@ -265,7 +265,7 @@ Distributes prizes to top players and resets tournament state.
 
 ### Database Schema
 
-SQLite database at `server/db/fantasyyc.db` with tables:
+SQLite database at `server/db/attentionx.db` with tables:
 - `user_profiles` - Player info (address, username, avatar)
 - `daily_scores` - Daily base points per startup
 - `score_history` - Player score breakdowns per day

@@ -1,5 +1,5 @@
 /**
- * Authentication & validation middleware for FantasyYC API.
+ * Authentication & validation middleware for AttentionX API.
  * - Wallet signature verification (proves wallet ownership)
  * - Admin API key authentication
  * - Input validators

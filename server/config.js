@@ -1,5 +1,5 @@
 /**
- * FantasyYC Server Configuration
+ * AttentionX Server Configuration
  * Single source of truth for all contract addresses and chain config.
  * Both server/index.js and server/jobs/daily-scorer.js import from here.
  * When contracts are redeployed, update ONLY this file and restart the server.
@@ -79,7 +79,7 @@ export const CHAIN = CHAIN_CONFIGS[NETWORK_NAME] || CHAIN_CONFIGS.rise;
 export const CONTRACTS = CONTRACT_CONFIGS[NETWORK_NAME] || CONTRACT_CONFIGS.rise;
 
 // DB filename
-export const DB_FILENAME = 'fantasyyc.db';
+export const DB_FILENAME = 'attentionx.db';
 
 // Expose all network configs for the unified scorer
 export { CHAIN_CONFIGS, CONTRACT_CONFIGS };
@@ -89,7 +89,7 @@ export const ALL_NETWORKS = Object.keys(CHAIN_CONFIGS);
 
 /** Get absolute DB path for a given network */
 export function dbPathForNetwork(networkName) {
-    return join(__dirname, 'db', 'fantasyyc.db');
+    return join(__dirname, 'db', 'attentionx.db');
 }
 
 /** Get schema.sql path */

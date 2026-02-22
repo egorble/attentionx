@@ -128,7 +128,7 @@ async function waitForScorerDone(tournamentId, address, maxWait = 180) {
 
 async function run() {
     console.log('========================================');
-    console.log('  FantasyYC End-to-End Tournament Test');
+    console.log('  AttentionX End-to-End Tournament Test');
     console.log('========================================\n');
     console.log(`Wallet: ${wallet.address}`);
     const balance = await provider.getBalance(wallet.address);

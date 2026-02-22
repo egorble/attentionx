@@ -1,7 +1,7 @@
 {
-  "name": "fantasyyc-twitter-scorer",
+  "name": "attentionx-twitter-scorer",
   "version": "1.0.0",
-  "description": "Twitter League Scorer for FantasyYC - Fetches tweets and calculates league points",
+  "description": "Twitter League Scorer for AttentionX - Fetches tweets and calculates league points",
   "main": "twitter-league-scorer.js",
   "scripts": {
     "score": "node twitter-league-scorer.js",

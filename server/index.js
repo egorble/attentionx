@@ -1,5 +1,5 @@
 /**
- * FantasyYC API Server
+ * AttentionX API Server
  * Provides leaderboard and tournament data to frontend
  */
 
@@ -1194,7 +1194,7 @@ async function startServer() {
 
         // Start Express server
         app.listen(PORT, () => {
-            console.log(`🚀 FantasyYC API Server running on port ${PORT} [${NETWORK_NAME}]`);
+            console.log(`🚀 AttentionX API Server running on port ${PORT} [${NETWORK_NAME}]`);
             console.log(`📊 Endpoints:`);
             console.log(`   GET /api/tournaments/active`);
             console.log(`   GET /api/tournaments/:id`);

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 
-const STORAGE_PREFIX = 'fantasyyc:onboarding:';
+const STORAGE_PREFIX = 'attentionx:onboarding:';
 
 export type GuideId = 'marketplace' | 'portfolio' | 'leagues' | 'feed';
 

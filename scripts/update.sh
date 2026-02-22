@@ -1,8 +1,8 @@
 #!/bin/bash
 ###############################################################################
-# FantasyYC — Quick Update from GitHub
+# AttentionX — Quick Update from GitHub
 #
-# Usage: sudo bash /opt/fantasyyc/scripts/update.sh
+# Usage: sudo bash /opt/attentionx/scripts/update.sh
 #
 # What it does:
 #   1. git pull from GitHub
@@ -17,8 +17,8 @@
 
 set -euo pipefail
 
-APP_DIR="/opt/fantasyyc"
-REPO="https://github.com/egorble/fantasyyc.git"
+APP_DIR="/opt/attentionx"
+REPO="https://github.com/egorble/attentionx"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -54,7 +54,7 @@ if [ ! -d "${APP_DIR}/.git" ]; then
     # Save .env and db before clone
     TEMP_DIR=$(mktemp -d)
     [ -f "${APP_DIR}/.env" ] && cp "${APP_DIR}/.env" "${TEMP_DIR}/.env"
-    [ -f "${APP_DIR}/server/db/fantasyyc.db" ] && cp "${APP_DIR}/server/db/fantasyyc.db" "${TEMP_DIR}/fantasyyc.db"
+    [ -f "${APP_DIR}/server/db/attentionx.db" ] && cp "${APP_DIR}/server/db/attentionx.db" "${TEMP_DIR}/attentionx.db"
 
     # Clone
     rm -rf "${APP_DIR:?}/.git"
@@ -66,7 +66,7 @@ if [ ! -d "${APP_DIR}/.git" ]; then
 
     # Restore .env and db
     [ -f "${TEMP_DIR}/.env" ] && cp "${TEMP_DIR}/.env" "${APP_DIR}/.env"
-    [ -f "${TEMP_DIR}/fantasyyc.db" ] && mkdir -p "${APP_DIR}/server/db" && cp "${TEMP_DIR}/fantasyyc.db" "${APP_DIR}/server/db/fantasyyc.db"
+    [ -f "${TEMP_DIR}/attentionx.db" ] && mkdir -p "${APP_DIR}/server/db" && cp "${TEMP_DIR}/attentionx.db" "${APP_DIR}/server/db/attentionx.db"
     rm -rf "$TEMP_DIR"
 
     log "Repo cloned"
@@ -111,19 +111,19 @@ if [ -f "${APP_DIR}/deployment-rise.json" ]; then
 fi
 
 # ─── Fix ownership ───
-chown -R fantasyyc:fantasyyc "${APP_DIR}"
+chown -R attentionx:attentionx "${APP_DIR}"
 
 # ─── Stop services, kill stale processes, then start clean ───
 log "Stopping services..."
-systemctl stop fantasyyc-api 2>/dev/null || true
-systemctl stop fantasyyc-metadata 2>/dev/null || true
+systemctl stop attentionx-api 2>/dev/null || true
+systemctl stop attentionx-metadata 2>/dev/null || true
 # Clean up legacy MegaETH services if they exist
-systemctl stop fantasyyc-megaeth-api 2>/dev/null || true
-systemctl stop fantasyyc-megaeth-metadata 2>/dev/null || true
-systemctl disable fantasyyc-megaeth-api 2>/dev/null || true
-systemctl disable fantasyyc-megaeth-metadata 2>/dev/null || true
-rm -f /etc/systemd/system/fantasyyc-megaeth-api.service
-rm -f /etc/systemd/system/fantasyyc-megaeth-metadata.service
+systemctl stop attentionx-megaeth-api 2>/dev/null || true
+systemctl stop attentionx-megaeth-metadata 2>/dev/null || true
+systemctl disable attentionx-megaeth-api 2>/dev/null || true
+systemctl disable attentionx-megaeth-metadata 2>/dev/null || true
+rm -f /etc/systemd/system/attentionx-megaeth-api.service
+rm -f /etc/systemd/system/attentionx-megaeth-metadata.service
 sleep 2
 
 # Kill any leftover node processes on our ports
@@ -134,8 +134,8 @@ sleep 1
 systemctl daemon-reload
 
 log "Starting services..."
-systemctl start fantasyyc-api
-systemctl start fantasyyc-metadata
+systemctl start attentionx-api
+systemctl start attentionx-metadata
 
 # ─── Reload nginx config (picks up burst/rate limit changes) ───
 if [ -f "${APP_DIR}/deploy/nginx.conf" ]; then
@@ -143,11 +143,11 @@ if [ -f "${APP_DIR}/deploy/nginx.conf" ]; then
     DOMAIN="attnx.fun"
     NGINX_TARGET="/etc/nginx/sites-available/${DOMAIN}"
 
-    # Clean up old 'fantasyyc' config that conflicts with the canonical name
-    if [ -f "/etc/nginx/sites-available/fantasyyc" ] && [ "fantasyyc" != "${DOMAIN}" ]; then
-        rm -f /etc/nginx/sites-enabled/fantasyyc
-        rm -f /etc/nginx/sites-available/fantasyyc
-        log "Removed old duplicate nginx config 'fantasyyc'"
+    # Clean up old 'attentionx' config that conflicts with the canonical name
+    if [ -f "/etc/nginx/sites-available/attentionx" ] && [ "attentionx" != "${DOMAIN}" ]; then
+        rm -f /etc/nginx/sites-enabled/attentionx
+        rm -f /etc/nginx/sites-available/attentionx
+        log "Removed old duplicate nginx config 'attentionx'"
     fi
 
     cp "${APP_DIR}/deploy/nginx.conf" "$NGINX_TARGET"
@@ -164,14 +164,14 @@ fi
 sleep 3
 
 # ─── Verify ───
-API_OK=$(systemctl is-active fantasyyc-api)
-META_OK=$(systemctl is-active fantasyyc-metadata)
+API_OK=$(systemctl is-active attentionx-api)
+META_OK=$(systemctl is-active attentionx-metadata)
 NGINX_OK=$(systemctl is-active nginx)
 
 echo ""
 echo -e "  ${CYAN}RISE Testnet:${NC}"
-echo -e "  fantasyyc-api:              ${API_OK} $([ "$API_OK" = "active" ] && echo "${GREEN}OK${NC}" || echo "${RED}FAIL${NC}")"
-echo -e "  fantasyyc-metadata:         ${META_OK} $([ "$META_OK" = "active" ] && echo "${GREEN}OK${NC}" || echo "${RED}FAIL${NC}")"
+echo -e "  attentionx-api:              ${API_OK} $([ "$API_OK" = "active" ] && echo "${GREEN}OK${NC}" || echo "${RED}FAIL${NC}")"
+echo -e "  attentionx-metadata:         ${META_OK} $([ "$META_OK" = "active" ] && echo "${GREEN}OK${NC}" || echo "${RED}FAIL${NC}")"
 echo -e "  ${CYAN}Infra:${NC}"
 echo -e "  nginx:                      ${NGINX_OK} $([ "$NGINX_OK" = "active" ] && echo "${GREEN}OK${NC}" || echo "${RED}FAIL${NC}")"
 

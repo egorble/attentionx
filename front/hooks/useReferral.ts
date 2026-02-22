@@ -6,7 +6,7 @@ import { apiUrl } from '../lib/api';
 import { getActiveNetworkId } from '../lib/networks';
 
 function referralStorageKey(): string {
-    return `fantasyyc_referrer_${getActiveNetworkId()}`;
+    return `attentionx_referrer_${getActiveNetworkId()}`;
 }
 
 export function useReferral() {

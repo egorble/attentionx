@@ -118,7 +118,7 @@ export function usePacks() {
             const signerAddress = await signer.getAddress();
 
             // Get referrer from localStorage or URL params
-            let referrer = localStorage.getItem(`fantasyyc_referrer_${getActiveNetworkId()}`);
+            let referrer = localStorage.getItem(`attentionx_referrer_${getActiveNetworkId()}`);
             if (!referrer) {
                 const params = new URLSearchParams(window.location.search);
                 const ref = params.get('ref');
@@ -212,7 +212,7 @@ export function usePacks() {
             const signerAddress = await signer.getAddress();
 
             // Get referrer
-            let referrer = localStorage.getItem(`fantasyyc_referrer_${getActiveNetworkId()}`);
+            let referrer = localStorage.getItem(`attentionx_referrer_${getActiveNetworkId()}`);
             if (!referrer) {
                 const params = new URLSearchParams(window.location.search);
                 const ref = params.get('ref');

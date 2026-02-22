@@ -1,13 +1,13 @@
 [Unit]
-Description=FantasyYC RISE Metadata Server (port 3006)
+Description=AttentionX RISE Metadata Server (port 3006)
 After=network.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-User=fantasyyc
-Group=fantasyyc
-WorkingDirectory=/opt/fantasyyc/backend
+User=attentionx
+Group=attentionx
+WorkingDirectory=/opt/attentionx/backend
 ExecStart=/usr/bin/node server.js
 Environment=NODE_ENV=production
 
@@ -22,7 +22,7 @@ NoNewPrivileges=true
 
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=fantasyyc-metadata
+SyslogIdentifier=attentionx-metadata
 
 [Install]
 WantedBy=multi-user.target

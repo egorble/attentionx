@@ -1,4 +1,4 @@
--- FantasyYC Database Schema
+-- AttentionX Database Schema
 
 -- Tournaments table
 CREATE TABLE IF NOT EXISTS tournaments (

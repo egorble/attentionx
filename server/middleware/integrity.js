@@ -9,7 +9,7 @@ function getHmacSecret() {
     if (process.env.SCORE_HMAC_SECRET) return process.env.SCORE_HMAC_SECRET;
     // Derive from admin key as fallback
     if (process.env.ADMIN_PRIVATE_KEY) {
-        return createHmac('sha256', 'fantasyyc-score-key')
+        return createHmac('sha256', 'attentionx-score-key')
             .update(process.env.ADMIN_PRIVATE_KEY)
             .digest('hex');
     }

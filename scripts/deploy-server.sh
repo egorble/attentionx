@@ -1,18 +1,18 @@
 #!/bin/bash
 ###############################################################################
-# FantasyYC — Production Deployment Script
+# AttentionX — Production Deployment Script
 # Domain: attnx.fun
 #
 # First deploy:
-#   1. Create .env:  sudo mkdir -p /opt/fantasyyc && sudo nano /opt/fantasyyc/.env
+#   1. Create .env:  sudo mkdir -p /opt/attentionx && sudo nano /opt/attentionx/.env
 #   2. Run:          sudo bash scripts/deploy-server.sh
 #
 # Update from GitHub:
-#   sudo bash /opt/fantasyyc/scripts/update.sh
+#   sudo bash /opt/attentionx/scripts/update.sh
 #
 # What it does:
 #   - Installs Node.js 20, nginx, certbot
-#   - Creates fantasyyc user and directory structure
+#   - Creates attentionx user and directory structure
 #   - Builds frontend, installs backend deps
 #   - Configures nginx with SSL (Let's Encrypt)
 #   - Sets up systemd services with auto-restart
@@ -25,8 +25,8 @@ set -euo pipefail
 
 # ─── Configuration ───
 DOMAIN="attnx.fun"
-APP_DIR="/opt/fantasyyc"
-APP_USER="fantasyyc"
+APP_DIR="/opt/attentionx"
+APP_USER="attentionx"
 ENV_FILE="${APP_DIR}/.env"
 CERTBOT_WEBROOT="/var/www/certbot"
 
@@ -126,7 +126,7 @@ log "Directories created at ${APP_DIR}"
 ###############################################################################
 step "4/10 — Fetching code from GitHub"
 
-REPO="https://github.com/egorble/fantasyyc.git"
+REPO="https://github.com/egorble/attentionx"
 
 apt-get install -y -qq git
 git config --global --add safe.directory "${APP_DIR}" 2>/dev/null || true
@@ -142,7 +142,7 @@ else
     # Save .env and db before clone
     TEMP_DIR=$(mktemp -d)
     [ -f "${APP_DIR}/.env" ] && cp "${APP_DIR}/.env" "${TEMP_DIR}/.env"
-    [ -f "${APP_DIR}/server/db/fantasyyc.db" ] && cp "${APP_DIR}/server/db/fantasyyc.db" "${TEMP_DIR}/fantasyyc.db"
+    [ -f "${APP_DIR}/server/db/attentionx.db" ] && cp "${APP_DIR}/server/db/attentionx.db" "${TEMP_DIR}/attentionx.db"
 
     git clone "$REPO" "${APP_DIR}_tmp"
     cp -a "${APP_DIR}_tmp/." "${APP_DIR}/"
@@ -150,7 +150,7 @@ else
 
     # Restore .env and db
     [ -f "${TEMP_DIR}/.env" ] && cp "${TEMP_DIR}/.env" "${APP_DIR}/.env"
-    [ -f "${TEMP_DIR}/fantasyyc.db" ] && mkdir -p "${APP_DIR}/server/db" && cp "${TEMP_DIR}/fantasyyc.db" "${APP_DIR}/server/db/fantasyyc.db"
+    [ -f "${TEMP_DIR}/attentionx.db" ] && mkdir -p "${APP_DIR}/server/db" && cp "${TEMP_DIR}/attentionx.db" "${APP_DIR}/server/db/attentionx.db"
     rm -rf "$TEMP_DIR"
 fi
 
@@ -235,7 +235,7 @@ server {
     }
 
     location / {
-        return 200 'FantasyYC setup in progress...';
+        return 200 'AttentionX setup in progress...';
         add_header Content-Type text/plain;
     }
 }
@@ -303,34 +303,34 @@ systemctl enable --now certbot.timer 2>/dev/null || true
 step "9/10 — Installing systemd services"
 
 # RISE services
-cp "${APP_DIR}/deploy/fantasyyc-api.service" /etc/systemd/system/
-cp "${APP_DIR}/deploy/fantasyyc-metadata.service" /etc/systemd/system/
+cp "${APP_DIR}/deploy/attentionx-api.service" /etc/systemd/system/
+cp "${APP_DIR}/deploy/attentionx-metadata.service" /etc/systemd/system/
 
 # Clean up legacy MegaETH services if they exist
-systemctl stop fantasyyc-megaeth-api 2>/dev/null || true
-systemctl stop fantasyyc-megaeth-metadata 2>/dev/null || true
-systemctl disable fantasyyc-megaeth-api 2>/dev/null || true
-systemctl disable fantasyyc-megaeth-metadata 2>/dev/null || true
-rm -f /etc/systemd/system/fantasyyc-megaeth-api.service
-rm -f /etc/systemd/system/fantasyyc-megaeth-metadata.service
+systemctl stop attentionx-megaeth-api 2>/dev/null || true
+systemctl stop attentionx-megaeth-metadata 2>/dev/null || true
+systemctl disable attentionx-megaeth-api 2>/dev/null || true
+systemctl disable attentionx-megaeth-metadata 2>/dev/null || true
+rm -f /etc/systemd/system/attentionx-megaeth-api.service
+rm -f /etc/systemd/system/attentionx-megaeth-metadata.service
 
 systemctl daemon-reload
 
 # Enable services (start on boot)
-systemctl enable fantasyyc-api
-systemctl enable fantasyyc-metadata
+systemctl enable attentionx-api
+systemctl enable attentionx-metadata
 
 # Stop services first, kill stale processes, then start clean
-systemctl stop fantasyyc-api 2>/dev/null || true
-systemctl stop fantasyyc-metadata 2>/dev/null || true
+systemctl stop attentionx-api 2>/dev/null || true
+systemctl stop attentionx-metadata 2>/dev/null || true
 sleep 2
 fuser -k 3007/tcp 2>/dev/null || true
 fuser -k 3006/tcp 2>/dev/null || true
 sleep 1
 
 # Start services
-systemctl start fantasyyc-api
-systemctl start fantasyyc-metadata
+systemctl start attentionx-api
+systemctl start attentionx-metadata
 
 log "Services installed and started"
 
@@ -338,7 +338,7 @@ log "Services installed and started"
 sleep 3
 
 # Check status
-for svc in fantasyyc-api fantasyyc-metadata; do
+for svc in attentionx-api attentionx-metadata; do
     if systemctl is-active --quiet "$svc"; then
         log "${svc}: RUNNING"
     else
@@ -356,7 +356,7 @@ chmod +x "${APP_DIR}/deploy/backup-db.sh"
 chmod +x "${APP_DIR}/deploy/healthcheck.sh"
 
 # Install cron jobs (idempotent — removes old entries first)
-CRON_TAG="# fantasyyc-managed"
+CRON_TAG="# attentionx-managed"
 (crontab -l 2>/dev/null | grep -v "$CRON_TAG") | {
     cat
     echo "0 3 * * * ${APP_DIR}/deploy/backup-db.sh ${CRON_TAG}"
@@ -366,7 +366,7 @@ CRON_TAG="# fantasyyc-managed"
 log "Cron installed: DB backup (03:00 daily), health check (every 5min)"
 
 # Install logrotate config
-cp "${APP_DIR}/deploy/logrotate.conf" /etc/logrotate.d/fantasyyc
+cp "${APP_DIR}/deploy/logrotate.conf" /etc/logrotate.d/attentionx
 log "Log rotation configured"
 
 ###############################################################################
@@ -391,17 +391,17 @@ echo ""
 
 # Useful commands
 echo -e "${CYAN}Useful commands:${NC}"
-echo "  sudo bash /opt/fantasyyc/scripts/update.sh  # Update from GitHub"
-echo "  systemctl status fantasyyc-api         # API status"
-echo "  systemctl status fantasyyc-metadata    # Metadata status"
-echo "  journalctl -u fantasyyc-api -f         # API logs (live)"
-echo "  journalctl -u fantasyyc-metadata -f    # Metadata logs (live)"
-echo "  systemctl restart fantasyyc-api        # Restart API"
-echo "  systemctl restart fantasyyc-metadata   # Restart metadata"
+echo "  sudo bash /opt/attentionx/scripts/update.sh  # Update from GitHub"
+echo "  systemctl status attentionx-api         # API status"
+echo "  systemctl status attentionx-metadata    # Metadata status"
+echo "  journalctl -u attentionx-api -f         # API logs (live)"
+echo "  journalctl -u attentionx-metadata -f    # Metadata logs (live)"
+echo "  systemctl restart attentionx-api        # Restart API"
+echo "  systemctl restart attentionx-metadata   # Restart metadata"
 echo "  nginx -t && systemctl reload nginx     # Reload nginx"
 echo "  certbot renew --dry-run                # Test cert renewal"
-echo "  ls /opt/fantasyyc/backups/             # DB backups"
-echo "  cat /opt/fantasyyc/logs/healthcheck.log # Health check log"
+echo "  ls /opt/attentionx/backups/             # DB backups"
+echo "  cat /opt/attentionx/logs/healthcheck.log # Health check log"
 echo ""
 echo -e "${YELLOW}If services fail, check:${NC}"
 echo "  - Secrets in ${ENV_FILE}"
