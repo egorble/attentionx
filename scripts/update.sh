@@ -140,7 +140,7 @@ systemctl start attentionx-metadata
 # ─── Reload nginx config (picks up burst/rate limit changes) ───
 if [ -f "${APP_DIR}/deploy/nginx.conf" ]; then
     log "Updating nginx config..."
-    DOMAIN="attnx.fun"
+    DOMAIN="app.attnx.fun"
     NGINX_TARGET="/etc/nginx/sites-available/${DOMAIN}"
 
     # Clean up old 'attentionx' config that conflicts with the canonical name

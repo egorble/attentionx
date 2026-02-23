@@ -1,7 +1,7 @@
 #!/bin/bash
 ###############################################################################
 # AttentionX — Production Deployment Script
-# Domain: attnx.fun
+# Domain: app.attnx.fun
 #
 # First deploy:
 #   1. Create .env:  sudo mkdir -p /opt/attentionx && sudo nano /opt/attentionx/.env
@@ -24,7 +24,7 @@
 set -euo pipefail
 
 # ─── Configuration ───
-DOMAIN="attnx.fun"
+DOMAIN="app.attnx.fun"
 APP_DIR="/opt/attentionx"
 APP_USER="attentionx"
 ENV_FILE="${APP_DIR}/.env"
