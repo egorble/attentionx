@@ -922,6 +922,21 @@ app.post('/api/run-scorer', adminLimiter, requireAdmin, async (req, res) => {
 });
 
 /**
+ * POST /api/admin/clear-nft-cache
+ * Clear all cached NFT cards. Frontend will re-fetch from blockchain.
+ */
+app.post('/api/admin/clear-nft-cache', adminLimiter, requireAdmin, (req, res) => {
+    try {
+        db.wipeNFTCards();
+        db.saveDatabase();
+        console.log('[Admin] NFT card cache cleared');
+        return res.json({ success: true, message: 'NFT cache cleared. Cards will re-sync when users visit.' });
+    } catch (error) {
+        return res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
  * POST /api/reload-db
  * Reload the database from disk. Used by the unified scorer to notify
  * secondary servers after writing to their DB files.
