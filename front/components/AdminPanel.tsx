@@ -60,8 +60,12 @@ const AdminPanel: React.FC = () => {
     const [dbActionLoading, setDbActionLoading] = useState<string | null>(null);
     const [confirmAction, setConfirmAction] = useState<string | null>(null);
 
+    // Waitlist
+    const [waitlistEntries, setWaitlistEntries] = useState<{ id: number; email: string; wallet_address: string; created_at: string }[]>([]);
+    const [waitlistLoading, setWaitlistLoading] = useState(false);
 
-    // Startup names for points UI (from UnicornX_NFT.sol)
+
+    // Startup names for points UI (from AttentionX_NFT.sol)
     const startupNames = [
         // Legendary (10x multiplier) - IDs 1-5
         'Openclaw', 'Lovable', 'Cursor', 'OpenAI', 'Anthropic',
@@ -376,6 +380,41 @@ const AdminPanel: React.FC = () => {
         setDbActionLoading(null);
     };
 
+    const loadWaitlist = async () => {
+        if (!adminKey.trim()) { showMessage('error', 'Enter admin key first'); return; }
+        setWaitlistLoading(true);
+        try {
+            const res = await fetch(apiUrl('/admin/waitlist'), {
+                headers: { 'X-Admin-Key': adminKey.trim() },
+            });
+            const data = await res.json();
+            if (data.success) {
+                setWaitlistEntries(data.data);
+                showMessage('success', `Loaded ${data.total} waitlist entries`);
+            } else {
+                showMessage('error', data.error || 'Failed to load waitlist');
+            }
+        } catch {
+            showMessage('error', 'Network error loading waitlist');
+        }
+        setWaitlistLoading(false);
+    };
+
+    const downloadWaitlistTxt = () => {
+        if (waitlistEntries.length === 0) return;
+        const lines = waitlistEntries.map((e, i) =>
+            `${i + 1}\t${e.email}\t${e.wallet_address}\t${e.created_at}`
+        );
+        const content = `#\tEmail\tWallet\tDate\n${lines.join('\n')}`;
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `waitlist-${new Date().toISOString().split('T')[0]}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
     // Don't render if not admin
     if (!isConnected || !userIsAdmin) {
         return null;
@@ -674,6 +713,57 @@ const AdminPanel: React.FC = () => {
                                     : 'Reset All Scores'}
                         </button>
                     </div>
+                </div>
+
+                {/* Waitlist */}
+                <div className="mt-6 bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl p-6">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <Users className="w-5 h-5 text-purple-500" />
+                        Waitlist {waitlistEntries.length > 0 && `(${waitlistEntries.length})`}
+                    </h3>
+                    <div className="flex gap-3 mb-4">
+                        <button
+                            onClick={loadWaitlist}
+                            disabled={waitlistLoading || !adminKey.trim()}
+                            className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition-all disabled:opacity-40 flex items-center gap-2"
+                        >
+                            <RefreshCw className={`w-4 h-4 ${waitlistLoading ? 'animate-spin' : ''}`} />
+                            {waitlistLoading ? 'Loading...' : 'Load Waitlist'}
+                        </button>
+                        {waitlistEntries.length > 0 && (
+                            <button
+                                onClick={downloadWaitlistTxt}
+                                className="bg-gray-100 dark:bg-[#1A1A1A] hover:bg-gray-200 dark:hover:bg-[#222] text-gray-900 dark:text-white font-bold py-2 px-4 rounded-lg transition-all flex items-center gap-2"
+                            >
+                                <Download className="w-4 h-4" />
+                                Download TXT
+                            </button>
+                        )}
+                    </div>
+                    {waitlistEntries.length > 0 && (
+                        <div className="overflow-x-auto max-h-80 overflow-y-auto border border-gray-200 dark:border-[#333] rounded-lg">
+                            <table className="w-full text-sm">
+                                <thead className="bg-gray-50 dark:bg-[#0A0A0A] sticky top-0">
+                                    <tr>
+                                        <th className="text-left px-3 py-2 text-gray-500 font-medium">#</th>
+                                        <th className="text-left px-3 py-2 text-gray-500 font-medium">Email</th>
+                                        <th className="text-left px-3 py-2 text-gray-500 font-medium">Wallet</th>
+                                        <th className="text-left px-3 py-2 text-gray-500 font-medium">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {waitlistEntries.map((entry, i) => (
+                                        <tr key={entry.id} className="border-t border-gray-100 dark:border-[#222]">
+                                            <td className="px-3 py-2 text-gray-400">{i + 1}</td>
+                                            <td className="px-3 py-2 text-gray-900 dark:text-white font-mono text-xs">{entry.email}</td>
+                                            <td className="px-3 py-2 text-gray-500 font-mono text-xs">{entry.wallet_address?.slice(0, 6)}...{entry.wallet_address?.slice(-4)}</td>
+                                            <td className="px-3 py-2 text-gray-400 text-xs">{new Date(entry.created_at).toLocaleDateString()}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
 
                 {/* Tournament List */}

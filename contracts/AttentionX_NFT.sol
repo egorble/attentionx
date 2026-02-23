@@ -11,13 +11,13 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /**
- * @title UnicornX_NFT
- * @author UnicornX Team
- * @notice Main ERC-721 NFT contract for UnicornX startup cards (UUPS upgradeable)
+ * @title AttentionX_NFT
+ * @author AttentionX Team
+ * @notice Main ERC-721 NFT contract for AttentionX startup cards (UUPS upgradeable)
  * @dev Implements 19 startup cards with 5 rarity tiers, lock mechanism for tournaments,
  *      and ERC-2981 royalty standard (2% royalty)
  */
-contract UnicornX_NFT is
+contract AttentionX_NFT is
     Initializable,
     ERC721Upgradeable,
     ERC721EnumerableUpgradeable,
@@ -167,13 +167,13 @@ contract UnicornX_NFT is
     // ============ Initializer ============
 
     /**
-     * @notice Initializes the UnicornX NFT contract (called once via proxy)
+     * @notice Initializes the AttentionX NFT contract (called once via proxy)
      * @param initialOwner The initial owner of the contract
      */
     function initialize(address initialOwner) public initializer {
         if (initialOwner == address(0)) revert ZeroAddress();
 
-        __ERC721_init("UnicornX Cards", "UNIX");
+        __ERC721_init("AttentionX Cards", "ATTNX");
         __ERC721Enumerable_init();
         __ERC2981_init();
         __Ownable_init(initialOwner);

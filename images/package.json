@@ -1,5 +1,5 @@
 {
-  "name": "unicornx-contracts",
+  "name": "attentionx-contracts",
   "version": "1.0.0",
   "description": "AttentionX NFT Smart Contracts for RISE blockchain",
   "main": "scripts/deploy.js",

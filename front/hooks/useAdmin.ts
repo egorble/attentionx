@@ -59,7 +59,7 @@ export function useAdmin() {
             const provider = new ethers.JsonRpcProvider(network.rpcUrl);
 
             const [nft, packOpener, tournament] = await Promise.all([
-                provider.getBalance(contracts.UnicornX_NFT),
+                provider.getBalance(contracts.AttentionX_NFT),
                 provider.getBalance(contracts.PackOpener),
                 provider.getBalance(contracts.TournamentManager),
             ]);

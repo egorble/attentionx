@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { BrowserProvider, ethers } from 'ethers';
-import { getMarketplaceV2Contract, getNFTContract, CONTRACTS, formatXTZ } from '@/lib/contracts';
+import { getMarketplaceV2Contract, getNFTContract, getPackNFTContract, CONTRACTS, formatXTZ } from '@/lib/contracts';
+import { getActiveContracts } from '@/lib/contracts';
 import { blockchainCache, CacheKeys, CacheTTL } from '../lib/cache';
 import { useWalletContext } from '../context/WalletContext';
 
@@ -15,6 +16,7 @@ export interface Bid {
     amount: bigint;
     expiration: bigint;
     active: boolean;
+    nftAddr?: string;
 }
 
 export interface Auction {
@@ -28,6 +30,8 @@ export interface Auction {
     startTime: bigint;
     endTime: bigint;
     status: number; // 0=Active, 1=Ended, 2=Cancelled
+    nftAddr?: string;
+    isPack?: boolean;
 }
 
 export interface Sale {
@@ -63,6 +67,8 @@ export interface Listing {
     price: bigint;
     listedAt: bigint;
     active: boolean;
+    nftAddr?: string;
+    isPack?: boolean;
 }
 
 // ============ Hook ============
@@ -71,6 +77,18 @@ export function useMarketplaceV2() {
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Invalidate all marketplace cache keys so next read fetches fresh from blockchain.
+    // Called after every successful mutation (list, buy, cancel, bid, auction, etc.)
+    const invalidateMarketplaceCache = useCallback(() => {
+        blockchainCache.invalidate(CacheKeys.activeListings());
+        blockchainCache.invalidate(CacheKeys.activeAuctions());
+        blockchainCache.invalidate(CacheKeys.marketplaceStats());
+        if (address) {
+            blockchainCache.invalidate(CacheKeys.userListings(address));
+            blockchainCache.invalidate(CacheKeys.userBids(address));
+        }
+    }, [address]);
 
     // Get signer
     const getSigner = useCallback(async () => {
@@ -94,6 +112,7 @@ export function useMarketplaceV2() {
                 blockchainCache.fetchInBackground(key, async () => {
                     const contract = getMarketplaceV2Contract();
                     const listings = await contract.getActiveListings();
+                    const packNftAddr = getActiveContracts().PackNFT?.toLowerCase();
                     return listings.map((l: any) => ({
                         listingId: l.listingId,
                         seller: l.seller,
@@ -101,6 +120,8 @@ export function useMarketplaceV2() {
                         price: l.price,
                         listedAt: l.listedAt,
                         active: l.active,
+                        nftAddr: l.nftAddr,
+                        isPack: l.nftAddr?.toLowerCase() === packNftAddr,
                     }));
                 });
             }
@@ -110,6 +131,7 @@ export function useMarketplaceV2() {
         return blockchainCache.getOrFetch(key, async () => {
             const contract = getMarketplaceV2Contract();
             const listings = await contract.getActiveListings();
+            const packNftAddr = getActiveContracts().PackNFT?.toLowerCase();
             return listings.map((l: any) => ({
                 listingId: l.listingId,
                 seller: l.seller,
@@ -117,6 +139,8 @@ export function useMarketplaceV2() {
                 price: l.price,
                 listedAt: l.listedAt,
                 active: l.active,
+                nftAddr: l.nftAddr,
+                isPack: l.nftAddr?.toLowerCase() === packNftAddr,
             }));
         }, CacheTTL.DEFAULT);
     }, []);
@@ -130,6 +154,7 @@ export function useMarketplaceV2() {
                 blockchainCache.fetchInBackground(key, async () => {
                     const contract = getMarketplaceV2Contract();
                     const listings = await contract.getListingsBySeller(userAddress);
+                    const packNftAddr = getActiveContracts().PackNFT?.toLowerCase();
                     return listings.map((l: any) => ({
                         listingId: l.listingId,
                         seller: l.seller,
@@ -137,6 +162,8 @@ export function useMarketplaceV2() {
                         price: l.price,
                         listedAt: l.listedAt,
                         active: l.active,
+                        nftAddr: l.nftAddr,
+                        isPack: l.nftAddr?.toLowerCase() === packNftAddr,
                     }));
                 });
             }
@@ -146,6 +173,7 @@ export function useMarketplaceV2() {
         return blockchainCache.getOrFetch(key, async () => {
             const contract = getMarketplaceV2Contract();
             const listings = await contract.getListingsBySeller(userAddress);
+            const packNftAddr = getActiveContracts().PackNFT?.toLowerCase();
             return listings.map((l: any) => ({
                 listingId: l.listingId,
                 seller: l.seller,
@@ -153,6 +181,8 @@ export function useMarketplaceV2() {
                 price: l.price,
                 listedAt: l.listedAt,
                 active: l.active,
+                nftAddr: l.nftAddr,
+                isPack: l.nftAddr?.toLowerCase() === packNftAddr,
             }));
         }, CacheTTL.DEFAULT);
     }, []);
@@ -174,6 +204,7 @@ export function useMarketplaceV2() {
             const listTx = await marketplaceContract.listCard(tokenId, priceWei);
             await listTx.wait();
 
+            invalidateMarketplaceCache();
             return true;
         } catch (err: any) {
             setError(err.message || 'Failed to list card');
@@ -181,7 +212,35 @@ export function useMarketplaceV2() {
         } finally {
             setLoading(false);
         }
-    }, [getSigner]);
+    }, [getSigner, invalidateMarketplaceCache]);
+
+    const listPack = useCallback(async (tokenId: bigint, priceInXTZ: string) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const signer = await getSigner();
+            const packNft = getPackNFTContract(signer);
+            const marketplaceContract = getMarketplaceV2Contract(signer);
+
+            // Approve marketplace for pack NFT
+            const contracts = getActiveContracts();
+            const approveTx = await packNft.approve(contracts.MarketplaceV2, tokenId);
+            await approveTx.wait();
+
+            // List pack
+            const priceWei = ethers.parseEther(priceInXTZ);
+            const listTx = await marketplaceContract.listPack(tokenId, priceWei);
+            await listTx.wait();
+
+            invalidateMarketplaceCache();
+            return true;
+        } catch (err: any) {
+            setError(err.message || 'Failed to list pack');
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    }, [getSigner, invalidateMarketplaceCache]);
 
     const buyCard = useCallback(async (listingId: bigint, price: bigint) => {
         setLoading(true);
@@ -195,6 +254,7 @@ export function useMarketplaceV2() {
             });
             await tx.wait();
 
+            invalidateMarketplaceCache();
             return true;
         } catch (err: any) {
             setError(err.message || 'Failed to buy card');
@@ -202,7 +262,7 @@ export function useMarketplaceV2() {
         } finally {
             setLoading(false);
         }
-    }, [getSigner]);
+    }, [getSigner, invalidateMarketplaceCache]);
 
     const cancelListing = useCallback(async (listingId: bigint) => {
         setLoading(true);
@@ -214,13 +274,15 @@ export function useMarketplaceV2() {
             const tx = await contract.cancelListing(listingId);
             await tx.wait();
 
+            invalidateMarketplaceCache();
             return true;
         } catch (err: any) {
             setError(err.message || 'Failed to cancel listing');
             throw err;
         } finally {
+            setLoading(false);
         }
-    }, [getSigner]);
+    }, [getSigner, invalidateMarketplaceCache]);
 
     // ============ Bids ============
     const getUserBids = useCallback(async (userAddress: string): Promise<Bid[]> => {
@@ -274,6 +336,7 @@ export function useMarketplaceV2() {
             });
             await tx.wait();
 
+            invalidateMarketplaceCache();
             return true;
         } catch (err: any) {
             setError(err.message || 'Failed to place bid');
@@ -281,7 +344,7 @@ export function useMarketplaceV2() {
         } finally {
             setLoading(false);
         }
-    }, [getSigner]);
+    }, [getSigner, invalidateMarketplaceCache]);
 
     const cancelBid = useCallback(async (bidId: bigint) => {
         setLoading(true);
@@ -293,6 +356,7 @@ export function useMarketplaceV2() {
             const tx = await contract.cancelBid(bidId);
             await tx.wait();
 
+            invalidateMarketplaceCache();
             return true;
         } catch (err: any) {
             setError(err.message || 'Failed to cancel bid');
@@ -300,7 +364,7 @@ export function useMarketplaceV2() {
         } finally {
             setLoading(false);
         }
-    }, [getSigner]);
+    }, [getSigner, invalidateMarketplaceCache]);
 
     const acceptBid = useCallback(async (bidId: bigint) => {
         setLoading(true);
@@ -312,6 +376,7 @@ export function useMarketplaceV2() {
             const tx = await contract.acceptBid(bidId);
             await tx.wait();
 
+            invalidateMarketplaceCache();
             return true;
         } catch (err: any) {
             setError(err.message || 'Failed to accept bid');
@@ -319,7 +384,7 @@ export function useMarketplaceV2() {
         } finally {
             setLoading(false);
         }
-    }, [getSigner]);
+    }, [getSigner, invalidateMarketplaceCache]);
 
     const getBidsForToken = useCallback(async (tokenId: bigint): Promise<Bid[]> => {
         try {
@@ -400,6 +465,7 @@ export function useMarketplaceV2() {
             const tx = await contract.createAuction(tokenId, startPrice, reservePrice, duration);
             await tx.wait();
 
+            invalidateMarketplaceCache();
             return true;
         } catch (err: any) {
             setError(err.message || 'Failed to create auction');
@@ -407,7 +473,42 @@ export function useMarketplaceV2() {
         } finally {
             setLoading(false);
         }
-    }, [getSigner]);
+    }, [getSigner, invalidateMarketplaceCache]);
+
+    const createPackAuction = useCallback(async (
+        tokenId: bigint,
+        startPriceXTZ: string,
+        reservePriceXTZ: string,
+        durationDays: number
+    ) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const signer = await getSigner();
+            const packNft = getPackNFTContract(signer);
+            const contract = getMarketplaceV2Contract(signer);
+
+            // Approve marketplace for pack NFT
+            const contracts = getActiveContracts();
+            const approveTx = await packNft.approve(contracts.MarketplaceV2, tokenId);
+            await approveTx.wait();
+
+            const startPrice = ethers.parseEther(startPriceXTZ);
+            const reservePrice = ethers.parseEther(reservePriceXTZ);
+            const duration = BigInt(durationDays * 24 * 60 * 60);
+
+            const tx = await contract.createPackAuction(tokenId, startPrice, reservePrice, duration);
+            await tx.wait();
+
+            invalidateMarketplaceCache();
+            return true;
+        } catch (err: any) {
+            setError(err.message || 'Failed to create pack auction');
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    }, [getSigner, invalidateMarketplaceCache]);
 
     const bidOnAuction = useCallback(async (auctionId: bigint, amountInXTZ: string) => {
         setLoading(true);
@@ -423,6 +524,7 @@ export function useMarketplaceV2() {
             });
             await tx.wait();
 
+            invalidateMarketplaceCache();
             return true;
         } catch (err: any) {
             setError(err.message || 'Failed to bid on auction');
@@ -430,7 +532,7 @@ export function useMarketplaceV2() {
         } finally {
             setLoading(false);
         }
-    }, [getSigner]);
+    }, [getSigner, invalidateMarketplaceCache]);
 
     const finalizeAuction = useCallback(async (auctionId: bigint) => {
         setLoading(true);
@@ -442,6 +544,7 @@ export function useMarketplaceV2() {
             const tx = await contract.finalizeAuction(auctionId);
             await tx.wait();
 
+            invalidateMarketplaceCache();
             return true;
         } catch (err: any) {
             setError(err.message || 'Failed to finalize auction');
@@ -449,7 +552,7 @@ export function useMarketplaceV2() {
         } finally {
             setLoading(false);
         }
-    }, [getSigner]);
+    }, [getSigner, invalidateMarketplaceCache]);
 
     const cancelAuction = useCallback(async (auctionId: bigint) => {
         setLoading(true);
@@ -461,6 +564,7 @@ export function useMarketplaceV2() {
             const tx = await contract.cancelAuction(auctionId);
             await tx.wait();
 
+            invalidateMarketplaceCache();
             return true;
         } catch (err: any) {
             setError(err.message || 'Failed to cancel auction');
@@ -468,7 +572,7 @@ export function useMarketplaceV2() {
         } finally {
             setLoading(false);
         }
-    }, [getSigner]);
+    }, [getSigner, invalidateMarketplaceCache]);
 
     const getActiveAuctions = useCallback(async (): Promise<Auction[]> => {
         const key = CacheKeys.activeAuctions();
@@ -479,6 +583,7 @@ export function useMarketplaceV2() {
                 blockchainCache.fetchInBackground(key, async () => {
                     const contract = getMarketplaceV2Contract();
                     const auctions = await contract.getActiveAuctions();
+                    const packNftAddr = getActiveContracts().PackNFT?.toLowerCase();
                     return auctions.map((a: any) => ({
                         auctionId: a.auctionId,
                         seller: a.seller,
@@ -490,6 +595,8 @@ export function useMarketplaceV2() {
                         startTime: a.startTime,
                         endTime: a.endTime,
                         status: a.status,
+                        nftAddr: a.nftAddr,
+                        isPack: a.nftAddr?.toLowerCase() === packNftAddr,
                     }));
                 });
             }
@@ -499,6 +606,7 @@ export function useMarketplaceV2() {
         return blockchainCache.getOrFetch(key, async () => {
             const contract = getMarketplaceV2Contract();
             const auctions = await contract.getActiveAuctions();
+            const packNftAddr = getActiveContracts().PackNFT?.toLowerCase();
             return auctions.map((a: any) => ({
                 auctionId: a.auctionId,
                 seller: a.seller,
@@ -510,6 +618,8 @@ export function useMarketplaceV2() {
                 startTime: a.startTime,
                 endTime: a.endTime,
                 status: a.status,
+                nftAddr: a.nftAddr,
+                isPack: a.nftAddr?.toLowerCase() === packNftAddr,
             }));
         }, CacheTTL.DEFAULT);
     }, []);
@@ -576,6 +686,7 @@ export function useMarketplaceV2() {
         getActiveListings,
         getUserListings,
         listCard,
+        listPack,
         buyCard,
         cancelListing,
 
@@ -589,6 +700,7 @@ export function useMarketplaceV2() {
 
         // Auctions
         createAuction,
+        createPackAuction,
         bidOnAuction,
         finalizeAuction,
         cancelAuction,

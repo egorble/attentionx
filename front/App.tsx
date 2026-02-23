@@ -18,6 +18,7 @@ import TournamentCTA from './components/TournamentCTA';
 import DashboardLeaderboard from './components/DashboardLeaderboard';
 import MobileWidgets from './components/MobileWidgets';
 import SplashScreen from './components/SplashScreen';
+import ModelViewer3D from './components/ModelViewer3D';
 import { NavSection, UserProfile, Rarity, CardData } from './types';
 import { Filter, Search, Wallet, Loader2, Sun, Moon, LogOut, User } from 'lucide-react';
 import { useTheme } from './context/ThemeContext';
@@ -32,11 +33,14 @@ import { generatePixelAvatar } from './lib/pixelAvatar';
 import { ethers } from 'ethers';
 import { useMarketplaceV2, Listing } from './hooks/useMarketplaceV2';
 import { useNFT } from './hooks/useNFT';
+import { usePacks } from './hooks/usePacks';
+import { checkContractChange } from './lib/cache';
 
 // Inner component that uses wallet context
 const AppContent: React.FC = () => {
     const [activeSection, setActiveSection] = useState<NavSection>(NavSection.HOME);
     const [isPackModalOpen, setIsPackModalOpen] = useState(false);
+    const [openPackId, setOpenPackId] = useState<number | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [dashboardSelectedStartup, setDashboardSelectedStartup] = useState<CardDetailData | null>(null);
     const [dashboardSelectedCard, setDashboardSelectedCard] = useState<CardData | null>(null);
@@ -90,6 +94,9 @@ const AppContent: React.FC = () => {
     // NFT hook
     const { getCardInfo, getCards, updateServerCache, clearCache } = useNFT();
 
+    // Packs hook (for pre-fetching)
+    const { getUserPacks } = usePacks();
+
     // Dynamic user from wallet + profile
     const user: UserProfile = {
         name: isConnected
@@ -103,13 +110,24 @@ const AppContent: React.FC = () => {
         address: address || undefined,
     };
 
-    // Pre-fetch user's NFT cards as soon as wallet connects or network changes
-    // Cards get cached in blockchainCache + localStorage → Portfolio loads instantly
+    // On app load (or network switch), check if contracts changed on the server.
+    // If so, all caches (in-memory + localStorage) are wiped so stale data is never served.
+    useEffect(() => {
+        checkContractChange(activeNetwork.apiBase).then(changed => {
+            if (changed) {
+                clearCache(); // wipe NFT-specific caches
+            }
+        });
+    }, [activeNetwork.apiBase, clearCache]);
+
+    // Pre-fetch user's NFT cards + packs as soon as wallet connects or network changes
+    // Data gets cached in blockchainCache → Portfolio loads instantly
     useEffect(() => {
         if (isConnected && address) {
-            getCards(address).catch(() => { }); // fire-and-forget
+            getCards(address).catch(() => { });
+            getUserPacks(address).catch(() => { });
         }
-    }, [isConnected, address, getCards, networkId]);
+    }, [isConnected, address, getCards, getUserPacks, networkId]);
 
     // Load dashboard listings with NFT metadata (refetch on network switch)
     useEffect(() => {
@@ -118,9 +136,26 @@ const AppContent: React.FC = () => {
             try {
                 const listings = await getActiveListings();
 
-                // Fetch metadata for each listing
+                // Fetch metadata for each listing (handle packs differently)
                 const listingsWithCards = await Promise.all(
                     listings.map(async (listing) => {
+                        if (listing.isPack) {
+                            // Pack listings use fixed metadata — don't query AttentionX_NFT metadata
+                            const packCard: CardData = {
+                                tokenId: Number(listing.tokenId),
+                                startupId: 0,
+                                name: `Pack #${Number(listing.tokenId)}`,
+                                rarity: Rarity.COMMON,
+                                multiplier: 1,
+                                isLocked: false,
+                                image: '',
+                                edition: 1,
+                                fundraising: null,
+                                description: null,
+                                isPack: true,
+                            };
+                            return { listing, card: packCard };
+                        }
                         const card = await getCardInfo(Number(listing.tokenId));
                         return card ? { listing, card } : null;
                     })
@@ -149,9 +184,10 @@ const AppContent: React.FC = () => {
             );
         }
 
-        // Apply category filter
+        // Apply category filter (packs are always shown — they don't have rarity)
         if (activeFilter !== 'all') {
             filtered = filtered.filter(({ card }) => {
+                if (card.isPack) return true;
                 switch (activeFilter) {
                     case 'legendary':
                         return card.rarity === Rarity.LEGENDARY;
@@ -208,7 +244,7 @@ const AppContent: React.FC = () => {
             case NavSection.MARKETPLACE:
                 return <Marketplace />;
             case NavSection.PORTFOLIO:
-                return <Portfolio onBuyPack={() => setIsPackModalOpen(true)} />;
+                return <Portfolio onBuyPack={(packId?: number) => { setOpenPackId(packId ?? null); setIsPackModalOpen(true); }} />;
             case NavSection.LEAGUES:
                 return <Leagues />;
             case NavSection.FEED:
@@ -238,8 +274,7 @@ const AppContent: React.FC = () => {
 
                         {/* 5. NFT Marketplace */}
                         <div className="mt-8">
-                            <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4 flex items-center">
-                                <span className="w-1.5 h-5 bg-yc-purple rounded-full mr-2"></span>
+                            <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4">
                                 NFT Marketplace
                             </h3>
 
@@ -251,8 +286,8 @@ const AppContent: React.FC = () => {
                                                 key={filter}
                                                 onClick={() => setActiveFilter(filter)}
                                                 className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all duration-300 transform active:scale-95 ${activeFilter === filter
-                                                    ? 'bg-yc-purple text-white shadow-lg shadow-yc-purple/30 scale-105'
-                                                    : 'bg-gray-100 dark:bg-[#1A1A1A] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white'
+                                                    ? 'bg-yc-purple/10 dark:bg-yc-purple/[0.15] text-yc-purple border border-yc-purple/30 dark:border-yc-purple/30'
+                                                    : 'bg-gray-100 dark:bg-white/[0.03] text-gray-500 dark:text-gray-500 border border-transparent hover:bg-gray-200 dark:hover:bg-white/[0.06] hover:text-gray-900 dark:hover:text-white'
                                                     }`}
                                             >
                                                 {filter.charAt(0).toUpperCase() + filter.slice(1)}
@@ -262,28 +297,28 @@ const AppContent: React.FC = () => {
                                 </div>
 
                                 <div className="flex items-center space-x-3 self-end md:self-auto">
-                                    <span className="text-xs font-bold text-gray-400 uppercase">Sort by:</span>
+                                    <span className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Sort:</span>
                                     <div className="relative group">
-                                        <button className="flex items-center text-sm font-bold text-yc-text-primary dark:text-white hover:text-yc-purple transition-colors">
+                                        <button className="flex items-center text-sm font-semibold text-yc-text-primary dark:text-white hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                                             {sortBy === 'price' ? 'Price' : sortBy === 'rarity' ? 'Rarity' : 'Recent'}
-                                            <Filter className="w-3 h-3 ml-1 text-gray-400 group-hover:text-yc-purple transition-colors" />
+                                            <Filter className="w-3 h-3 ml-1 text-gray-400" />
                                         </button>
-                                        <div className="absolute right-0 top-full mt-2 bg-white dark:bg-[#09090b] border border-gray-200 dark:border-[#27272a] rounded-lg shadow-lg py-2 min-w-[120px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                                        <div className="absolute right-0 top-full mt-2 bg-white dark:bg-white/[0.04] backdrop-blur-xl border border-gray-200 dark:border-white/[0.08] rounded-2xl shadow-lg py-2 min-w-[120px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                                             <button
                                                 onClick={() => setSortBy('recent')}
-                                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[#18181b] text-gray-900 dark:text-white"
+                                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/[0.06] text-gray-900 dark:text-white rounded-lg"
                                             >
                                                 Recent
                                             </button>
                                             <button
                                                 onClick={() => setSortBy('price')}
-                                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[#18181b] text-gray-900 dark:text-white"
+                                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/[0.06] text-gray-900 dark:text-white rounded-lg"
                                             >
                                                 Price
                                             </button>
                                             <button
                                                 onClick={() => setSortBy('rarity')}
-                                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-[#18181b] text-gray-900 dark:text-white"
+                                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/[0.06] text-gray-900 dark:text-white rounded-lg"
                                             >
                                                 Rarity
                                             </button>
@@ -303,23 +338,34 @@ const AppContent: React.FC = () => {
                                         filteredAndSortedListings.map(({ listing, card }) => (
                                             <div
                                                 key={`${listing.listingId}-${card.tokenId}`}
-                                                className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl overflow-hidden hover:border-yc-purple/50 transition-all duration-300 group cursor-pointer"
+                                                className="bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/[0.06] rounded-2xl overflow-hidden hover:border-gray-300 dark:hover:border-white/[0.15] transition-all duration-300 group cursor-pointer"
                                                 onClick={() => {
-                                                    setDashboardSelectedCard(card);
-                                                    setDashboardSelectedStartup({
-                                                        id: card.tokenId.toString(),
-                                                        image: card.image,
-                                                        name: card.name,
-                                                        value: Number(ethers.formatEther(listing.price)),
-                                                        rarity: card.rarity,
-                                                        multiplier: `${card.multiplier}x`,
-                                                        batch: `Edition ${card.edition}`,
-                                                        stage: card.rarity
-                                                    });
+                                                    if (!card.isPack) {
+                                                        setDashboardSelectedCard(card);
+                                                        setDashboardSelectedStartup({
+                                                            id: card.tokenId.toString(),
+                                                            image: card.image,
+                                                            name: card.name,
+                                                            value: Number(ethers.formatEther(listing.price)),
+                                                            rarity: card.rarity,
+                                                            multiplier: `${card.multiplier}x`,
+                                                            batch: `Edition ${card.edition}`,
+                                                            stage: card.rarity
+                                                        });
+                                                    }
                                                 }}
                                             >
                                                 <div className="overflow-hidden" style={{ aspectRatio: '591/1004' }}>
-                                                    <img src={card.image} alt={card.name} className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105" />
+                                                    {card.isPack ? (
+                                                        <div className="relative w-full h-full bg-gradient-to-b from-yc-purple/5 to-gray-50 dark:from-yc-purple/[0.06] dark:to-[#0a0a0a]">
+                                                            <ModelViewer3D mode="static" cameraZ={3} modelScale={0.8} />
+                                                            <div className="absolute bottom-2 left-0 right-0 flex flex-col items-center pointer-events-none">
+                                                                <span className="text-gray-700 dark:text-white/50 text-[10px] font-mono bg-white/60 dark:bg-black/40 px-2 py-0.5 rounded">#{card.tokenId}</span>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <img src={card.image} alt={card.name} className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105" />
+                                                    )}
                                                 </div>
                                                 <div className="p-1.5 md:p-3">
                                                     <p className="text-gray-900 dark:text-white font-bold text-[11px] md:text-sm leading-tight truncate">{card.name}</p>
@@ -336,7 +382,7 @@ const AppContent: React.FC = () => {
                                                                 .finally(() => setBuyingId(null));
                                                         }}
                                                         disabled={buyingId === Number(listing.listingId)}
-                                                        className="w-full mt-1.5 md:mt-2 px-2 py-1 md:px-4 md:py-2 rounded-lg font-bold text-[10px] md:text-sm bg-yc-purple hover:bg-purple-600 text-white transition-all active:scale-95 disabled:opacity-50"
+                                                        className="w-full mt-1.5 md:mt-2 px-2 py-1 md:px-4 md:py-2 rounded-xl font-bold text-[10px] md:text-sm bg-yc-purple text-white border border-yc-purple hover:bg-yc-purple/80 transition-all active:scale-95 disabled:opacity-50"
                                                     >
                                                         {buyingId === Number(listing.listingId) ? 'Buying...' : 'Buy Now'}
                                                     </button>
@@ -359,7 +405,7 @@ const AppContent: React.FC = () => {
     };
 
     return (
-        <div className="bg-white dark:bg-[#050505] text-yc-text-primary dark:text-white font-sans">
+        <div className="bg-white dark:bg-[#050507] text-yc-text-primary dark:text-white font-sans selection:bg-white/20 selection:text-white">
 
             {/* Sidebar Navigation (desktop only) */}
             <Sidebar
@@ -409,12 +455,12 @@ const AppContent: React.FC = () => {
                                 {isMobileMenuOpen && (
                                     <>
                                         <div className="fixed inset-0 z-40" onClick={() => setIsMobileMenuOpen(false)} />
-                                        <div className="absolute right-0 top-12 z-50 w-64 glass-nav rounded-2xl shadow-2xl p-4 space-y-3">
+                                        <div className="absolute right-0 top-12 z-50 w-64 glass-nav rounded-2xl shadow-[0_4px_24px_-8px_rgba(0,0,0,0.5)] p-4 space-y-3 border border-gray-200 dark:border-white/[0.08]">
 
                                             {/* User info */}
                                             {isConnected && (
                                                 <div
-                                                    className="flex items-center gap-3 p-2 rounded-xl bg-gray-50 dark:bg-[#121212] cursor-pointer active:scale-[0.98] transition-transform"
+                                                    className="flex items-center gap-3 p-2 rounded-xl bg-gray-50 dark:bg-white/[0.03] cursor-pointer active:scale-[0.98] transition-transform"
                                                     onClick={() => { setIsMobileMenuOpen(false); if (profile) setIsProfileEditOpen(true); }}
                                                 >
                                                     <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-gray-200 dark:border-gray-700">
@@ -434,7 +480,7 @@ const AppContent: React.FC = () => {
 
                                             {/* Balance */}
                                             {isConnected && (
-                                                <div className="flex items-center justify-between p-2 rounded-xl bg-gray-50 dark:bg-[#121212]">
+                                                <div className="flex items-center justify-between p-2 rounded-xl bg-gray-50 dark:bg-white/[0.03]">
                                                     <span className="text-xs font-bold text-gray-400">Balance</span>
                                                     {balanceLoading ? (
                                                         <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
@@ -451,7 +497,7 @@ const AppContent: React.FC = () => {
                                             {!isConnected ? (
                                                 <button
                                                     onClick={() => { setIsMobileMenuOpen(false); connect(); }}
-                                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-yc-purple text-white font-bold text-sm active:scale-95 transition-transform"
+                                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-yc-purple text-white font-bold text-sm active:scale-95 transition-transform hover:bg-yc-purple/80"
                                                 >
                                                     <Wallet className="w-4 h-4" />
                                                     Connect Wallet
@@ -459,7 +505,7 @@ const AppContent: React.FC = () => {
                                             ) : !isCorrectChain ? (
                                                 <button
                                                     onClick={() => { setIsMobileMenuOpen(false); switchChain(); }}
-                                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-yc-purple text-white font-bold text-sm active:scale-95 transition-transform"
+                                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-yc-purple text-white font-bold text-sm active:scale-95 transition-transform hover:bg-yc-purple/80"
                                                 >
                                                     <Wallet className="w-4 h-4" />
                                                     Switch Network
@@ -469,14 +515,14 @@ const AppContent: React.FC = () => {
                                             {/* Network toggle */}
                                             <div className="flex items-center justify-between p-2">
                                                 <span className="text-xs font-bold text-gray-400 uppercase">Network</span>
-                                                <div className="flex bg-gray-200 dark:bg-[#121212] rounded-full p-0.5 gap-0.5">
+                                                <div className="flex bg-gray-200 dark:bg-white/[0.04] rounded-full p-0.5 gap-0.5 border border-transparent dark:border-white/[0.06]">
                                                     {allNetworks.map((net) => (
                                                         <button
                                                             key={net.id}
                                                             onClick={() => { setIsMobileMenuOpen(false); handleNetworkSwitch(net.id); }}
                                                             className={`flex items-center gap-1 px-2 py-1.5 rounded-full text-xs font-bold transition-all ${networkId === net.id
-                                                                ? 'bg-yc-purple text-white shadow'
-                                                                : 'text-gray-400'
+                                                                ? 'bg-gray-100 dark:bg-white/[0.1] text-black dark:text-white shadow-sm'
+                                                                : 'text-gray-400 dark:text-gray-500'
                                                                 }`}
                                                         >
                                                             <span>{net.shortName}</span>
@@ -488,16 +534,16 @@ const AppContent: React.FC = () => {
                                             {/* Theme toggle */}
                                             <div className="flex items-center justify-between p-2">
                                                 <span className="text-xs font-bold text-gray-400 uppercase">Theme</span>
-                                                <div className="flex bg-gray-200 dark:bg-[#121212] rounded-full p-0.5">
+                                                <div className="flex bg-gray-200 dark:bg-white/[0.04] rounded-full p-0.5 border border-transparent dark:border-white/[0.06]">
                                                     <button
                                                         onClick={() => theme === 'dark' && toggleTheme()}
-                                                        className={`p-1.5 rounded-full transition-all ${theme === 'light' ? 'bg-white shadow text-purple-500' : 'text-gray-400'}`}
+                                                        className={`p-1.5 rounded-full transition-all ${theme === 'light' ? 'bg-white shadow text-gray-700' : 'text-gray-500'}`}
                                                     >
                                                         <Sun size={14} />
                                                     </button>
                                                     <button
                                                         onClick={() => theme === 'light' && toggleTheme()}
-                                                        className={`p-1.5 rounded-full transition-all ${theme === 'dark' ? 'bg-gray-700 text-white shadow' : 'text-gray-400'}`}
+                                                        className={`p-1.5 rounded-full transition-all ${theme === 'dark' ? 'bg-white/10 text-white' : 'text-gray-400'}`}
                                                     >
                                                         <Moon size={14} />
                                                     </button>
@@ -533,7 +579,8 @@ const AppContent: React.FC = () => {
             {/* Pack Opening Modal */}
             <PackOpeningModal
                 isOpen={isPackModalOpen}
-                onClose={() => setIsPackModalOpen(false)}
+                initialPackId={openPackId}
+                onClose={() => { setIsPackModalOpen(false); setOpenPackId(null); }}
                 onCardsAcquired={(cards) => {
                     if (address) {
                         updateServerCache(address, cards);

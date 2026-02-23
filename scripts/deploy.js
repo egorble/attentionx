@@ -88,8 +88,11 @@ async function main() {
     // Load compiled contracts
     const buildDir = path.join(__dirname, "..", "build");
 
-    const UnicornX_NFT = JSON.parse(
-        fs.readFileSync(path.join(buildDir, "UnicornX_NFT.json"), "utf8")
+    const AttentionX_NFT = JSON.parse(
+        fs.readFileSync(path.join(buildDir, "AttentionX_NFT.json"), "utf8")
+    );
+    const PackNFT = JSON.parse(
+        fs.readFileSync(path.join(buildDir, "PackNFT.json"), "utf8")
     );
     const PackOpener = JSON.parse(
         fs.readFileSync(path.join(buildDir, "PackOpener.json"), "utf8")
@@ -112,39 +115,45 @@ async function main() {
     console.log("   Deploy mode: UUPS Proxy (upgradeable)");
     console.log("");
 
-    // ============ Step 1: Deploy UnicornX_NFT (Proxy) ============
-    console.log('📦 Step 1: Deploying UnicornX_NFT...');
-    const nft = await deployProxy(wallet, UnicornX_NFT, ERC1967Proxy, [wallet.address], "UnicornX_NFT");
-    console.log(`✅ UnicornX_NFT proxy: ${nft.proxyAddress}`);
+    // ============ Step 1: Deploy AttentionX_NFT (Proxy) ============
+    console.log('📦 Step 1: Deploying AttentionX_NFT...');
+    const nft = await deployProxy(wallet, AttentionX_NFT, ERC1967Proxy, [wallet.address], "AttentionX_NFT");
+    console.log(`✅ AttentionX_NFT proxy: ${nft.proxyAddress}`);
     console.log(`   Explorer: ${network.explorer}/address/${nft.proxyAddress}`);
     console.log("");
 
-    // ============ Step 2: Deploy TournamentManager (Proxy) ============
-    console.log("📦 Step 2: Deploying TournamentManager...");
+    // ============ Step 2: Deploy PackNFT (Proxy) ============
+    console.log("📦 Step 2: Deploying PackNFT...");
+    const packNft = await deployProxy(wallet, PackNFT, ERC1967Proxy, [wallet.address], "PackNFT");
+    console.log(`✅ PackNFT proxy: ${packNft.proxyAddress}`);
+    console.log("");
+
+    // ============ Step 3: Deploy TournamentManager (Proxy) ============
+    console.log("📦 Step 3: Deploying TournamentManager...");
     const tournament = await deployProxy(wallet, TournamentManager, ERC1967Proxy, [nft.proxyAddress], "TournamentManager");
     console.log(`✅ TournamentManager proxy: ${tournament.proxyAddress}`);
     console.log("");
 
-    // ============ Step 3: Deploy PackOpener (Proxy) ============
-    console.log("📦 Step 3: Deploying PackOpener...");
+    // ============ Step 4: Deploy PackOpener (Proxy) ============
+    console.log("📦 Step 4: Deploying PackOpener...");
     const pack = await deployProxy(wallet, PackOpener, ERC1967Proxy, [nft.proxyAddress, TREASURY_ADDRESS, wallet.address], "PackOpener");
     console.log(`✅ PackOpener proxy: ${pack.proxyAddress}`);
     console.log("");
 
-    // ============ Step 4: Deploy MarketplaceV2 (Proxy) ============
-    console.log("📦 Step 4: Deploying MarketplaceV2...");
+    // ============ Step 5: Deploy MarketplaceV2 (Proxy) ============
+    console.log("📦 Step 5: Deploying MarketplaceV2...");
     const marketplace = await deployProxy(wallet, MarketplaceV2, ERC1967Proxy, [nft.proxyAddress, wallet.address], "MarketplaceV2");
     console.log(`✅ MarketplaceV2 proxy: ${marketplace.proxyAddress}`);
     console.log("");
 
-    // ============ Step 5: Configuration ============
-    console.log("🛠️ Step 5: Configuring Contracts...");
+    // ============ Step 6: Configuration ============
+    console.log("🛠️ Step 6: Configuring Contracts...");
 
-    // 1. Set PackOpener as authorized minter
-    console.log("   Setting PackOpener as authorized minter...");
+    // 1. Set PackOpener as authorized minter on AttentionX_NFT (cards)
+    console.log("   Setting PackOpener as authorized card minter...");
     const tx1 = await nft.contract.setAuthorizedMinter(pack.proxyAddress, true);
     await tx1.wait();
-    console.log("   ✅ PackOpener is now authorized minter");
+    console.log("   ✅ PackOpener is now authorized card minter");
 
     // 2. Set TournamentManager as authorized locker
     console.log("   Setting TournamentManager as authorized locker...");
@@ -164,6 +173,29 @@ async function main() {
     await tx4.wait();
     console.log("   ✅ PackOpener set in TournamentManager");
 
+    // 5. Set PackOpener as authorized minter & burner on PackNFT
+    console.log("   Setting PackOpener as authorized pack minter...");
+    const tx5 = await packNft.contract.setAuthorizedMinter(pack.proxyAddress, true);
+    await tx5.wait();
+    console.log("   ✅ PackOpener is now authorized pack minter");
+
+    console.log("   Setting PackOpener as authorized pack burner...");
+    const tx6 = await packNft.contract.setAuthorizedBurner(pack.proxyAddress, true);
+    await tx6.wait();
+    console.log("   ✅ PackOpener is now authorized pack burner");
+
+    // 6. Set PackNFT reference in PackOpener
+    console.log("   Setting PackNFT contract in PackOpener...");
+    const tx7 = await pack.contract.setPackNftContract(packNft.proxyAddress);
+    await tx7.wait();
+    console.log("   ✅ PackNFT set in PackOpener");
+
+    // 7. Set PackNFT in MarketplaceV2 for pack trading
+    console.log("   Setting PackNFT contract in MarketplaceV2...");
+    const tx8 = await marketplace.contract.setPackNftContract(packNft.proxyAddress);
+    await tx8.wait();
+    console.log("   ✅ PackNFT set in MarketplaceV2");
+
     console.log("");
 
     // ============ Summary ============
@@ -172,13 +204,15 @@ async function main() {
     console.log("═══════════════════════════════════════════════════════════════");
     console.log("");
     console.log("📋 Proxy Addresses (permanent — use these everywhere):");
-    console.log('   UnicornX_NFT:       ', nft.proxyAddress);
+    console.log('   AttentionX_NFT:       ', nft.proxyAddress);
+    console.log("   PackNFT:            ", packNft.proxyAddress);
     console.log("   PackOpener:         ", pack.proxyAddress);
     console.log("   TournamentManager:  ", tournament.proxyAddress);
     console.log("   MarketplaceV2:      ", marketplace.proxyAddress);
     console.log("");
     console.log("📋 Implementation Addresses (upgradeable):");
-    console.log('   UnicornX_NFT:       ', nft.implAddress);
+    console.log('   AttentionX_NFT:       ', nft.implAddress);
+    console.log("   PackNFT:            ", packNft.implAddress);
     console.log("   PackOpener:         ", pack.implAddress);
     console.log("   TournamentManager:  ", tournament.implAddress);
     console.log("   MarketplaceV2:      ", marketplace.implAddress);
@@ -194,13 +228,15 @@ async function main() {
         deployer: wallet.address,
         deployMode: "UUPS Proxy",
         proxies: {
-            UnicornX_NFT: nft.proxyAddress,
+            AttentionX_NFT: nft.proxyAddress,
+            PackNFT: packNft.proxyAddress,
             PackOpener: pack.proxyAddress,
             TournamentManager: tournament.proxyAddress,
             MarketplaceV2: marketplace.proxyAddress
         },
         implementations: {
-            UnicornX_NFT: nft.implAddress,
+            AttentionX_NFT: nft.implAddress,
+            PackNFT: packNft.implAddress,
             PackOpener: pack.implAddress,
             TournamentManager: tournament.implAddress,
             MarketplaceV2: marketplace.implAddress

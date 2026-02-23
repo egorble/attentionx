@@ -139,7 +139,16 @@ CREATE TABLE IF NOT EXISTS nft_cards (
     PRIMARY KEY (token_id)
 );
 
+-- Waitlist (landing page signups)
+CREATE TABLE IF NOT EXISTS waitlist (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE,
+    wallet_address TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for performance
+CREATE INDEX IF NOT EXISTS idx_waitlist_email ON waitlist(email);
 CREATE INDEX IF NOT EXISTS idx_tournament_entries_tournament ON tournament_entries(tournament_id);
 CREATE INDEX IF NOT EXISTS idx_tournament_entries_player ON tournament_entries(player_address);
 CREATE INDEX IF NOT EXISTS idx_tournament_cards_tournament ON tournament_cards(tournament_id);

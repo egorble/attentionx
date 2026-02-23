@@ -19,7 +19,8 @@ console.log("🔨 Compiling AttentionX Smart Contracts with solc...\n");
 
 // Contract files to compile
 const contractFiles = [
-    "UnicornX_NFT.sol",
+    "AttentionX_NFT.sol",
+    "PackNFT.sol",
     "PackOpener.sol",
     "TournamentManager.sol",
     "MarketplaceV2.sol",
@@ -175,7 +176,8 @@ console.log("🎉 COMPILATION COMPLETE!");
 console.log("═══════════════════════════════════════════════════════════════");
 console.log(`\n📁 Build artifacts saved to: ${BUILD_DIR}`);
 console.log("\nFiles generated:");
-console.log("   - UnicornX_NFT.json");
+console.log("   - AttentionX_NFT.json");
+console.log("   - PackNFT.json");
 console.log("   - PackOpener.json");
 console.log("   - TournamentManager.json");
 console.log("   - MarketplaceV2.json");

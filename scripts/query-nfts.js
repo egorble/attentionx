@@ -58,7 +58,7 @@ async function main() {
   var provider = new ethers.JsonRpcProvider(RPC_URL);
   var contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
 
-  console.log('Querying UnicornX_NFT contract:', CONTRACT_ADDRESS);
+  console.log('Querying AttentionX_NFT contract:', CONTRACT_ADDRESS);
   console.log('RPC:', RPC_URL);
   console.log('');
 

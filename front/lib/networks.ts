@@ -9,7 +9,8 @@ export interface NetworkConfig {
     explorerUrl: string;
     nativeCurrency: { name: string; symbol: string; decimals: number };
     contracts: {
-        UnicornX_NFT: string;
+        AttentionX_NFT: string;
+        PackNFT: string;
         PackOpener: string;
         TournamentManager: string;
         MarketplaceV2: string;
@@ -31,10 +32,11 @@ export const NETWORKS: Record<string, NetworkConfig> = {
         explorerUrl: 'https://explorer.testnet.riselabs.xyz',
         nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
         contracts: {
-            UnicornX_NFT: '0xd75293a06Ebce94a3A2C07431fC3f2CF16eaE304',
-            PackOpener: '0x3676c7D4f9C04C9e225d1F589921F6afc0Af4BFC',
-            TournamentManager: '0x70d8596574223719341f6DDf334B5C486f82a1D6',
-            MarketplaceV2: '0x606d031ca8477Ece0b074F8af4E1b3464e250225',
+            AttentionX_NFT: '0x93faD2BA6C77C1A9853E5b2E1B1714e7BEb1E238',
+            PackNFT: '0xF4A09F2AaE4166C850153Ae24C67C1B29865b3e6',
+            PackOpener: '0x85C031EbBBf859B2b376622a74D8fEe74753bDC0',
+            TournamentManager: '0x59948cdE98f923A4653fBc5A0Fae594EE5a680cB',
+            MarketplaceV2: '0xA7f02B767e5E86f70271D3D1D8B73342aC7034DE',
         },
         apiBase: '/api',
         metadataBase: '/metadata',

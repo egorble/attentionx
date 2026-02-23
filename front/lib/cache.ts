@@ -368,6 +368,42 @@ const _restored = blockchainCache.restoreKeys('nft:');
 if (_restored > 0) {
 }
 
+// ── Contract change detection ──
+// On app load, fetch /api/contracts and compare the hash with what's in localStorage.
+// If contracts changed (redeployment), nuke all caches so stale data is never served.
+const CONTRACT_HASH_KEY = 'fyc:contractHash';
+
+export async function checkContractChange(apiBase: string): Promise<boolean> {
+    try {
+        const res = await fetch(`${apiBase}/contracts`);
+        if (!res.ok) return false;
+        const json = await res.json();
+        const serverHash = json.data?.contractHash;
+        if (!serverHash) return false;
+
+        const storedHash = localStorage.getItem(CONTRACT_HASH_KEY);
+        if (storedHash && storedHash !== serverHash) {
+            console.warn('[cache] Contract addresses changed! Clearing all caches.');
+            blockchainCache.fullReset();
+            // Clear all localStorage entries for this app
+            const keysToRemove: string[] = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('fyc:')) keysToRemove.push(key);
+            }
+            keysToRemove.forEach(k => localStorage.removeItem(k));
+            localStorage.setItem(CONTRACT_HASH_KEY, serverHash);
+            return true; // changed
+        }
+
+        // First visit or same contracts — store hash
+        localStorage.setItem(CONTRACT_HASH_KEY, serverHash);
+        return false;
+    } catch {
+        return false;
+    }
+}
+
 // Export polling intervals for use in hooks
 export { POLLING_INTERVALS };
 

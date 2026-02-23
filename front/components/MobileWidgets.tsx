@@ -32,17 +32,17 @@ const MobileWidgets: React.FC<MobileWidgetsProps> = ({ onOpenPack }) => {
         <div className="my-6 xl:hidden">
             {/* Buy Pack CTA */}
             {onOpenPack && (
-                <div className="mb-3 rounded-xl overflow-hidden shadow-lg bg-[#0a0a0a] border border-[#1a1a1a]">
-                    <div className="relative h-36 bg-gradient-to-b from-[#111] to-[#0a0a0a]">
+                <div className="mb-3 rounded-xl overflow-hidden shadow-lg bg-white dark:bg-[#0a0a0a] border border-yc-purple/20 dark:border-yc-purple/[0.15]">
+                    <div className="relative h-36 bg-gradient-to-b from-yc-purple/5 to-gray-50 dark:from-yc-purple/[0.06] dark:to-[#0a0a0a]">
                         <ModelViewer3D mode="gentle" cameraZ={2.8} modelScale={0.8} />
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <div className="w-20 h-20 bg-yc-purple/10 rounded-full blur-2xl" />
                         </div>
                     </div>
-                    <div className="p-3 border-t border-[#1a1a1a] flex items-center justify-between">
+                    <div className="p-3 border-t border-gray-200 dark:border-white/[0.06] flex items-center justify-between">
                         <div>
-                            <span className="text-gray-500 dark:text-gray-500 text-[10px] font-medium">5 cards per pack</span>
-                            <p className="text-yc-text-primary dark:text-white font-mono font-black text-lg">{packPrice} <span className="text-gray-500 dark:text-gray-400 text-sm font-bold">{currencySymbol()}</span></p>
+                            <span className="text-gray-500 text-[10px] font-medium">5 cards per pack</span>
+                            <p className="text-yc-text-primary dark:text-white font-mono font-black text-lg">{packPrice} <span className="text-gray-500 text-sm font-bold">{currencySymbol()}</span></p>
                         </div>
                         <button
                             onClick={onOpenPack}
@@ -57,7 +57,7 @@ const MobileWidgets: React.FC<MobileWidgetsProps> = ({ onOpenPack }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
                 {/* Top Startups Card */}
-                <div className="bg-gray-50 dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl p-4 shadow-sm dark:shadow-none">
+                <div className="bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/[0.06] rounded-xl p-4 shadow-sm dark:shadow-none">
                     <div className="flex items-center justify-between mb-3">
                         <h3 className="text-gray-900 dark:text-white font-bold text-xs uppercase tracking-wide flex items-center">
                             <TrendingUp className="w-4 h-4 text-yc-purple mr-2" />

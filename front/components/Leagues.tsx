@@ -796,7 +796,7 @@ const Leagues: React.FC = () => {
                     ) : (phase === 'registration' || phase === 'active') ? (
                         <button
                             onClick={() => setIsJoining(true)}
-                            className="bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-yc-purple hover:text-white px-5 sm:px-8 py-2.5 sm:py-3 rounded-lg font-black text-xs sm:text-sm uppercase tracking-wide transition-all flex items-center shadow-[0_0_20px_rgba(0,0,0,0.1)] dark:shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(147,51,234,0.4)]"
+                            className="bg-yc-purple text-white hover:bg-yc-purple/80 px-5 sm:px-8 py-2.5 sm:py-3 rounded-lg font-black text-xs sm:text-sm uppercase tracking-wide transition-all flex items-center shadow-[0_0_20px_rgba(147,51,234,0.2)] hover:shadow-[0_0_20px_rgba(147,51,234,0.4)]"
                         >
                             Enter League <ArrowRight className="w-4 h-4 ml-2" />
                         </button>

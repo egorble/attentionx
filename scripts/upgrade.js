@@ -19,7 +19,7 @@ const NETWORKS = {
     }
 };
 
-const VALID_CONTRACTS = ["UnicornX_NFT", "PackOpener", "TournamentManager", "MarketplaceV2"];
+const VALID_CONTRACTS = ["AttentionX_NFT", "PackNFT", "PackOpener", "TournamentManager", "MarketplaceV2"];
 
 async function main() {
     const networkArg = process.argv[2];
@@ -113,12 +113,12 @@ async function main() {
     console.log(`   ✅ Upgrade confirmed in block ${receipt.blockNumber}`);
     console.log("");
 
-    // Step 2b: For UnicornX_NFT — re-initialize startups mapping to prevent rarity corruption
+    // Step 2b: For AttentionX_NFT — re-initialize startups mapping to prevent rarity corruption
     // The startups mapping stores rarity/multiplier data used by mergeCards() and getCardInfo().
     // After a UUPS upgrade, storage layout changes can corrupt this mapping, causing:
     //   - RarityMismatch errors during merge (cards show correct rarity in UI but differ on-chain)
     //   - Wrong rarity on merged cards (e.g. Common instead of Rare)
-    if (contractName === "UnicornX_NFT") {
+    if (contractName === "AttentionX_NFT") {
         console.log("📦 Step 2b: Re-initializing startups data (NFT-specific)...");
         try {
             const reinitTx = await proxyContract.reinitializeStartups();

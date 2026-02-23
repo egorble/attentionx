@@ -9,15 +9,15 @@ import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-// Interface for UnicornX_NFT lock check
-interface IUnicornX_NFT {
+// Interface for AttentionX_NFT lock check
+interface IAttentionX_NFT {
     function isLocked(uint256 tokenId) external view returns (bool);
 }
 
 /**
  * @title MarketplaceV2
- * @author UnicornX Team
- * @notice NFT Marketplace with listings, bids, auctions, and sale history (UUPS upgradeable)
+ * @author AttentionX Team
+ * @notice NFT Marketplace supporting card NFTs and pack NFTs — listings, bids, auctions, sale history (UUPS upgradeable)
  */
 contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable, UUPSUpgradeable {
 
@@ -35,6 +35,7 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
         uint256 price;
         uint256 listedAt;
         bool active;
+        address nftAddr;  // which NFT contract (card or pack)
     }
 
     struct Bid {
@@ -44,6 +45,7 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
         uint256 amount;
         uint256 expiration;
         bool active;
+        address nftAddr;
     }
 
     struct Auction {
@@ -57,6 +59,7 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
         uint256 startTime;
         uint256 endTime;
         AuctionStatus status;
+        address nftAddr;
     }
 
     struct Sale {
@@ -79,9 +82,9 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
 
     // ============ State Variables ============
 
-    // Changed from immutable to storage for proxy compatibility
-    IERC721 public nftContract;
-    IUnicornX_NFT public unicornXNFT;
+    IERC721 public nftContract;        // AttentionX_NFT (cards)
+    IAttentionX_NFT public attentionXNFT;
+    IERC721 public packNftContract;    // PackNFT (packs)
 
     address public constant SECOND_ADMIN = 0xB36402e87a86206D3a114a98B53f31362291fe1B;
 
@@ -95,21 +98,21 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
 
     // Listings
     mapping(uint256 => Listing) public listings;
-    mapping(uint256 => uint256) public tokenToListing;
+    mapping(address => mapping(uint256 => uint256)) public nftTokenToListing;  // nftAddr => tokenId => listingId
     mapping(address => uint256[]) private _userListings;
     uint256[] private _activeListingIds;
     mapping(uint256 => uint256) private _listingIndex;
 
     // Bids
     mapping(uint256 => Bid) public bids;
-    mapping(uint256 => uint256[]) private _tokenBids;
+    mapping(address => mapping(uint256 => uint256[])) private _nftTokenBids;  // nftAddr => tokenId => bidIds
     mapping(address => uint256[]) private _userBids;
     uint256[] private _activeBidIds;
     mapping(uint256 => uint256) private _bidIndex;
 
     // Auctions
     mapping(uint256 => Auction) public auctions;
-    mapping(uint256 => uint256) public tokenToAuction;
+    mapping(address => mapping(uint256 => uint256)) public nftTokenToAuction;  // nftAddr => tokenId => auctionId
     mapping(address => uint256[]) private _userAuctions;
     uint256[] private _activeAuctionIds;
     mapping(uint256 => uint256) private _auctionIndex;
@@ -125,6 +128,9 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
     // Global stats
     uint256 public totalVolume;
     uint256 public totalSalesCount;
+
+    // Allowed NFT contracts
+    mapping(address => bool) public allowedNFTs;
 
     // ============ Events ============
 
@@ -168,11 +174,17 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
     error InvalidDuration();
     error TokenInAuction();
     error NotAdmin();
+    error NFTNotAllowed();
 
     // ============ Modifiers ============
 
     modifier onlyAdmin() {
         if (msg.sender != owner() && msg.sender != SECOND_ADMIN) revert NotAdmin();
+        _;
+    }
+
+    modifier onlyAllowedNFT(address nftAddr) {
+        if (!allowedNFTs[nftAddr]) revert NFTNotAllowed();
         _;
     }
 
@@ -193,7 +205,8 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
         __UUPSUpgradeable_init();
 
         nftContract = IERC721(_nftContract);
-        unicornXNFT = IUnicornX_NFT(_nftContract);
+        attentionXNFT = IAttentionX_NFT(_nftContract);
+        allowedNFTs[_nftContract] = true;
         feeRecipient = initialOwner;
         marketplaceFee = 0;
         _nextListingId = 1;
@@ -206,16 +219,34 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
 
     function _authorizeUpgrade(address newImplementation) internal override onlyAdmin {}
 
+    // ============ Internal: is token locked? ============
+
+    function _isTokenLocked(address nftAddr, uint256 tokenId) internal view returns (bool) {
+        // Only card NFTs can be locked (in tournaments). Pack NFTs are never locked.
+        if (nftAddr == address(nftContract)) {
+            return attentionXNFT.isLocked(tokenId);
+        }
+        return false;
+    }
+
     // ============ LISTINGS ============
 
     function listCard(uint256 tokenId, uint256 price) external whenNotPaused nonReentrant returns (uint256) {
-        if (price == 0) revert ZeroPrice();
-        if (nftContract.ownerOf(tokenId) != msg.sender) revert NotTokenOwner();
-        if (unicornXNFT.isLocked(tokenId)) revert TokenIsLocked();
-        if (tokenToListing[tokenId] != 0) revert TokenAlreadyListed();
-        if (tokenToAuction[tokenId] != 0) revert TokenInAuction();
+        return _listToken(address(nftContract), tokenId, price);
+    }
 
-        nftContract.transferFrom(msg.sender, address(this), tokenId);
+    function listPack(uint256 tokenId, uint256 price) external whenNotPaused nonReentrant returns (uint256) {
+        return _listToken(address(packNftContract), tokenId, price);
+    }
+
+    function _listToken(address nftAddr, uint256 tokenId, uint256 price) internal onlyAllowedNFT(nftAddr) returns (uint256) {
+        if (price == 0) revert ZeroPrice();
+        if (IERC721(nftAddr).ownerOf(tokenId) != msg.sender) revert NotTokenOwner();
+        if (_isTokenLocked(nftAddr, tokenId)) revert TokenIsLocked();
+        if (nftTokenToListing[nftAddr][tokenId] != 0) revert TokenAlreadyListed();
+        if (nftTokenToAuction[nftAddr][tokenId] != 0) revert TokenInAuction();
+
+        IERC721(nftAddr).transferFrom(msg.sender, address(this), tokenId);
 
         uint256 listingId = _nextListingId++;
         listings[listingId] = Listing({
@@ -224,10 +255,11 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
             tokenId: tokenId,
             price: price,
             listedAt: block.timestamp,
-            active: true
+            active: true,
+            nftAddr: nftAddr
         });
 
-        tokenToListing[tokenId] = listingId;
+        nftTokenToListing[nftAddr][tokenId] = listingId;
         _userListings[msg.sender].push(listingId);
         _activeListingIds.push(listingId);
         _listingIndex[listingId] = _activeListingIds.length - 1;
@@ -244,17 +276,18 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
         uint256 tokenId = listing.tokenId;
         address seller = listing.seller;
         uint256 price = listing.price;
+        address nftAddr = listing.nftAddr;
 
         listing.active = false;
-        tokenToListing[tokenId] = 0;
+        nftTokenToListing[nftAddr][tokenId] = 0;
         _removeFromActiveListings(listingId);
 
-        _cancelTokenBids(tokenId);
+        _cancelTokenBids(nftAddr, tokenId);
 
         _processSale(tokenId, seller, msg.sender, price, SaleType.LISTING);
 
-        nftContract.transferFrom(address(this), msg.sender, tokenId);
-        _distributePayment(tokenId, seller, price);
+        IERC721(nftAddr).transferFrom(address(this), msg.sender, tokenId);
+        _distributePayment(nftAddr, tokenId, seller, price);
 
         if (msg.value > price) {
             (bool refundSuccess, ) = payable(msg.sender).call{value: msg.value - price}("");
@@ -270,12 +303,13 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
         if (listing.seller != msg.sender) revert NotListingSeller();
 
         uint256 tokenId = listing.tokenId;
+        address nftAddr = listing.nftAddr;
 
         listing.active = false;
-        tokenToListing[tokenId] = 0;
+        nftTokenToListing[nftAddr][tokenId] = 0;
         _removeFromActiveListings(listingId);
 
-        nftContract.transferFrom(address(this), msg.sender, tokenId);
+        IERC721(nftAddr).transferFrom(address(this), msg.sender, tokenId);
 
         emit ListingCancelled(listingId, msg.sender, tokenId);
     }
@@ -283,9 +317,17 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
     // ============ BIDS ============
 
     function placeBid(uint256 tokenId, uint256 expiration) external payable whenNotPaused nonReentrant returns (uint256) {
+        return _placeBid(address(nftContract), tokenId, expiration);
+    }
+
+    function placeBidOnPack(uint256 tokenId, uint256 expiration) external payable whenNotPaused nonReentrant returns (uint256) {
+        return _placeBid(address(packNftContract), tokenId, expiration);
+    }
+
+    function _placeBid(address nftAddr, uint256 tokenId, uint256 expiration) internal onlyAllowedNFT(nftAddr) returns (uint256) {
         if (msg.value == 0) revert ZeroPrice();
         if (expiration <= block.timestamp) revert BidExpired();
-        if (unicornXNFT.isLocked(tokenId)) revert TokenIsLocked();
+        if (_isTokenLocked(nftAddr, tokenId)) revert TokenIsLocked();
 
         uint256 bidId = _nextBidId++;
         bids[bidId] = Bid({
@@ -294,10 +336,11 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
             tokenId: tokenId,
             amount: msg.value,
             expiration: expiration,
-            active: true
+            active: true,
+            nftAddr: nftAddr
         });
 
-        _tokenBids[tokenId].push(bidId);
+        _nftTokenBids[nftAddr][tokenId].push(bidId);
         _userBids[msg.sender].push(bidId);
         _activeBidIds.push(bidId);
         _bidIndex[bidId] = _activeBidIds.length - 1;
@@ -326,9 +369,10 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
         if (block.timestamp > bid.expiration) revert BidExpired();
 
         uint256 tokenId = bid.tokenId;
-        address tokenOwner = nftContract.ownerOf(tokenId);
+        address nftAddr = bid.nftAddr;
+        address tokenOwner = IERC721(nftAddr).ownerOf(tokenId);
         if (tokenOwner != msg.sender) revert NotTokenOwner();
-        if (unicornXNFT.isLocked(tokenId)) revert TokenIsLocked();
+        if (_isTokenLocked(nftAddr, tokenId)) revert TokenIsLocked();
 
         address bidder = bid.bidder;
         uint256 amount = bid.amount;
@@ -336,19 +380,19 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
         bid.active = false;
         _removeFromActiveBids(bidId);
 
-        uint256 listingId = tokenToListing[tokenId];
+        uint256 listingId = nftTokenToListing[nftAddr][tokenId];
         if (listingId != 0) {
             listings[listingId].active = false;
-            tokenToListing[tokenId] = 0;
+            nftTokenToListing[nftAddr][tokenId] = 0;
             _removeFromActiveListings(listingId);
         }
 
-        _cancelTokenBids(tokenId);
+        _cancelTokenBids(nftAddr, tokenId);
 
         _processSale(tokenId, msg.sender, bidder, amount, SaleType.BID_ACCEPTED);
 
-        nftContract.transferFrom(msg.sender, bidder, tokenId);
-        _distributePayment(tokenId, msg.sender, amount);
+        IERC721(nftAddr).transferFrom(msg.sender, bidder, tokenId);
+        _distributePayment(nftAddr, tokenId, msg.sender, amount);
 
         emit BidAccepted(bidId, msg.sender, bidder, tokenId, amount);
     }
@@ -361,14 +405,33 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
         uint256 reservePrice,
         uint256 duration
     ) external whenNotPaused nonReentrant returns (uint256) {
+        return _createAuction(address(nftContract), tokenId, startPrice, reservePrice, duration);
+    }
+
+    function createPackAuction(
+        uint256 tokenId,
+        uint256 startPrice,
+        uint256 reservePrice,
+        uint256 duration
+    ) external whenNotPaused nonReentrant returns (uint256) {
+        return _createAuction(address(packNftContract), tokenId, startPrice, reservePrice, duration);
+    }
+
+    function _createAuction(
+        address nftAddr,
+        uint256 tokenId,
+        uint256 startPrice,
+        uint256 reservePrice,
+        uint256 duration
+    ) internal onlyAllowedNFT(nftAddr) returns (uint256) {
         if (startPrice == 0) revert ZeroPrice();
         if (duration < 1 hours || duration > 30 days) revert InvalidDuration();
-        if (nftContract.ownerOf(tokenId) != msg.sender) revert NotTokenOwner();
-        if (unicornXNFT.isLocked(tokenId)) revert TokenIsLocked();
-        if (tokenToListing[tokenId] != 0) revert TokenAlreadyListed();
-        if (tokenToAuction[tokenId] != 0) revert TokenInAuction();
+        if (IERC721(nftAddr).ownerOf(tokenId) != msg.sender) revert NotTokenOwner();
+        if (_isTokenLocked(nftAddr, tokenId)) revert TokenIsLocked();
+        if (nftTokenToListing[nftAddr][tokenId] != 0) revert TokenAlreadyListed();
+        if (nftTokenToAuction[nftAddr][tokenId] != 0) revert TokenInAuction();
 
-        nftContract.transferFrom(msg.sender, address(this), tokenId);
+        IERC721(nftAddr).transferFrom(msg.sender, address(this), tokenId);
 
         uint256 auctionId = _nextAuctionId++;
         uint256 endTime = block.timestamp + duration;
@@ -383,10 +446,11 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
             highestBidder: address(0),
             startTime: block.timestamp,
             endTime: endTime,
-            status: AuctionStatus.ACTIVE
+            status: AuctionStatus.ACTIVE,
+            nftAddr: nftAddr
         });
 
-        tokenToAuction[tokenId] = auctionId;
+        nftTokenToAuction[nftAddr][tokenId] = auctionId;
         _userAuctions[msg.sender].push(auctionId);
         _activeAuctionIds.push(auctionId);
         _auctionIndex[auctionId] = _activeAuctionIds.length - 1;
@@ -423,18 +487,20 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
         if (auction.status != AuctionStatus.ACTIVE) revert AuctionNotActive();
         if (block.timestamp < auction.endTime) revert AuctionNotEnded();
 
+        address nftAddr = auction.nftAddr;
+
         auction.status = AuctionStatus.FINALIZED;
-        tokenToAuction[auction.tokenId] = 0;
+        nftTokenToAuction[nftAddr][auction.tokenId] = 0;
         _removeFromActiveAuctions(auctionId);
 
         if (auction.highestBidder != address(0) && auction.highestBid >= auction.reservePrice) {
             _processSale(auction.tokenId, auction.seller, auction.highestBidder, auction.highestBid, SaleType.AUCTION);
-            nftContract.transferFrom(address(this), auction.highestBidder, auction.tokenId);
-            _distributePayment(auction.tokenId, auction.seller, auction.highestBid);
+            IERC721(nftAddr).transferFrom(address(this), auction.highestBidder, auction.tokenId);
+            _distributePayment(nftAddr, auction.tokenId, auction.seller, auction.highestBid);
 
             emit AuctionFinalized(auctionId, auction.highestBidder, auction.highestBid);
         } else {
-            nftContract.transferFrom(address(this), auction.seller, auction.tokenId);
+            IERC721(nftAddr).transferFrom(address(this), auction.seller, auction.tokenId);
 
             if (auction.highestBidder != address(0)) {
                 (bool success, ) = payable(auction.highestBidder).call{value: auction.highestBid}("");
@@ -451,11 +517,13 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
         if (auction.seller != msg.sender) revert NotAuctionSeller();
         if (auction.highestBidder != address(0)) revert AuctionHasBids();
 
+        address nftAddr = auction.nftAddr;
+
         auction.status = AuctionStatus.CANCELLED;
-        tokenToAuction[auction.tokenId] = 0;
+        nftTokenToAuction[nftAddr][auction.tokenId] = 0;
         _removeFromActiveAuctions(auctionId);
 
-        nftContract.transferFrom(address(this), msg.sender, auction.tokenId);
+        IERC721(nftAddr).transferFrom(address(this), msg.sender, auction.tokenId);
 
         emit AuctionCancelled(auctionId, msg.sender, auction.tokenId);
     }
@@ -480,7 +548,11 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
     }
 
     function isTokenListed(uint256 tokenId) external view returns (bool) {
-        return tokenToListing[tokenId] != 0;
+        return nftTokenToListing[address(nftContract)][tokenId] != 0;
+    }
+
+    function isPackListed(uint256 tokenId) external view returns (bool) {
+        return nftTokenToListing[address(packNftContract)][tokenId] != 0;
     }
 
     function getListingsBySeller(address seller) external view returns (Listing[] memory) {
@@ -518,7 +590,15 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
     }
 
     function getBidsOnToken(uint256 tokenId) external view returns (Bid[] memory) {
-        uint256[] memory ids = _tokenBids[tokenId];
+        return _getActiveBidsFor(address(nftContract), tokenId);
+    }
+
+    function getBidsOnPack(uint256 tokenId) external view returns (Bid[] memory) {
+        return _getActiveBidsFor(address(packNftContract), tokenId);
+    }
+
+    function _getActiveBidsFor(address nftAddr, uint256 tokenId) internal view returns (Bid[] memory) {
+        uint256[] memory ids = _nftTokenBids[nftAddr][tokenId];
         uint256 activeCount = 0;
         for (uint256 i = 0; i < ids.length; i++) {
             if (bids[ids[i]].active && bids[ids[i]].expiration > block.timestamp) activeCount++;
@@ -553,26 +633,7 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
     }
 
     function getActiveBidsForToken(uint256 tokenId) external view returns (Bid[] memory) {
-        uint256[] memory bidIds = _tokenBids[tokenId];
-
-        uint256 activeCount = 0;
-        for (uint256 i = 0; i < bidIds.length; i++) {
-            if (bids[bidIds[i]].active && bids[bidIds[i]].expiration > block.timestamp) {
-                activeCount++;
-            }
-        }
-
-        Bid[] memory result = new Bid[](activeCount);
-        uint256 idx = 0;
-
-        for (uint256 i = 0; i < bidIds.length; i++) {
-            Bid storage bid = bids[bidIds[i]];
-            if (bid.active && bid.expiration > block.timestamp) {
-                result[idx++] = bid;
-            }
-        }
-
-        return result;
+        return _getActiveBidsFor(address(nftContract), tokenId);
     }
 
     function getTokenSaleHistory(uint256 tokenId) external view returns (Sale[] memory) {
@@ -593,6 +654,11 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
     }
 
     // ============ ADMIN FUNCTIONS ============
+
+    function setPackNftContract(address _packNftContract) external onlyAdmin {
+        packNftContract = IERC721(_packNftContract);
+        allowedNFTs[_packNftContract] = true;
+    }
 
     function setMarketplaceFee(uint256 newFee) external onlyAdmin {
         if (newFee > 500) revert InvalidFee();
@@ -637,11 +703,11 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
         totalSalesCount++;
     }
 
-    function _distributePayment(uint256 tokenId, address seller, uint256 price) internal {
+    function _distributePayment(address nftAddr, uint256 tokenId, address seller, uint256 price) internal {
         uint256 royaltyAmount = 0;
         address royaltyReceiver;
 
-        try ERC2981(address(nftContract)).royaltyInfo(tokenId, price) returns (address receiver, uint256 amount) {
+        try ERC2981(nftAddr).royaltyInfo(tokenId, price) returns (address receiver, uint256 amount) {
             royaltyReceiver = receiver;
             royaltyAmount = amount;
         } catch {}
@@ -663,8 +729,8 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
         if (!sellerSuccess) revert TransferFailed();
     }
 
-    function _cancelTokenBids(uint256 tokenId) internal {
-        uint256[] storage bidIds = _tokenBids[tokenId];
+    function _cancelTokenBids(address nftAddr, uint256 tokenId) internal {
+        uint256[] storage bidIds = _nftTokenBids[nftAddr][tokenId];
         for (uint256 i = 0; i < bidIds.length; i++) {
             Bid storage bid = bids[bidIds[i]];
             if (bid.active) {

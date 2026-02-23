@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-interface IUnicornX_NFT {
+interface IAttentionX_NFT {
     function ownerOf(uint256 tokenId) external view returns (address);
     function batchLock(uint256[] calldata tokenIds) external;
     function batchUnlock(uint256[] calldata tokenIds) external;
@@ -24,7 +24,7 @@ interface IUnicornX_NFT {
 
 /**
  * @title TournamentManager
- * @author UnicornX Team
+ * @author AttentionX Team
  * @notice Manage weekly tournaments with registration period, NFT freeze, and prize distribution (UUPS upgradeable)
  */
 contract TournamentManager is Initializable, Ownable2StepUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable, UUPSUpgradeable {
@@ -66,7 +66,7 @@ contract TournamentManager is Initializable, Ownable2StepUpgradeable, PausableUp
 
     // ============ State Variables ============
 
-    IUnicornX_NFT public nftContract;
+    IAttentionX_NFT public nftContract;
     address public packOpener;
     uint256 public nextTournamentId;
 
@@ -143,7 +143,7 @@ contract TournamentManager is Initializable, Ownable2StepUpgradeable, PausableUp
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
 
-        nftContract = IUnicornX_NFT(_nftContract);
+        nftContract = IAttentionX_NFT(_nftContract);
         nextTournamentId = 1;
     }
 

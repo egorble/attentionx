@@ -222,10 +222,10 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({ data, cardData, onClo
                             <div className="space-y-3">
                                 {tokenId !== undefined && (
                                     <a
-                                        href={`${getActiveNetwork().explorerUrl}/token/${getActiveContracts().UnicornX_NFT}/instance/${tokenId}`}
+                                        href={`${getActiveNetwork().explorerUrl}/token/${getActiveContracts().AttentionX_NFT}/instance/${tokenId}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="w-full py-3.5 px-4 bg-gray-900 dark:bg-white text-white dark:text-black rounded-lg font-bold text-sm hover:bg-yc-purple dark:hover:bg-yc-purple dark:hover:text-white transition-colors flex items-center justify-center"
+                                        className="w-full py-3.5 px-4 bg-yc-purple text-white rounded-lg font-bold text-sm hover:bg-yc-purple/80 transition-colors flex items-center justify-center"
                                     >
                                         <ExternalLink className="w-4 h-4 mr-2" /> View on Explorer
                                     </a>

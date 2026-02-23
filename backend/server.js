@@ -31,7 +31,7 @@ const deploymentPath = path.join(__dirname, "..", network.deploymentFile);
 let NFT_CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
 try {
     const deployment = JSON.parse(fs.readFileSync(deploymentPath, "utf8"));
-    NFT_CONTRACT_ADDRESS = deployment.proxies.UnicornX_NFT;
+    NFT_CONTRACT_ADDRESS = deployment.proxies.AttentionX_NFT;
 } catch (e) {
     console.error(`⚠️  Could not read ${network.deploymentFile}: ${e.message}`);
 }
@@ -127,7 +127,7 @@ app.use('/metadata/images', express.static(path.join(__dirname, 'public', 'image
 // ============ Token Cache ============
 
 const tokenCache = new Map();
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 5 * 60 * 1000;       // 5 minutes (was 1h — reduced so isLocked updates propagate faster)
 const CACHE_TTL_NOT_FOUND = 30 * 1000;
 
 function getCachedToken(tokenId) {

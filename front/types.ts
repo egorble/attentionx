@@ -55,6 +55,7 @@ export interface CardData {
   edition: number;
   fundraising?: FundraisingData | null; // Optional fundraising data from metadata
   description?: string; // Optional description from metadata
+  isPack?: boolean; // True for PackNFT listings (not AttentionX_NFT cards)
 }
 
 // Legacy CardData for mock (deprecated)

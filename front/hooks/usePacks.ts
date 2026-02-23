@@ -1,7 +1,7 @@
-// Pack opener contract hook
+// Pack opener contract hook — two-step: buy Pack NFT, then open it
 import { useState, useCallback } from 'react';
 import { ethers } from 'ethers';
-import { getPackOpenerContract, getNFTContract, STARTUPS } from '../lib/contracts';
+import { getPackOpenerContract, getPackNFTContract, getNFTContract, STARTUPS } from '../lib/contracts';
 import { CardData, Rarity } from '../types';
 import { blockchainCache, CacheKeys, CacheTTL } from '../lib/cache';
 import { metadataUrl } from '../lib/api';
@@ -61,10 +61,8 @@ export function usePacks() {
     const getPackPrice = useCallback(async (): Promise<bigint> => {
         const key = CacheKeys.packPrice();
 
-        // Try cache first
         const cached = blockchainCache.get<bigint>(key);
         if (cached !== undefined) {
-            // Refresh in background if stale
             if (blockchainCache.isStale(key, CacheTTL.DEFAULT)) {
                 blockchainCache.fetchInBackground(key, async () => {
                     const contract = getPackOpenerContract();
@@ -74,7 +72,6 @@ export function usePacks() {
             return cached;
         }
 
-        // Fetch fresh
         return blockchainCache.getOrFetch(key, async () => {
             const contract = getPackOpenerContract();
             return await contract.currentPackPrice();
@@ -85,10 +82,8 @@ export function usePacks() {
     const getPacksSold = useCallback(async (): Promise<number> => {
         const key = CacheKeys.packsSold();
 
-        // Try cache first
         const cached = blockchainCache.get<number>(key);
         if (cached !== undefined) {
-            // Refresh in background if stale
             if (blockchainCache.isStale(key, CacheTTL.SHORT)) {
                 blockchainCache.fetchInBackground(key, async () => {
                     const contract = getPackOpenerContract();
@@ -98,23 +93,46 @@ export function usePacks() {
             return cached;
         }
 
-        // Fetch fresh
         return blockchainCache.getOrFetch(key, async () => {
             const contract = getPackOpenerContract();
             return Number(await contract.packsSold());
         }, CacheTTL.SHORT);
     }, []);
 
-    // Buy AND Open pack in one transaction - returns 5 cards with metadata
-    const buyAndOpenPack = useCallback(async (
-        signer: ethers.Signer
-    ): Promise<{ success: boolean; cards?: CardData[]; error?: string }> => {
+    // Get user's owned (unopened) pack NFT token IDs — cache first, refresh in background
+    const getUserPacks = useCallback(async (address: string): Promise<number[]> => {
+        const key = CacheKeys.userUnopenedPacks(address);
+
+        const cached = blockchainCache.get<number[]>(key);
+        if (cached !== undefined) {
+            // Refresh in background if stale
+            if (blockchainCache.isStale(key, CacheTTL.DEFAULT)) {
+                blockchainCache.fetchInBackground(key, async () => {
+                    const packNft = getPackNFTContract();
+                    const tokenIds = await packNft.getOwnedTokens(address);
+                    return tokenIds.map((id: bigint) => Number(id));
+                });
+            }
+            return cached;
+        }
+
+        return blockchainCache.getOrFetch(key, async () => {
+            const packNft = getPackNFTContract();
+            const tokenIds = await packNft.getOwnedTokens(address);
+            return tokenIds.map((id: bigint) => Number(id));
+        }, CacheTTL.DEFAULT);
+    }, []);
+
+    // Step 1: Buy pack(s) — mints Pack NFT(s) to buyer
+    const buyPack = useCallback(async (
+        signer: ethers.Signer,
+        count: number = 1
+    ): Promise<{ success: boolean; packTokenIds?: number[]; error?: string }> => {
         setIsLoading(true);
         setError(null);
 
         try {
             const packContract = getPackOpenerContract(signer);
-            const nftContract = getNFTContract(signer);
             const signerAddress = await signer.getAddress();
 
             // Get referrer from localStorage or URL params
@@ -126,7 +144,6 @@ export function usePacks() {
                     referrer = ref.toLowerCase();
                 }
             }
-            // Don't refer yourself
             if (referrer && referrer.toLowerCase() === signerAddress.toLowerCase()) {
                 referrer = null;
             }
@@ -134,11 +151,88 @@ export function usePacks() {
             const referrerAddress = referrer || ethers.ZeroAddress;
             const price = await packContract.currentPackPrice();
 
+            let packTokenIds: number[];
 
-            // Single transaction: buy, set referrer, and open pack
-            // Explicit gas limit — batchMint of 5 ERC721Enumerable NFTs + fund distribution uses ~3.1M gas
-            const tx = await packContract.buyAndOpenPack(referrerAddress, {
-                value: BigInt(price.toString()),
+            if (count === 1) {
+                const tx = await packContract.buyPack(referrerAddress, {
+                    value: BigInt(price.toString()),
+                    gasLimit: 3_000_000n
+                });
+                const receipt = await tx.wait();
+
+                // Parse PackMinted events from PackNFT to get token ID
+                const packNft = getPackNFTContract(signer);
+                const mintedIds: number[] = [];
+                for (const log of receipt.logs) {
+                    try {
+                        const parsed = packNft.interface.parseLog(log);
+                        if (parsed?.name === 'PackMinted') {
+                            mintedIds.push(Number(parsed.args.tokenId));
+                        }
+                    } catch { }
+                }
+                // Fallback: parse PackPurchased event
+                if (mintedIds.length === 0) {
+                    for (const log of receipt.logs) {
+                        try {
+                            const parsed = packContract.interface.parseLog(log);
+                            if (parsed?.name === 'PackPurchased') {
+                                mintedIds.push(Number(parsed.args.packTokenId));
+                            }
+                        } catch { }
+                    }
+                }
+                packTokenIds = mintedIds;
+            } else {
+                const totalPrice = BigInt(price.toString()) * BigInt(count);
+                const tx = await packContract.buyMultiplePacks(referrerAddress, count, {
+                    value: totalPrice,
+                    gasLimit: 2_000_000n * BigInt(count) + 1_000_000n
+                });
+                const receipt = await tx.wait();
+
+                const packNft = getPackNFTContract(signer);
+                const mintedIds: number[] = [];
+                for (const log of receipt.logs) {
+                    try {
+                        const parsed = packNft.interface.parseLog(log);
+                        if (parsed?.name === 'PackMinted') {
+                            mintedIds.push(Number(parsed.args.tokenId));
+                        }
+                    } catch { }
+                }
+                packTokenIds = mintedIds;
+            }
+
+            // Invalidate cache
+            blockchainCache.invalidate(CacheKeys.packsSold());
+            blockchainCache.invalidatePrefix(`pack:user:${signerAddress}`);
+            blockchainCache.invalidate(CacheKeys.userUnopenedPacks(signerAddress));
+
+            return { success: true, packTokenIds };
+        } catch (e: any) {
+            const msg = e.reason || e.message || 'Failed to buy pack';
+            setError(msg);
+            return { success: false, error: msg };
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // Step 2: Open a pack NFT — burns it and mints 5 card NFTs
+    const openPack = useCallback(async (
+        signer: ethers.Signer,
+        packTokenId: number
+    ): Promise<{ success: boolean; cards?: CardData[]; error?: string }> => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const packContract = getPackOpenerContract(signer);
+            const nftContract = getNFTContract(signer);
+            const signerAddress = await signer.getAddress();
+
+            const tx = await packContract.openPack(packTokenId, {
                 gasLimit: 10_000_000n
             });
 
@@ -159,12 +253,11 @@ export function usePacks() {
                 } catch { }
             }
 
-
-            // Invalidate cache after purchase
-            blockchainCache.invalidate(CacheKeys.packsSold());
+            // Invalidate cache
             blockchainCache.invalidatePrefix(`nft:owned:${signerAddress}`);
             blockchainCache.invalidatePrefix(`nft:cards:${signerAddress}`);
             blockchainCache.invalidatePrefix(`pack:user:${signerAddress}`);
+            blockchainCache.invalidate(CacheKeys.userUnopenedPacks(signerAddress));
 
             // Fetch metadata for all cards in parallel, fallback to event data
             const metadataResults = await Promise.all(
@@ -190,125 +283,11 @@ export function usePacks() {
 
             return { success: true, cards };
         } catch (e: any) {
-            const msg = e.reason || e.message || 'Failed to buy pack';
+            const msg = e.reason || e.message || 'Failed to open pack';
             setError(msg);
             return { success: false, error: msg };
         } finally {
             setIsLoading(false);
-        }
-    }, []);
-
-    // Buy AND Open multiple packs (up to 10) in one transaction
-    const buyAndOpenMultiplePacks = useCallback(async (
-        signer: ethers.Signer,
-        count: number
-    ): Promise<{ success: boolean; cards?: CardData[]; error?: string }> => {
-        setIsLoading(true);
-        setError(null);
-
-        try {
-            const packContract = getPackOpenerContract(signer);
-            const nftContract = getNFTContract(signer);
-            const signerAddress = await signer.getAddress();
-
-            // Get referrer
-            let referrer = localStorage.getItem(`attentionx_referrer_${getActiveNetworkId()}`);
-            if (!referrer) {
-                const params = new URLSearchParams(window.location.search);
-                const ref = params.get('ref');
-                if (ref && ref.startsWith('0x') && ref.length === 42) {
-                    referrer = ref.toLowerCase();
-                }
-            }
-            if (referrer && referrer.toLowerCase() === signerAddress.toLowerCase()) {
-                referrer = null;
-            }
-
-            const referrerAddress = referrer || ethers.ZeroAddress;
-            const price = await packContract.currentPackPrice();
-            const totalPrice = BigInt(price.toString()) * BigInt(count);
-
-
-            // Explicit gas limit — scales with pack count (each pack mints 5 NFTs)
-            const gasPerPack = 4_000_000n;
-            const tx = await packContract.buyAndOpenMultiplePacks(referrerAddress, count, {
-                value: totalPrice,
-                gasLimit: gasPerPack * BigInt(count) + 1_000_000n
-            });
-
-            const receipt = await tx.wait();
-
-            // Parse CardMinted events to get all token IDs + startup data
-            const mintedTokens: { tokenId: number; startupId: number; edition: number }[] = [];
-            for (const log of receipt.logs) {
-                try {
-                    const parsed = nftContract.interface.parseLog(log);
-                    if (parsed?.name === 'CardMinted') {
-                        mintedTokens.push({
-                            tokenId: Number(parsed.args.tokenId),
-                            startupId: Number(parsed.args.startupId),
-                            edition: Number(parsed.args.edition),
-                        });
-                    }
-                } catch { }
-            }
-
-
-            // Invalidate cache
-            blockchainCache.invalidate(CacheKeys.packsSold());
-            blockchainCache.invalidatePrefix(`nft:owned:${signerAddress}`);
-            blockchainCache.invalidatePrefix(`nft:cards:${signerAddress}`);
-            blockchainCache.invalidatePrefix(`pack:user:${signerAddress}`);
-
-            // Fetch metadata for all cards in parallel, fallback to event data
-            const metadataResults = await Promise.all(
-                mintedTokens.map(mt => fetchCardMetadata(mt.tokenId))
-            );
-            const cards: CardData[] = mintedTokens.map((mt, i) => {
-                const card = metadataResults[i];
-                if (card) return card;
-                const startup = STARTUPS[mt.startupId];
-                return {
-                    tokenId: mt.tokenId,
-                    startupId: mt.startupId,
-                    name: startup?.name || 'Unknown',
-                    rarity: RARITY_STRING_MAP[startup?.rarity || 'Common'] || Rarity.COMMON,
-                    multiplier: startup?.multiplier || 1,
-                    isLocked: false,
-                    image: `/images/${mt.startupId}.png`,
-                    edition: mt.edition,
-                };
-            });
-            cards.forEach(card => blockchainCache.set(CacheKeys.cardMetadata(card.tokenId), card));
-
-            return { success: true, cards };
-        } catch (e: any) {
-            const msg = e.reason || e.message || 'Failed to buy packs';
-            setError(msg);
-            return { success: false, error: msg };
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
-
-    // Get user's unopened packs count
-    const getUnopenedPackCount = useCallback(async (address: string): Promise<number> => {
-        try {
-            const contract = getPackOpenerContract();
-            return Number(await contract.getUnopenedPackCount(address));
-        } catch {
-            return 0;
-        }
-    }, []);
-
-    // Get user's pack history
-    const getUserPacks = useCallback(async (address: string): Promise<number[]> => {
-        try {
-            const contract = getPackOpenerContract();
-            const packs = await contract.getUserPacks(address);
-            return packs.map((p: bigint) => Number(p));
-        } catch {
-            return [];
         }
     }, []);
 
@@ -317,9 +296,8 @@ export function usePacks() {
         error,
         getPackPrice,
         getPacksSold,
-        buyAndOpenPack,
-        buyAndOpenMultiplePacks,
-        getUnopenedPackCount,
         getUserPacks,
+        buyPack,
+        openPack,
     };
 }

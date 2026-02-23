@@ -7,8 +7,15 @@ import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-interface IUnicornX_NFT {
+interface IAttentionX_NFT {
     function batchMint(address to, uint256[5] calldata startupIds) external returns (uint256[5] memory);
+    function totalSupply() external view returns (uint256);
+}
+
+interface IPackNFT {
+    function mint(address to) external returns (uint256);
+    function burn(uint256 tokenId) external;
+    function ownerOf(uint256 tokenId) external view returns (address);
     function totalSupply() external view returns (uint256);
 }
 
@@ -18,8 +25,8 @@ interface ITournamentManager {
 
 /**
  * @title PackOpener
- * @author UnicornX Team
- * @notice Pack purchases with referral system (UUPS upgradeable)
+ * @author AttentionX Team
+ * @notice Two-step pack system: buy → receive Pack NFT, open → burn Pack NFT + mint 5 cards (UUPS upgradeable)
  */
 contract PackOpener is Initializable, Ownable2StepUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable, UUPSUpgradeable {
 
@@ -49,7 +56,8 @@ contract PackOpener is Initializable, Ownable2StepUpgradeable, PausableUpgradeab
 
     // ============ State Variables ============
 
-    IUnicornX_NFT public nftContract;
+    IAttentionX_NFT public nftContract;
+    IPackNFT public packNftContract;
     uint256 public packsSold;
     address public treasury;
     ITournamentManager public tournamentManager;
@@ -61,22 +69,10 @@ contract PackOpener is Initializable, Ownable2StepUpgradeable, PausableUpgradeab
     mapping(address => uint256) public referralEarnings;
     mapping(address => uint256) public referralCount;
 
-    // ============ Structs ============
-
-    struct PackPurchase {
-        address buyer;
-        uint256 purchaseTime;
-        bool opened;
-        uint256[5] cardIds;
-    }
-
-    mapping(uint256 => PackPurchase) public packs;
-    mapping(address => uint256[]) public userPacks;
-
     // ============ Events ============
 
-    event PackPurchased(address indexed buyer, uint256 indexed packId, uint256 price, uint256 timestamp);
-    event PackOpened(address indexed owner, uint256 indexed packId, uint256[5] cardIds, uint256[5] startupIds);
+    event PackPurchased(address indexed buyer, uint256 indexed packTokenId, uint256 price, uint256 timestamp);
+    event PackOpened(address indexed owner, uint256 indexed packTokenId, uint256[5] cardIds, uint256[5] startupIds);
     event ReferralRegistered(address indexed user, address indexed referrer);
     event ReferralRewardPaid(address indexed referrer, address indexed buyer, uint256 amount);
     event FundsDistributed(uint256 prizePoolAmount, uint256 platformAmount, uint256 referralAmount);
@@ -86,21 +82,21 @@ contract PackOpener is Initializable, Ownable2StepUpgradeable, PausableUpgradeab
     event FundsWithdrawn(address indexed to, uint256 amount);
     event TournamentManagerUpdated(address indexed oldTM, address indexed newTM);
     event ActiveTournamentUpdated(uint256 oldId, uint256 newId);
-    event MultiplePacksOpened(address indexed buyer, uint256 packCount, uint256 totalCards);
+    event MultiplePacksPurchased(address indexed buyer, uint256 packCount, uint256[] packTokenIds);
+    event PackNftContractUpdated(address indexed oldContract, address indexed newContract);
 
     // ============ Errors ============
 
     error InsufficientPayment();
     error MaxPacksReached();
-    error PackAlreadyOpened();
     error NotPackOwner();
-    error PackDoesNotExist();
     error ZeroAddress();
     error WithdrawFailed();
     error InvalidPrice();
     error CannotReferSelf();
     error NotAdmin();
     error InvalidPackCount();
+    error PackNftNotSet();
 
     // ============ Modifiers ============
 
@@ -129,7 +125,7 @@ contract PackOpener is Initializable, Ownable2StepUpgradeable, PausableUpgradeab
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
 
-        nftContract = IUnicornX_NFT(_nftContract);
+        nftContract = IAttentionX_NFT(_nftContract);
         treasury = _treasury;
         currentPackPrice = PACK_PRICE;
     }
@@ -160,23 +156,23 @@ contract PackOpener is Initializable, Ownable2StepUpgradeable, PausableUpgradeab
 
     // ============ Pack Purchase Functions ============
 
-    function buyPack(address referrer) external payable whenNotPaused nonReentrant returns (uint256 packId) {
+    /**
+     * @notice Buy a single pack — mints a Pack NFT to the buyer
+     * @param referrer Address of the referrer (or zero address)
+     * @return packTokenId The token ID of the minted Pack NFT
+     */
+    function buyPack(address referrer) external payable whenNotPaused nonReentrant returns (uint256 packTokenId) {
+        if (address(packNftContract) == address(0)) revert PackNftNotSet();
         if (msg.value < currentPackPrice) revert InsufficientPayment();
         if (packsSold >= MAX_PACKS) revert MaxPacksReached();
 
         _trySetReferrer(msg.sender, referrer);
 
-        packId = packsSold + 1;
         packsSold++;
 
-        packs[packId] = PackPurchase({
-            buyer: msg.sender,
-            purchaseTime: block.timestamp,
-            opened: false,
-            cardIds: [uint256(0), uint256(0), uint256(0), uint256(0), uint256(0)]
-        });
+        // Mint Pack NFT to buyer
+        packTokenId = packNftContract.mint(msg.sender);
 
-        userPacks[msg.sender].push(packId);
         _distributeFunds(currentPackPrice, msg.sender);
 
         if (msg.value > currentPackPrice) {
@@ -184,50 +180,20 @@ contract PackOpener is Initializable, Ownable2StepUpgradeable, PausableUpgradeab
             if (!refundSuccess) revert WithdrawFailed();
         }
 
-        emit PackPurchased(msg.sender, packId, currentPackPrice, block.timestamp);
-        return packId;
+        emit PackPurchased(msg.sender, packTokenId, currentPackPrice, block.timestamp);
+        return packTokenId;
     }
 
-    function buyAndOpenPack(address referrer) external payable whenNotPaused nonReentrant returns (
-        uint256[5] memory cardIds,
-        uint256[5] memory startupIds
+    /**
+     * @notice Buy multiple packs in one transaction — mints Pack NFTs
+     * @param referrer Address of the referrer (or zero address)
+     * @param count Number of packs to buy (1-10)
+     * @return packTokenIds Array of minted Pack NFT token IDs
+     */
+    function buyMultiplePacks(address referrer, uint256 count) external payable whenNotPaused nonReentrant returns (
+        uint256[] memory packTokenIds
     ) {
-        if (msg.value < currentPackPrice) revert InsufficientPayment();
-        if (packsSold >= MAX_PACKS) revert MaxPacksReached();
-
-        _trySetReferrer(msg.sender, referrer);
-
-        uint256 packId = packsSold + 1;
-        packsSold++;
-
-        startupIds = _generateRandomCards(packId);
-        cardIds = nftContract.batchMint(msg.sender, startupIds);
-
-        packs[packId] = PackPurchase({
-            buyer: msg.sender,
-            purchaseTime: block.timestamp,
-            opened: true,
-            cardIds: cardIds
-        });
-
-        userPacks[msg.sender].push(packId);
-        _distributeFunds(currentPackPrice, msg.sender);
-
-        if (msg.value > currentPackPrice) {
-            (bool refundSuccess, ) = msg.sender.call{value: msg.value - currentPackPrice}("");
-            if (!refundSuccess) revert WithdrawFailed();
-        }
-
-        emit PackPurchased(msg.sender, packId, currentPackPrice, block.timestamp);
-        emit PackOpened(msg.sender, packId, cardIds, startupIds);
-
-        return (cardIds, startupIds);
-    }
-
-    function buyAndOpenMultiplePacks(address referrer, uint256 count) external payable whenNotPaused nonReentrant returns (
-        uint256[] memory allCardIds,
-        uint256[] memory allStartupIds
-    ) {
+        if (address(packNftContract) == address(0)) revert PackNftNotSet();
         if (count == 0 || count > MAX_MULTI_PACKS) revert InvalidPackCount();
         uint256 totalCost = currentPackPrice * count;
         if (msg.value < totalCost) revert InsufficientPayment();
@@ -235,33 +201,12 @@ contract PackOpener is Initializable, Ownable2StepUpgradeable, PausableUpgradeab
 
         _trySetReferrer(msg.sender, referrer);
 
-        uint256 totalCards = count * CARDS_PER_PACK;
-        allCardIds = new uint256[](totalCards);
-        allStartupIds = new uint256[](totalCards);
+        packTokenIds = new uint256[](count);
 
         for (uint256 p = 0; p < count; p++) {
-            uint256 packId = packsSold + 1;
             packsSold++;
-
-            uint256[5] memory startupIds = _generateRandomCards(packId);
-            uint256[5] memory cardIds = nftContract.batchMint(msg.sender, startupIds);
-
-            packs[packId] = PackPurchase({
-                buyer: msg.sender,
-                purchaseTime: block.timestamp,
-                opened: true,
-                cardIds: cardIds
-            });
-
-            userPacks[msg.sender].push(packId);
-
-            for (uint256 i = 0; i < CARDS_PER_PACK; i++) {
-                allCardIds[p * CARDS_PER_PACK + i] = cardIds[i];
-                allStartupIds[p * CARDS_PER_PACK + i] = startupIds[i];
-            }
-
-            emit PackPurchased(msg.sender, packId, currentPackPrice, block.timestamp);
-            emit PackOpened(msg.sender, packId, cardIds, startupIds);
+            packTokenIds[p] = packNftContract.mint(msg.sender);
+            emit PackPurchased(msg.sender, packTokenIds[p], currentPackPrice, block.timestamp);
         }
 
         _distributeFunds(totalCost, msg.sender);
@@ -271,44 +216,48 @@ contract PackOpener is Initializable, Ownable2StepUpgradeable, PausableUpgradeab
             if (!refundSuccess) revert WithdrawFailed();
         }
 
-        emit MultiplePacksOpened(msg.sender, count, totalCards);
-        return (allCardIds, allStartupIds);
+        emit MultiplePacksPurchased(msg.sender, count, packTokenIds);
+        return packTokenIds;
     }
 
-    function openPack(uint256 packId) external whenNotPaused nonReentrant returns (
+    /**
+     * @notice Open a Pack NFT — burns the pack and mints 5 card NFTs
+     * @param packTokenId The token ID of the Pack NFT to open
+     * @return cardIds The token IDs of the 5 minted card NFTs
+     * @return startupIds The startup IDs assigned to each card
+     */
+    function openPack(uint256 packTokenId) external whenNotPaused nonReentrant returns (
         uint256[5] memory cardIds,
         uint256[5] memory startupIds
     ) {
-        PackPurchase storage pack = packs[packId];
+        if (address(packNftContract) == address(0)) revert PackNftNotSet();
+        if (packNftContract.ownerOf(packTokenId) != msg.sender) revert NotPackOwner();
 
-        if (pack.buyer == address(0)) revert PackDoesNotExist();
-        if (pack.buyer != msg.sender) revert NotPackOwner();
-        if (pack.opened) revert PackAlreadyOpened();
+        // Burn the Pack NFT
+        packNftContract.burn(packTokenId);
 
-        startupIds = _generateRandomCards(packId);
+        // Generate random cards and mint them
+        startupIds = _generateRandomCards(packTokenId);
         cardIds = nftContract.batchMint(msg.sender, startupIds);
 
-        pack.opened = true;
-        pack.cardIds = cardIds;
-
-        emit PackOpened(msg.sender, packId, cardIds, startupIds);
+        emit PackOpened(msg.sender, packTokenId, cardIds, startupIds);
         return (cardIds, startupIds);
     }
 
     // ============ Internal Functions ============
 
-    function _generateRandomCards(uint256 packId) internal view returns (uint256[5] memory startupIds) {
+    function _generateRandomCards(uint256 seed) internal view returns (uint256[5] memory startupIds) {
         for (uint256 i = 0; i < CARDS_PER_PACK; i++) {
-            uint256 seed = uint256(keccak256(abi.encodePacked(
+            uint256 s = uint256(keccak256(abi.encodePacked(
                 block.prevrandao,
                 block.timestamp,
                 msg.sender,
-                packId,
+                seed,
                 i
             )));
 
-            uint256 rarityRoll = seed % 100;
-            startupIds[i] = _pickStartupByRarity(rarityRoll, seed);
+            uint256 rarityRoll = s % 100;
+            startupIds[i] = _pickStartupByRarity(rarityRoll, s);
         }
         return startupIds;
     }
@@ -367,28 +316,14 @@ contract PackOpener is Initializable, Ownable2StepUpgradeable, PausableUpgradeab
         return MAX_PACKS - packsSold;
     }
 
-    function getUserPacks(address user) external view returns (uint256[] memory) {
-        return userPacks[user];
-    }
-
-    function getPackInfo(uint256 packId) external view returns (
-        address buyer, uint256 purchaseTime, bool opened, uint256[5] memory cardIds
-    ) {
-        PackPurchase storage pack = packs[packId];
-        return (pack.buyer, pack.purchaseTime, pack.opened, pack.cardIds);
-    }
-
-    function getUnopenedPackCount(address user) external view returns (uint256 count) {
-        uint256[] storage packIds = userPacks[user];
-        for (uint256 i = 0; i < packIds.length; i++) {
-            if (!packs[packIds[i]].opened) {
-                count++;
-            }
-        }
-        return count;
-    }
-
     // ============ Admin Functions ============
+
+    function setPackNftContract(address _packNftContract) external onlyAdmin {
+        if (_packNftContract == address(0)) revert ZeroAddress();
+        address oldContract = address(packNftContract);
+        packNftContract = IPackNFT(_packNftContract);
+        emit PackNftContractUpdated(oldContract, _packNftContract);
+    }
 
     function forwardPendingFunds() external onlyAdmin nonReentrant {
         require(address(tournamentManager) != address(0), "No tournament manager");
@@ -428,7 +363,7 @@ contract PackOpener is Initializable, Ownable2StepUpgradeable, PausableUpgradeab
 
     function setNftContract(address newNftContract) external onlyAdmin {
         if (newNftContract == address(0)) revert ZeroAddress();
-        nftContract = IUnicornX_NFT(newNftContract);
+        nftContract = IAttentionX_NFT(newNftContract);
     }
 
     function setTournamentManager(address newTournamentManager) external onlyAdmin {

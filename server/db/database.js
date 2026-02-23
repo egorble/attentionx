@@ -143,6 +143,15 @@ export function wipeTournamentData() {
     console.log('   Wiped all tournament data (contract change detected, live_feed preserved)');
 }
 
+/**
+ * Wipe all cached NFT card data.
+ * Called when contract addresses change so stale card metadata doesn't persist.
+ */
+export function wipeNFTCards() {
+    exec('DELETE FROM nft_cards');
+    console.log('   Wiped all NFT card cache (contract change detected)');
+}
+
 // ============ Tournament Functions ============
 
 export function saveTournament(tournament) {
@@ -708,6 +717,26 @@ export function getRecentStartupNews(days = 10) {
  */
 export function getLiveFeedCount() {
     const row = get('SELECT COUNT(*) as count FROM live_feed');
+    return row ? row.count : 0;
+}
+
+// ============ Waitlist Functions ============
+
+export function addWaitlistEntry(email, walletAddress) {
+    exec('INSERT INTO waitlist (email, wallet_address) VALUES (?, ?)', [email.toLowerCase(), walletAddress]);
+}
+
+export function isEmailInWaitlist(email) {
+    const row = get('SELECT COUNT(*) as count FROM waitlist WHERE email = ?', [email.toLowerCase()]);
+    return row && row.count > 0;
+}
+
+export function getWaitlistEntries() {
+    return all('SELECT * FROM waitlist ORDER BY created_at DESC');
+}
+
+export function getWaitlistCount() {
+    const row = get('SELECT COUNT(*) as count FROM waitlist');
     return row ? row.count : 0;
 }
 

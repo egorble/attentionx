@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { CardData, sortByRarity } from '../types';
-import { Layers, Package, Minus, Plus, ChevronDown } from 'lucide-react';
+import { Layers, Package, Minus, Plus, ChevronDown, BoxSelect } from 'lucide-react';
 import { usePacks } from '../hooks/usePacks';
 import { useWalletContext } from '../context/WalletContext';
 import { formatXTZ } from '../lib/contracts';
@@ -12,59 +12,70 @@ interface PackOpeningModalProps {
     isOpen: boolean;
     onClose: () => void;
     onCardsAcquired?: (cards: CardData[]) => void;
+    /** If provided, skip to 'bought' stage with this pack ready to open */
+    initialPackId?: number | null;
 }
 
-const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, onCardsAcquired }) => {
+// Stages: select → buying → bought → opening → exploding → dealing → finished
+type Stage = 'select' | 'buying' | 'bought' | 'opening' | 'exploding' | 'dealing' | 'finished';
+
+const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, onCardsAcquired, initialPackId }) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const packRef = useRef<HTMLDivElement>(null);
     const flashRef = useRef<HTMLDivElement>(null);
     const cardsContainerRef = useRef<HTMLDivElement>(null);
     const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
     const ctx = useRef<gsap.Context | null>(null);
 
-    // Stages: select → buying → tearing → exploding → dealing → finished
-    const [stage, setStage] = useState<'select' | 'buying' | 'tearing' | 'exploding' | 'dealing' | 'finished'>('select');
+    const [stage, setStage] = useState<Stage>('select');
     const [packCount, setPackCount] = useState(1);
     const [cardsDealtCount, setCardsDealtCount] = useState(0);
     const [mintedCards, setMintedCards] = useState<CardData[]>([]);
     const packPrice = getActiveNetwork().packPrice;
     const [txError, setTxError] = useState<string | null>(null);
     const [pendingCards, setPendingCards] = useState<CardData[] | null>(null);
-    const [cuts, setCuts] = useState<string[]>([]);
-    const maxTaps = 5;
+
+    // Two-step state
+    const [ownedPacks, setOwnedPacks] = useState<number[]>([]);
+    const [boughtPackIds, setBoughtPackIds] = useState<number[]>([]);
+    const [selectedPackId, setSelectedPackId] = useState<number | null>(null);
 
     const isMultiPack = packCount > 1;
 
     // Hooks
-    const { isConnected, getSigner, connect, isCorrectChain, switchChain, refreshBalance } = useWalletContext();
-    const { buyAndOpenPack, buyAndOpenMultiplePacks, isLoading } = usePacks();
+    const { isConnected, getSigner, connect, isCorrectChain, switchChain, refreshBalance, address } = useWalletContext();
+    const { buyPack, openPack, getUserPacks, isLoading } = usePacks();
 
-    // Helper: Generate jagged tear path
-    const generateTearPath = (seed: number) => {
-        const isHorizontal = Math.random() > 0.5;
-        const start = isHorizontal
-            ? { x: 0, y: 10 + Math.random() * 80 }
-            : { x: 10 + Math.random() * 80, y: 0 };
-        const end = isHorizontal
-            ? { x: 100, y: 10 + Math.random() * 80 }
-            : { x: 10 + Math.random() * 80, y: 100 };
-
-        let d = `M ${start.x} ${start.y}`;
-        const steps = 8;
-        for (let i = 1; i < steps; i++) {
-            const t = i / steps;
-            const lx = start.x + (end.x - start.x) * t;
-            const ly = start.y + (end.y - start.y) * t;
-            const noise = (Math.random() - 0.5) * 15;
-            d += ` L ${lx + noise} ${ly + noise}`;
+    // Fetch user's owned packs when modal opens
+    useEffect(() => {
+        if (isOpen && address) {
+            getUserPacks(address).then(packs => {
+                setOwnedPacks(packs);
+            });
         }
-        d += ` L ${end.x} ${end.y}`;
-        return d;
-    };
+    }, [isOpen, address, getUserPacks]);
+
+    // If initialPackId is provided, skip directly to opening (useLayoutEffect prevents flicker)
+    const autoOpenRef = useRef(false);
+
+    useLayoutEffect(() => {
+        if (isOpen && initialPackId != null) {
+            setSelectedPackId(initialPackId);
+            setBoughtPackIds([initialPackId]);
+            setStage('opening');
+        }
+    }, [isOpen, initialPackId]);
+
+    // Auto-trigger pack open when coming from portfolio
+    useEffect(() => {
+        if (isOpen && initialPackId != null && stage === 'opening' && !autoOpenRef.current) {
+            autoOpenRef.current = true;
+            handleOpenPack(initialPackId);
+        }
+    }, [isOpen, initialPackId, stage]);
 
     // Initialize GSAP Context
     useLayoutEffect(() => {
-        if (isOpen && stage !== 'select') {
+        if (isOpen && stage !== 'select' && stage !== 'bought') {
             ctx.current = gsap.context(() => { }, containerRef);
         }
         return () => {
@@ -81,9 +92,11 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
             setCardsDealtCount(0);
             setMintedCards([]);
             setPendingCards(null);
-            setCuts([]);
+            setBoughtPackIds([]);
+            setSelectedPackId(null);
             cardRefs.current = [];
             setTxError(null);
+            autoOpenRef.current = false;
         }
     }, [isOpen]);
 
@@ -96,7 +109,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
         }
     }, [stage]);
 
-    // Clean up GSAP when entering finished stage — prevent residual 3D transforms
+    // Clean up GSAP when entering finished stage
     useLayoutEffect(() => {
         if (stage === 'finished') {
             cardRefs.current.forEach(card => {
@@ -114,9 +127,9 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
         }
     }, [stage]);
 
-    // When pendingCards is set, transition
+    // When pendingCards is set during opening, transition
     useLayoutEffect(() => {
-        if (pendingCards && stage === 'buying') {
+        if (pendingCards && stage === 'opening') {
             setMintedCards(sortByRarity(pendingCards));
             setPendingCards(null);
             setStage('exploding');
@@ -132,38 +145,16 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                 onComplete: () => setStage(isMultiPack ? 'finished' : 'dealing'),
             });
             if (flashRef.current) {
-                tl.to(flashRef.current, { opacity: 0.8, duration: 0.15, ease: 'power4.in' })
-                    .to(flashRef.current, { opacity: 0, duration: 0.5, ease: 'power2.out' });
+                tl.to(flashRef.current, { opacity: 1, duration: 0.2, ease: 'power4.in' })
+                    .to(flashRef.current, { opacity: 0, duration: 0.7, ease: 'power2.out' });
             } else {
                 setStage(isMultiPack ? 'finished' : 'dealing');
             }
         });
     }, [stage]);
 
-    // Handle Pack Taps (Tearing) — single pack only
-    const handleTapPack = () => {
-        if (stage !== 'tearing') return;
-        const newCount = cuts.length + 1;
-        setCuts(prev => [...prev, generateTearPath(newCount)]);
-
-        if (packRef.current && ctx.current) {
-            ctx.current.add(() => {
-                gsap.killTweensOf(packRef.current);
-                const tl = gsap.timeline();
-                tl.to(packRef.current, {
-                    x: () => (Math.random() - 0.5) * 20,
-                    y: () => (Math.random() - 0.5) * 20,
-                    rotation: () => (Math.random() - 0.5) * 10,
-                    duration: 0.05, repeat: 3, yoyo: true, ease: "rough"
-                }).to(packRef.current, { x: 0, y: 0, rotation: 0, duration: 0.2 });
-            });
-        }
-
-        if (newCount >= maxTaps) setStage('exploding');
-    };
-
-    // Buy and open packs
-    const handleBuyAndOpen = async () => {
+    // Step 1: Buy pack(s)
+    const handleBuyPacks = async () => {
         if (stage !== 'select') return;
 
         if (!isConnected) { await connect(); return; }
@@ -176,14 +167,13 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
             const signer = await getSigner();
             if (!signer) { setTxError('Failed to get signer'); setStage('select'); return; }
 
-            const result = packCount > 1
-                ? await buyAndOpenMultiplePacks(signer, packCount)
-                : await buyAndOpenPack(signer);
+            const result = await buyPack(signer, packCount);
 
-            if (result.success && result.cards) {
-                setPendingCards(result.cards);
-                onCardsAcquired?.(result.cards);
+            if (result.success && result.packTokenIds) {
+                setBoughtPackIds(result.packTokenIds);
+                setSelectedPackId(result.packTokenIds[0]);
                 refreshBalance();
+                setStage('bought');
             } else {
                 setTxError(result.error || 'Failed to buy pack');
                 setStage('select');
@@ -192,6 +182,46 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
             setTxError(e.message);
             setStage('select');
         }
+    };
+
+    // Step 2: Open a pack
+    const handleOpenPack = async (packTokenId: number) => {
+        if (!isConnected) { await connect(); return; }
+        if (!isCorrectChain) { await switchChain(); return; }
+
+        setStage('opening');
+        setTxError(null);
+
+        // If auto-opening from portfolio, errors stay on 'opening' (with retry UI)
+        const errorStage: Stage = initialPackId != null ? 'opening' : 'bought';
+
+        try {
+            const signer = await getSigner();
+            if (!signer) { setTxError('Failed to get signer'); setStage(errorStage); return; }
+
+            const result = await openPack(signer, packTokenId);
+
+            if (result.success && result.cards) {
+                setPendingCards(result.cards);
+                onCardsAcquired?.(result.cards);
+                refreshBalance();
+                // Remove opened pack from boughtPackIds
+                setBoughtPackIds(prev => prev.filter(id => id !== packTokenId));
+                setOwnedPacks(prev => prev.filter(id => id !== packTokenId));
+            } else {
+                setTxError(result.error || 'Failed to open pack');
+                setStage(errorStage);
+            }
+        } catch (e: any) {
+            setTxError(e.message);
+            setStage(errorStage);
+        }
+    };
+
+    // Open an existing pack from inventory
+    const handleOpenExistingPack = async (packTokenId: number) => {
+        setSelectedPackId(packTokenId);
+        await handleOpenPack(packTokenId);
     };
 
     const prepareStack = () => {
@@ -245,7 +275,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
             {stage === 'select' && (
                 <div className="flex flex-col items-center w-full h-full px-4 py-4 sm:py-0 sm:justify-center">
                     {/* 3D pack — takes upper space */}
-                    <div className="relative w-full flex-1 min-h-0 max-h-[65%] shrink mb-2">
+                    <div className="relative w-full flex-1 min-h-0 max-h-[55%] shrink mb-2">
                         <ModelViewer3D mode="interactive" cameraZ={4.5} modelScale={1} paused={!isOpen} />
                         {packCount > 1 && (
                             <div className="absolute top-2 right-2 w-9 h-9 bg-yc-purple rounded-full flex items-center justify-center text-white font-black text-base shadow-lg shadow-purple-500/30 z-10">
@@ -253,6 +283,24 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                             </div>
                         )}
                     </div>
+
+                    {/* Owned packs indicator */}
+                    {ownedPacks.length > 0 && (
+                        <div className="mb-3 shrink-0">
+                            <button
+                                onClick={() => {
+                                    setBoughtPackIds(ownedPacks);
+                                    setSelectedPackId(ownedPacks[0]);
+                                    setStage('bought');
+                                }}
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm"
+                            >
+                                <BoxSelect className="w-4 h-4 text-yc-purple" />
+                                <span className="text-white font-medium">You have {ownedPacks.length} unopened pack{ownedPacks.length > 1 ? 's' : ''}</span>
+                                <span className="text-yc-purple font-bold">Open →</span>
+                            </button>
+                        </div>
+                    )}
 
                     {/* Pack count selector */}
                     <div className="flex items-center gap-3 sm:gap-4 mb-3 shrink-0">
@@ -264,7 +312,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                         </button>
                         <div className="text-center min-w-[80px] sm:min-w-[100px]">
                             <p className="text-2xl sm:text-3xl font-black text-white">{packCount}</p>
-                            <p className="text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider">{packCount === 1 ? 'Pack' : 'Packs'} ({packCount * 5} cards)</p>
+                            <p className="text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider">{packCount === 1 ? 'Pack' : 'Packs'}</p>
                         </div>
                         <button
                             onClick={() => setPackCount(Math.min(10, packCount + 1))}
@@ -291,11 +339,11 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
 
                     {/* Buy button */}
                     <button
-                        onClick={handleBuyAndOpen}
+                        onClick={handleBuyPacks}
                         className="bg-yc-purple hover:bg-purple-600 text-white px-8 sm:px-10 py-3 sm:py-3.5 rounded-xl font-black text-sm sm:text-base uppercase tracking-wider transition-all shadow-lg shadow-purple-500/20 active:scale-95 mb-3 shrink-0"
                     >
                         <Package className="w-4 h-4 sm:w-5 sm:h-5 inline-block mr-2 -mt-0.5" />
-                        {packCount === 1 ? 'Buy & Open Pack' : `Buy & Open ${packCount} Packs`}
+                        {packCount === 1 ? 'Buy Pack' : `Buy ${packCount} Packs`}
                     </button>
 
                     <button onClick={onClose} className="text-gray-500 hover:text-white text-sm font-medium transition-colors shrink-0">
@@ -304,69 +352,114 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                 </div>
             )}
 
-            {/* --- STAGE: BUYING (waiting for tx) --- */}
+            {/* --- STAGE: BUYING (waiting for buy tx) --- */}
             {stage === 'buying' && (
                 <div key="stage-buying" className="flex flex-col items-center justify-center w-full h-full relative">
                     <div className="w-24 h-24 mb-8 border-4 border-yc-purple/30 border-t-yc-purple rounded-full animate-spin" />
                     <h2 className="text-2xl font-bold text-white mb-2">Confirm in Wallet</h2>
                     <p className="text-gray-400 text-sm mb-4">
                         {packCount === 1
-                            ? 'Buying & opening 1 pack (5 cards)'
-                            : `Buying & opening ${packCount} packs (${packCount * 5} cards)`
+                            ? 'Buying 1 pack NFT'
+                            : `Buying ${packCount} pack NFTs`
                         }
                     </p>
                     <div className="text-yc-purple font-mono font-bold text-lg mb-6">{formatXTZ(totalPrice)} {currencySymbol()}</div>
-                    <button onClick={onClose} className="text-gray-500 hover:text-white text-sm font-medium transition-colors">Cancel</button>
+                    <button onClick={() => { setStage('select'); }} className="text-gray-500 hover:text-white text-sm font-medium transition-colors">Cancel</button>
                 </div>
             )}
 
-            {/* --- STAGE: BURST EFFECT --- */}
-            {stage === 'exploding' && (
-                <div key="stage-exploding-mega" className="flex flex-col items-center justify-center w-full h-full relative">
-                    <div className="relative w-40 h-40">
-                        <div className="absolute inset-0 rounded-full border-2 border-yc-purple/60 animate-ping" />
-                        <div className="absolute inset-4 rounded-full border-2 border-yc-purple/40 animate-ping" style={{ animationDelay: '0.1s' }} />
-                        <div className="absolute inset-8 rounded-full border-2 border-yc-purple/20 animate-ping" style={{ animationDelay: '0.2s' }} />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-5xl">⚡</span>
-                        </div>
-                    </div>
-                    <h2 className="text-2xl font-black text-white mt-6 uppercase tracking-tighter animate-pulse">
-                        Pack Opened!
-                    </h2>
-                </div>
-            )}
-
-            {/* --- STAGE: TEARING (legacy, kept for compatibility) --- */}
-            {stage === 'tearing' && (
-                <div key="stage-tearing" className="flex flex-col items-center justify-center w-full h-full relative cursor-pointer" onClick={handleTapPack}>
-                    <h2 className="absolute top-[15%] sm:top-1/4 text-2xl sm:text-3xl font-black text-white italic uppercase tracking-tighter drop-shadow-glow pointer-events-none select-none animate-pulse">
-                        {cuts.length === 0 ? "TAP TO BREACH" :
-                            cuts.length < maxTaps - 1 ? "TEAR IT OPEN" : "CRITICAL OVERLOAD"}
-                    </h2>
-
-                    <div className="absolute top-[22%] sm:top-[32%] w-40 sm:w-48 h-1 bg-gray-800 rounded-full overflow-hidden pointer-events-none">
-                        <div className="h-full bg-yc-purple transition-all duration-100" style={{ width: `${(cuts.length / maxTaps) * 100}%` }} />
-                    </div>
-
-                    <div ref={packRef} className="relative w-52 h-[300px] sm:w-72 sm:h-[420px] shadow-2xl z-10 transition-transform">
-                        <div className="absolute inset-0 rounded-xl overflow-hidden border bg-[#151515] border-white/20">
-                            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 mix-blend-overlay" />
-                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <div className="w-16 h-16 sm:w-24 sm:h-24 border-2 border-yc-purple rounded-full flex items-center justify-center mb-3 sm:mb-4 backdrop-blur-sm bg-black/50">
-                                    <span className="text-white font-black text-2xl sm:text-3xl">YC</span>
-                                </div>
-                                <div className="px-3 py-1 bg-yc-purple text-white text-[10px] font-black uppercase tracking-[0.2em]">Season 4</div>
+            {/* --- STAGE: BOUGHT (pack NFTs minted, choose to open) --- */}
+            {stage === 'bought' && (
+                <div key="stage-bought" className="flex flex-col items-center w-full h-full px-4 py-4 sm:py-0 sm:justify-center">
+                    {/* 3D pack */}
+                    <div className="relative w-full flex-1 min-h-0 max-h-[50%] shrink mb-4">
+                        <ModelViewer3D mode="interactive" cameraZ={4.5} modelScale={1} paused={!isOpen} />
+                        {boughtPackIds.length > 1 && (
+                            <div className="absolute top-2 right-2 w-9 h-9 bg-yc-purple rounded-full flex items-center justify-center text-white font-black text-base shadow-lg shadow-purple-500/30 z-10">
+                                {boughtPackIds.length}x
                             </div>
-                            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
-                        </div>
-                        <svg className="absolute inset-0 w-full h-full pointer-events-none filter drop-shadow-[0_0_5px_rgba(255,200,0,0.8)]" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            {cuts.map((d, i) => (
-                                <path key={i} d={d} stroke="#9333EA" strokeWidth={0.5 + (i * 0.3)} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                            ))}
-                        </svg>
+                        )}
                     </div>
+
+                    <div className="text-center mb-4 shrink-0">
+                        <h2 className="text-2xl sm:text-3xl font-black text-white mb-2">
+                            {boughtPackIds.length === 1 ? 'Pack Acquired!' : `${boughtPackIds.length} Packs Acquired!`}
+                        </h2>
+                        <p className="text-gray-400 text-sm">
+                            Your pack{boughtPackIds.length > 1 ? 's are' : ' is'} now in your wallet. Open to reveal 5 cards each.
+                        </p>
+                    </div>
+
+                    {/* Error */}
+                    {txError && (
+                        <div className="bg-red-500/20 border border-red-500 rounded-lg px-4 py-2 text-red-400 text-sm max-w-xs text-center mb-3 shrink-0">
+                            {txError}
+                        </div>
+                    )}
+
+                    {/* Open Now button */}
+                    <button
+                        onClick={() => handleOpenPack(boughtPackIds[0])}
+                        disabled={boughtPackIds.length === 0}
+                        className="bg-yc-purple hover:bg-purple-600 text-white px-8 sm:px-10 py-3 sm:py-3.5 rounded-xl font-black text-sm sm:text-base uppercase tracking-wider transition-all shadow-lg shadow-purple-500/20 active:scale-95 mb-3 shrink-0 disabled:opacity-50"
+                    >
+                        <Package className="w-4 h-4 sm:w-5 sm:h-5 inline-block mr-2 -mt-0.5" />
+                        Open Pack Now
+                    </button>
+
+                    <button onClick={onClose} className="text-gray-500 hover:text-white text-sm font-medium transition-colors shrink-0">
+                        Open Later
+                    </button>
                 </div>
+            )}
+
+            {/* --- STAGE: OPENING (waiting for open tx) --- */}
+            {stage === 'opening' && (
+                <div key="stage-opening" className="flex flex-col items-center w-full h-full px-4 py-4 sm:py-0 sm:justify-center">
+                    <div className="relative w-full flex-1 min-h-0 max-h-[50%] shrink mb-6">
+                        <ModelViewer3D mode="gentle" cameraZ={4.5} modelScale={1} paused={!isOpen} />
+                    </div>
+
+                    {!txError ? (
+                        <div className="flex flex-col items-center shrink-0">
+                            <div className="w-10 h-10 mb-4 border-[3px] border-yc-purple/30 border-t-yc-purple rounded-full animate-spin" />
+                            <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Opening Pack...</h2>
+                            <p className="text-gray-500 text-sm mb-4">Confirm in wallet to reveal 5 cards</p>
+                            <button
+                                onClick={() => initialPackId != null ? onClose() : setStage('bought')}
+                                className="text-gray-500 hover:text-white text-sm font-medium transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center shrink-0">
+                            <div className="bg-red-500/20 border border-red-500 rounded-lg px-4 py-2 text-red-400 text-sm max-w-xs text-center mb-4">
+                                {txError}
+                            </div>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => {
+                                        setTxError(null);
+                                        autoOpenRef.current = false;
+                                        handleOpenPack(selectedPackId || initialPackId!);
+                                    }}
+                                    className="px-6 py-2.5 bg-yc-purple hover:bg-purple-600 text-white rounded-xl font-bold text-sm transition-all"
+                                >
+                                    Retry
+                                </button>
+                                <button onClick={onClose} className="px-6 py-2.5 text-gray-500 hover:text-white text-sm font-medium transition-colors">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* --- STAGE: BURST EFFECT (flash overlay handles visual, this is just a placeholder) --- */}
+            {stage === 'exploding' && (
+                <div key="stage-exploding" className="flex items-center justify-center w-full h-full" />
             )}
 
             {/* --- STAGE: DEALING (single pack - tap to reveal) --- */}
@@ -420,7 +513,6 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                             {isMultiPack ? `${packCount} Packs Opened!` : 'Pack Opened!'}
                         </h2>
                         <p className="text-gray-400 text-xs sm:text-sm mt-1">{mintedCards.length} cards acquired</p>
-                        {/* Scroll hint for multi-pack */}
                         {isMultiPack && mintedCards.length > 10 && (
                             <div className="flex items-center justify-center gap-1 mt-2 text-gray-500 text-xs animate-bounce">
                                 <ChevronDown className="w-4 h-4" />
@@ -454,8 +546,23 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                         </div>
                     </div>
 
-                    {/* Fixed bottom button */}
-                    <div className="fixed bottom-0 left-0 right-0 flex justify-center pb-4 sm:pb-6 pt-3 sm:pt-4 bg-gradient-to-t from-black via-black/80 to-transparent z-50" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+                    {/* Fixed bottom buttons */}
+                    <div className="fixed bottom-0 left-0 right-0 flex justify-center gap-3 pb-4 sm:pb-6 pt-3 sm:pt-4 bg-gradient-to-t from-black via-black/80 to-transparent z-50" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+                        {/* If there are more packs to open, show "Open Next" */}
+                        {boughtPackIds.length > 0 && (
+                            <button
+                                onClick={() => {
+                                    setMintedCards([]);
+                                    setCardsDealtCount(0);
+                                    setPendingCards(null);
+                                    cardRefs.current = [];
+                                    setStage('bought');
+                                }}
+                                className="px-6 sm:px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-black text-sm sm:text-base uppercase tracking-wider transition-all active:scale-95"
+                            >
+                                Open Next ({boughtPackIds.length} left)
+                            </button>
+                        )}
                         <button
                             onClick={onClose}
                             className="px-8 sm:px-10 py-3 bg-yc-purple hover:bg-purple-600 text-white rounded-xl font-black text-sm sm:text-base uppercase tracking-wider transition-all shadow-lg shadow-purple-500/30 active:scale-95"

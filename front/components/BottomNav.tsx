@@ -23,7 +23,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeSection, onNavigate }) => {
   ];
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex justify-center" style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}>
-      <nav className="mx-4 mb-3 px-3 py-2 rounded-[28px] glass-nav">
+      <nav className="mx-4 mb-3 px-3 py-2 rounded-[28px] glass-nav border border-gray-200 dark:border-white/[0.08]">
         <div className="flex items-center gap-1">
           {tabs.map((tab) => {
             const isActive = activeSection === tab.id;
@@ -32,7 +32,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeSection, onNavigate }) => {
                 key={tab.id}
                 onClick={() => onNavigate(tab.id)}
                 className={`flex flex-col items-center justify-center px-3 py-1.5 rounded-2xl transition-all duration-300 ${isActive
-                    ? 'bg-yc-purple text-white shadow-lg shadow-yc-purple/30'
+                    ? 'bg-yc-purple/10 dark:bg-yc-purple/[0.15] text-yc-purple shadow-sm'
                     : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 active:scale-95'
                   }`}
               >

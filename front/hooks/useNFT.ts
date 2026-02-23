@@ -82,7 +82,7 @@ export function useNFT() {
     const [error, setError] = useState<string | null>(null);
 
     // Fetch metadata from backend API with caching + request deduplication
-    // Card metadata is immutable (startupId, rarity, multiplier never change) — cache permanently
+    // Card metadata is cached for 5 minutes — allows refresh after contract upgrades
     const fetchMetadata = useCallback(async (tokenId: number): Promise<CardData | null> => {
         const key = CacheKeys.cardMetadata(tokenId);
 
@@ -95,7 +95,7 @@ export function useNFT() {
             } catch (e) {
                 return null;
             }
-        }, CacheTTL.PERMANENT);
+        }, CacheTTL.LONG);
 
         if (result === null) {
             blockchainCache.invalidate(key);
@@ -347,6 +347,37 @@ export function useNFT() {
 
         const validCards = cards.filter((c): c is CardData => c !== null);
 
+        // Verify isLocked directly against the NFT contract for cards showing as locked.
+        // The metadata server caches isLocked for up to 1 hour, so after tournament ends
+        // or contract changes, the cached value can be stale. Direct contract call is real-time.
+        const lockedCards = validCards.filter(c => c.isLocked);
+        if (lockedCards.length > 0) {
+            try {
+                const contract = getNFTContract();
+                const lockChecks = await Promise.all(
+                    lockedCards.map(c => contract.isLocked(c.tokenId).catch(() => true))
+                );
+                let fixedCount = 0;
+                lockedCards.forEach((card, i) => {
+                    if (!lockChecks[i]) {
+                        card.isLocked = false;
+                        // Also fix the individual metadata cache entry
+                        const metaKey = CacheKeys.cardMetadata(card.tokenId);
+                        const cached = blockchainCache.get<CardData>(metaKey);
+                        if (cached) {
+                            blockchainCache.set(metaKey, { ...cached, isLocked: false });
+                        }
+                        fixedCount++;
+                    }
+                });
+                if (fixedCount > 0) {
+                    console.log(`[NFT] Fixed ${fixedCount} stale isLocked status from metadata cache`);
+                }
+            } catch (e) {
+                // Contract call failed — keep metadata server values
+            }
+        }
+
         const cardsKey = CacheKeys.userCards(address);
         blockchainCache.set(cardsKey, validCards);
         blockchainCache.persistKeys('nft:');
@@ -357,8 +388,8 @@ export function useNFT() {
         return validCards;
     }, [getOwnedTokens, fetchMetadataBatch, fetchCardFromContract, pushCardsToServer]);
 
-    // Get all cards for an address — server cache first, blockchain fallback
-    // Pass forceRefresh=true after mutations (merge, pack open, purchase) to skip stale cache
+    // Get all cards for an address — returns fast from cache/server, then validates against blockchain.
+    // Pass forceRefresh=true after mutations (merge, pack open, purchase) to skip all caches.
     const getCards = useCallback(async (address: string, forceRefresh = false): Promise<CardData[]> => {
         const addrKey = address.toLowerCase();
 
@@ -375,28 +406,39 @@ export function useNFT() {
             setError(null);
 
             try {
-                // Try server DB cache first (unless forced refresh)
-                if (!forceRefresh) {
-                    const serverCards = await fetchCardsFromServer(address);
-                    if (serverCards && serverCards.length > 0) {
-                        const cardsKey = CacheKeys.userCards(address);
-                        blockchainCache.set(cardsKey, serverCards);
-                        blockchainCache.persistKeys('nft:');
-                        return serverCards;
-                    }
+                if (forceRefresh) {
+                    // Force: skip all caches, go straight to blockchain
+                    return await fetchCardsFromBlockchain(address);
+                }
 
-                    // Server cache empty — check local blockchainCache
-                    // (covers cases where server POST/GET may not work yet)
+                // Try fast sources first (server DB / local cache) for instant UI
+                let fastCards: CardData[] | null = null;
+
+                const serverCards = await fetchCardsFromServer(address);
+                if (serverCards && serverCards.length > 0) {
+                    fastCards = serverCards;
+                } else {
                     const cardsKey = CacheKeys.userCards(address);
                     const localCached = blockchainCache.get<CardData[]>(cardsKey);
                     if (localCached && localCached.length > 0) {
-                        // Return cached data, refresh from blockchain in background
-                        fetchCardsFromBlockchain(address).catch(() => {});
-                        return localCached;
+                        fastCards = localCached;
                     }
                 }
 
-                // Fetch from blockchain (+ push to server)
+                if (fastCards) {
+                    // Store in local cache for immediate use
+                    const cardsKey = CacheKeys.userCards(address);
+                    blockchainCache.set(cardsKey, fastCards);
+
+                    // ALWAYS validate against blockchain in background.
+                    // This catches stale server data after contract changes.
+                    // If ownership count differs, the blockchain data will overwrite.
+                    fetchCardsFromBlockchain(address).catch(() => {});
+
+                    return fastCards;
+                }
+
+                // No cached data anywhere — must fetch from blockchain
                 return await fetchCardsFromBlockchain(address);
             } catch (e: any) {
                 const cardsKey = CacheKeys.userCards(address);

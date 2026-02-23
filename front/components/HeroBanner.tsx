@@ -3,12 +3,11 @@ import Interactive3DCards from './Interactive3DCards';
 
 const HeroBanner: React.FC = () => {
   return (
-    <div className="relative w-full rounded-2xl border border-yc-light-border dark:border-yc-dark-border group mb-4 md:mb-8 bg-white dark:bg-[#030014] overflow-hidden">
-      {/* Background - Pattern adapted for themes */}
-      <div className="absolute inset-0 rounded-2xl overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://picsum.photos/1200/400?grayscale')] opacity-5 bg-cover bg-center"></div>
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-gray-100 via-gray-100/90 to-transparent dark:from-[#030014] dark:via-[#030014]/90"></div>
+    <div className="relative w-full rounded-[24px] border border-purple-300/60 dark:border-yc-purple/[0.15] group mb-4 md:mb-8 bg-gradient-to-br from-purple-50 to-indigo-50 dark:bg-white/[0.02] overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 rounded-[24px] overflow-hidden">
+        {/* Solid overlay — no transparent edges, no white bleed */}
+        <div className="absolute inset-0 bg-purple-50 dark:bg-[#050507]"></div>
 
         {/* Decorative Grid Lines */}
         <div className="absolute inset-0 opacity-[0.05] dark:opacity-[0.03]" style={{
@@ -20,9 +19,9 @@ const HeroBanner: React.FC = () => {
       {/* Left Aligned Header */}
       <div className="absolute top-6 left-6 md:top-8 md:left-8 z-20 pointer-events-none">
         <div className="flex flex-col items-start text-left">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 dark:bg-white/10 border border-gray-200/50 dark:border-white/10 backdrop-blur-md shadow-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-yc-purple animate-pulse"></span>
-            <span className="text-[10px] font-bold tracking-widest uppercase text-gray-800 dark:text-gray-200">Season 1: Live</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 dark:bg-white/[0.04] border border-gray-200/50 dark:border-white/[0.08] backdrop-blur-md">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+            <span className="text-[10px] font-bold tracking-widest uppercase text-gray-800 dark:text-gray-300">Season 1: Live</span>
           </div>
         </div>
       </div>

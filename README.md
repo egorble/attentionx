@@ -17,7 +17,7 @@ A blockchain-based fantasy sports game for Y Combinator startups on the RISE Tes
 ```
 attentionx/
 ├── contracts/              # Solidity smart contracts (UUPS upgradeable)
-│   ├── UnicornX_NFT.sol           # ERC-721 NFT with rarity system
+│   ├── AttentionX_NFT.sol           # ERC-721 NFT with rarity system
 │   ├── PackOpener.sol             # Pack purchases & card generation
 │   ├── TournamentManager.sol      # Tournament logic & prize distribution
 │   └── MarketplaceV2.sol          # NFT marketplace (listings, bids, auctions)
@@ -99,7 +99,7 @@ Deployment addresses are saved to `deployment-rise.json`.
 #### Upgrade Contracts (UUPS)
 
 ```bash
-node scripts/upgrade.js rise UnicornX_NFT
+node scripts/upgrade.js rise AttentionX_NFT
 node scripts/upgrade.js rise PackOpener
 node scripts/upgrade.js rise TournamentManager
 node scripts/upgrade.js rise MarketplaceV2
@@ -147,7 +147,7 @@ Access at `http://localhost:5173`
 ### Contract Addresses (RISE Testnet)
 
 ```javascript
-UnicornX_NFT:        0x0000000000000000000000000000000000000000
+AttentionX_NFT:        0x0000000000000000000000000000000000000000
 PackOpener:          0x0000000000000000000000000000000000000000
 TournamentManager:   0x0000000000000000000000000000000000000000
 MarketplaceV2:       0x0000000000000000000000000000000000000000

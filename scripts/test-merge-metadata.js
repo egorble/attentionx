@@ -62,7 +62,7 @@ async function main() {
 
     const deploymentFile = path.join(__dirname, "..", `deployment-${networkArg}.json`);
     const deployment = JSON.parse(fs.readFileSync(deploymentFile, "utf8"));
-    const nftAddress = deployment.proxies.UnicornX_NFT;
+    const nftAddress = deployment.proxies.AttentionX_NFT;
 
     const provider = new ethers.JsonRpcProvider(network.rpc);
     const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);

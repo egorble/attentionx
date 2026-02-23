@@ -48,21 +48,22 @@ const TournamentCTA: React.FC<TournamentCTAProps> = ({ onNavigate }) => {
 
     return (
         <div className="my-8">
-            <div className="relative overflow-hidden rounded-2xl glass-panel p-4 md:p-8 group hover:border-yc-purple/60 transition-all duration-500">
+            <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-purple-50 via-white to-indigo-50 dark:from-yc-purple/[0.06] dark:via-white/[0.02] dark:to-indigo-500/[0.04] backdrop-blur-xl border border-purple-200/60 dark:border-yc-purple/[0.15] p-4 md:p-8 group hover:border-yc-purple/40 dark:hover:border-yc-purple/30 transition-all duration-500 shadow-sm">
                 {/* Background decoration */}
-                <div className="absolute -top-10 -right-10 opacity-5 pointer-events-none">
+                <div className="absolute -top-20 -right-20 w-60 h-60 bg-yc-purple/8 dark:bg-yc-purple/[0.06] rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-indigo-400/8 dark:bg-indigo-500/[0.04] rounded-full blur-2xl pointer-events-none" />
+                <div className="absolute -top-10 -right-10 opacity-[0.06] dark:opacity-[0.03] pointer-events-none text-yc-purple">
                     <Trophy size={200} />
                 </div>
-                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-yc-purple via-purple-400 to-yc-purple opacity-50"></div>
 
                 <div className="relative z-10 flex flex-col gap-4 md:gap-6">
                     {/* Top: Tournament info */}
                     <div>
                         <div className="flex items-center gap-2 mb-2 md:mb-3">
-                            <span className="px-2 py-0.5 bg-yc-purple text-white text-[10px] font-bold uppercase rounded">
+                            <span className="px-2.5 py-1 bg-purple-100 dark:bg-white/[0.06] text-yc-purple dark:text-gray-300 text-[10px] font-bold uppercase rounded-lg border border-purple-200/60 dark:border-white/[0.08]">
                                 Tournament #{tournament.id}
                             </span>
-                            <span className="px-2 py-0.5 bg-green-500/20 text-green-500 text-[10px] font-bold uppercase rounded flex items-center">
+                            <span className="px-2.5 py-1 bg-green-500/10 text-green-500 text-[10px] font-bold uppercase rounded-lg flex items-center">
                                 <Zap size={10} className="mr-1" /> {tournament.status === 'active' ? 'Live Now' : 'Open'}
                             </span>
                         </div>
@@ -78,17 +79,17 @@ const TournamentCTA: React.FC<TournamentCTAProps> = ({ onNavigate }) => {
 
                     {/* Stats Row */}
                     <div className="grid grid-cols-3 gap-2 md:flex md:items-center md:gap-4">
-                        <div className="text-center bg-white/5 rounded-xl px-2 md:px-4 py-2 md:py-3 border border-purple-500/20">
+                        <div className="text-center bg-white/70 dark:bg-white/[0.03] rounded-2xl px-2 md:px-4 py-2 md:py-3 border border-purple-200/50 dark:border-white/[0.06]">
                             <div className="flex items-center justify-center gap-1 mb-0.5 md:mb-1">
-                                <Trophy className="w-3 h-3 text-yc-purple" />
+                                <Trophy className="w-3 h-3 text-gray-400" />
                                 <span className="text-[9px] md:text-[10px] text-gray-500 uppercase font-bold">Prize Pool</span>
                             </div>
-                            <p className="text-sm md:text-xl font-black text-yc-purple font-mono leading-tight">
+                            <p className="text-sm md:text-xl font-black text-gray-900 dark:text-white font-mono leading-tight">
                                 {tournament.prizePool}
                             </p>
-                            <p className="text-[10px] md:text-xs text-yc-purple font-bold">{currencySymbol()}</p>
+                            <p className="text-[10px] md:text-xs text-gray-500 font-bold">{currencySymbol()}</p>
                         </div>
-                        <div className="text-center bg-white/5 rounded-xl px-2 md:px-4 py-2 md:py-3 border border-purple-500/20">
+                        <div className="text-center bg-white/70 dark:bg-white/[0.03] rounded-2xl px-2 md:px-4 py-2 md:py-3 border border-purple-200/50 dark:border-white/[0.06]">
                             <div className="flex items-center justify-center gap-1 mb-0.5 md:mb-1">
                                 <Users className="w-3 h-3 text-gray-400" />
                                 <span className="text-[9px] md:text-[10px] text-gray-500 uppercase font-bold">Players</span>
@@ -97,7 +98,7 @@ const TournamentCTA: React.FC<TournamentCTAProps> = ({ onNavigate }) => {
                                 {tournament.entryCount}
                             </p>
                         </div>
-                        <div className="text-center bg-white/5 rounded-xl px-2 md:px-4 py-2 md:py-3 border border-purple-500/20">
+                        <div className="text-center bg-white/70 dark:bg-white/[0.03] rounded-2xl px-2 md:px-4 py-2 md:py-3 border border-purple-200/50 dark:border-white/[0.06]">
                             <div className="flex items-center justify-center gap-1 mb-0.5 md:mb-1">
                                 <Clock className="w-3 h-3 text-gray-400" />
                                 <span className="text-[9px] md:text-[10px] text-gray-500 uppercase font-bold">Time Left</span>
@@ -111,7 +112,7 @@ const TournamentCTA: React.FC<TournamentCTAProps> = ({ onNavigate }) => {
                     {/* CTA Button */}
                     <button
                         onClick={() => onNavigate(NavSection.LEAGUES)}
-                        className="bg-yc-purple hover:bg-purple-600 text-white w-full md:w-auto md:self-start px-8 py-3 rounded-xl font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center shadow-lg shadow-purple-500/20 active:scale-95 group neon-glow"
+                        className="bg-yc-purple text-white w-full md:w-auto md:self-start px-8 py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-center active:scale-95 group hover:bg-yc-purple/80 hover:shadow-[0_0_20px_rgba(147,51,234,0.3)] hover:scale-[1.02]"
                     >
                         Join Tournament
                         <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />

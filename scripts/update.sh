@@ -106,7 +106,7 @@ log "Frontend built"
 # No .env sync needed — metadata server reads directly from deployment-rise.json
 log "Contract addresses from deployment file (no .env sync needed):"
 if [ -f "${APP_DIR}/deployment-rise.json" ]; then
-    ADDR=$(node -e "console.log(JSON.parse(require('fs').readFileSync('${APP_DIR}/deployment-rise.json','utf8')).proxies.UnicornX_NFT || 'N/A')" 2>/dev/null || echo "N/A")
+    ADDR=$(node -e "console.log(JSON.parse(require('fs').readFileSync('${APP_DIR}/deployment-rise.json','utf8')).proxies.AttentionX_NFT || 'N/A')" 2>/dev/null || echo "N/A")
     log "  deployment-rise.json: ${ADDR}"
 fi
 
@@ -180,7 +180,7 @@ echo -e "  ${CYAN}Contract verification:${NC}"
 
 DEPLOY_FILE="${APP_DIR}/deployment-rise.json"
 if [ -f "$DEPLOY_FILE" ]; then
-    EXPECTED_ADDR=$(node -e "console.log(JSON.parse(require('fs').readFileSync('${DEPLOY_FILE}','utf8')).proxies.UnicornX_NFT || '')" 2>/dev/null || echo "")
+    EXPECTED_ADDR=$(node -e "console.log(JSON.parse(require('fs').readFileSync('${DEPLOY_FILE}','utf8')).proxies.AttentionX_NFT || '')" 2>/dev/null || echo "")
     ACTUAL_ADDR=$(curl -s --max-time 5 "http://127.0.0.1:3006/" 2>/dev/null | node -e "process.stdin.on('data',d=>{try{console.log(JSON.parse(d).contract)}catch{console.log('?')}})" 2>/dev/null || echo "?")
 
     if [ "$ACTUAL_ADDR" = "$EXPECTED_ADDR" ]; then

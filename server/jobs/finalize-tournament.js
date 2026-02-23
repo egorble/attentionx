@@ -93,7 +93,7 @@ async function checkAndFinalize() {
     const provider = new ethers.JsonRpcProvider(CHAIN.RPC_URL);
     const packOpener = new ethers.Contract(CONTRACTS.PackOpener, packOpenerABI, provider);
     const tournamentContract = new ethers.Contract(CONTRACTS.TournamentManager, tournamentABI, provider);
-    const nftContract = new ethers.Contract(CONTRACTS.UnicornX_NFT, nftABI, provider);
+    const nftContract = new ethers.Contract(CONTRACTS.AttentionX_NFT, nftABI, provider);
 
     // 1. Get active tournament
     const tournamentId = Number(await packOpener.activeTournamentId());

@@ -120,7 +120,7 @@ async function getPlayerCards(networkName, tournamentId, playerAddress) {
     const provider = getProvider(networkName);
     const contracts = CONTRACT_CONFIGS[networkName];
     const tournament = new ethers.Contract(contracts.TournamentManager, tournamentABI, provider);
-    const nft = new ethers.Contract(contracts.UnicornX_NFT, nftABI, provider);
+    const nft = new ethers.Contract(contracts.AttentionX_NFT, nftABI, provider);
 
     const lineup = await tournament.getUserLineup(tournamentId, playerAddress);
     const cards = [];

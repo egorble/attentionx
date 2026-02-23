@@ -699,6 +699,51 @@ app.post('/api/referrals/track', writeLimiter, verifyWalletSignature, (req, res)
     }
 });
 
+// ============= WAITLIST =============
+
+/**
+ * POST /api/waitlist
+ * Public endpoint — landing page waitlist signup
+ */
+app.post('/api/waitlist', writeLimiter, (req, res) => {
+    try {
+        const { email, wallet } = req.body;
+
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return res.status(400).json({ success: false, error: 'Valid email is required' });
+        }
+
+        if (!wallet || !/^0x[a-fA-F0-9]{40}$/.test(wallet)) {
+            return res.status(400).json({ success: false, error: 'Valid wallet address is required (0x...)' });
+        }
+
+        if (db.isEmailInWaitlist(email)) {
+            return res.status(409).json({ success: false, error: 'This email is already on the waitlist!' });
+        }
+
+        db.addWaitlistEntry(email, wallet);
+        db.saveDatabase();
+
+        return res.json({ success: true, message: "You're on the list! We'll be in touch." });
+    } catch (error) {
+        return res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * GET /api/admin/waitlist
+ * Admin-only — get all waitlist entries
+ */
+app.get('/api/admin/waitlist', adminLimiter, requireAdmin, (req, res) => {
+    try {
+        const entries = db.getWaitlistEntries();
+        const total = db.getWaitlistCount();
+        return res.json({ success: true, data: entries, total });
+    } catch (error) {
+        return res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // ============= NFT CARDS CACHE =============
 // Server is a pure DB cache — no RPC calls.
 // Frontend fetches from blockchain (via user's wallet) and pushes data here.
@@ -833,6 +878,9 @@ app.get('/api/contracts', (req, res) => {
         data: {
             chain: CHAIN,
             contracts: CONTRACTS,
+            // Hash of contract addresses — frontend uses this to detect redeployments
+            // and clear stale caches
+            contractHash: JSON.stringify(CONTRACTS),
         }
     });
 });
@@ -1168,12 +1216,13 @@ async function startServer() {
         db.runAiSummaryMigrations();
         console.log('✅ AI summary migrations applied');
 
-        // Detect contract changes → wipe stale tournament data
+        // Detect contract changes → wipe stale tournament data AND NFT cache
         const contractHash = JSON.stringify(CONTRACTS);
         const storedHash = db.getConfig('contract_addresses');
         if (storedHash && storedHash !== contractHash) {
-            console.log('⚠️  Contract addresses changed! Wiping old tournament data...');
+            console.log('⚠️  Contract addresses changed! Wiping old tournament data + NFT cache...');
             db.wipeTournamentData();
+            db.wipeNFTCards();
             db.saveDatabase();
         }
         db.setConfig('contract_addresses', contractHash);

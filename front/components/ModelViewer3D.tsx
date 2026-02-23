@@ -62,8 +62,8 @@ function EnvPreloader() {
 }
 
 interface ModelViewer3DProps {
-    /** 'interactive' = orbit controls, 'gentle' = subtle oscillation, 'auto' = full spin */
-    mode?: 'interactive' | 'gentle' | 'auto';
+    /** 'interactive' = orbit controls, 'gentle' = subtle oscillation, 'auto' = full spin, 'static' = no rotation */
+    mode?: 'interactive' | 'gentle' | 'auto' | 'static';
     /** Model scale override (default 1) */
     modelScale?: number;
     /** Camera distance (default 2.5) */
@@ -91,48 +91,58 @@ const ModelViewer3D: React.FC<ModelViewer3DProps> = ({
     paused = false,
 }) => {
     const isInteractive = mode === 'interactive';
-    const packMode = isInteractive ? 'static' : mode as 'gentle' | 'auto';
+    const isStatic = mode === 'static';
+    const packMode = (isInteractive || isStatic) ? 'static' : mode as 'gentle' | 'auto';
     const [canvasKey, setCanvasKey] = useState(0);
+    const wrapRef = useRef<HTMLDivElement>(null!);
+    // Delay Canvas mount by one frame so the wrapper div is committed to the DOM.
+    // This prevents R3F's event system from calling addEventListener on a null parentElement.
+    const [domReady, setDomReady] = useState(false);
+    useEffect(() => { setDomReady(true); }, []);
 
     const handleContextLost = useCallback(() => {
         setTimeout(() => setCanvasKey(k => k + 1), 500);
     }, []);
 
     return (
-        <div className={className} style={{ width: '100%', height: '100%', ...style }}>
-            <Canvas
-                key={canvasKey}
-                camera={{ position: [0, cameraY, cameraZ], fov }}
-                gl={{
-                    alpha: true,
-                    antialias: mode !== 'gentle',
-                    powerPreference: mode === 'gentle' ? 'low-power' : 'default',
-                    ...(mode === 'gentle' ? { pixelRatio: 1 } : {}),
-                }}
-                frameloop={paused ? 'never' : (mode === 'gentle' ? 'demand' : 'always')}
-                style={{ background: 'transparent' }}
-            >
-                <ContextGuard onLost={handleContextLost} />
-                <ambientLight intensity={0.6} />
-                <directionalLight position={[5, 5, 5]} intensity={1} />
-                <directionalLight position={[-3, 2, -3]} intensity={0.3} />
-                <Suspense fallback={null}>
-                    <PackModel mode={packMode} scale={modelScale} />
-                    {isInteractive && <Environment files={ENV_HDR} />}
-                    {!isInteractive && !_envPreloaded && <EnvPreloader />}
-                </Suspense>
-                {mode === 'gentle' && <GentleInvalidator />}
-                {isInteractive && (
-                    <OrbitControls
-                        enableZoom={false}
-                        enablePan={false}
-                        autoRotate
-                        autoRotateSpeed={2}
-                        minPolarAngle={Math.PI / 4}
-                        maxPolarAngle={Math.PI / 1.5}
-                    />
-                )}
-            </Canvas>
+        <div ref={wrapRef} className={className} style={{ width: '100%', height: '100%', ...style }}>
+            {domReady && (
+                <Canvas
+                    key={canvasKey}
+                    eventSource={wrapRef}
+                    eventPrefix="offset"
+                    camera={{ position: [0, cameraY, cameraZ], fov }}
+                    gl={{
+                        alpha: true,
+                        antialias: mode !== 'gentle',
+                        powerPreference: mode === 'gentle' ? 'low-power' : 'default',
+                        ...(mode === 'gentle' ? { pixelRatio: 1 } : {}),
+                    }}
+                    frameloop={paused ? 'never' : (mode === 'gentle' || mode === 'static' ? 'demand' : 'always')}
+                    style={{ background: 'transparent' }}
+                >
+                    <ContextGuard onLost={handleContextLost} />
+                    <ambientLight intensity={0.6} />
+                    <directionalLight position={[5, 5, 5]} intensity={1} />
+                    <directionalLight position={[-3, 2, -3]} intensity={0.3} />
+                    <Suspense fallback={null}>
+                        <PackModel mode={packMode} scale={modelScale} />
+                        {isInteractive && <Environment files={ENV_HDR} />}
+                        {!isInteractive && !_envPreloaded && <EnvPreloader />}
+                    </Suspense>
+                    {mode === 'gentle' && <GentleInvalidator />}
+                    {isInteractive && (
+                        <OrbitControls
+                            enableZoom={false}
+                            enablePan={false}
+                            autoRotate
+                            autoRotateSpeed={2}
+                            minPolarAngle={Math.PI / 4}
+                            maxPolarAngle={Math.PI / 1.5}
+                        />
+                    )}
+                </Canvas>
+            )}
         </div>
     );
 };

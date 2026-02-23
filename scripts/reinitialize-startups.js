@@ -1,5 +1,5 @@
 // scripts/reinitialize-startups.js
-// Verify and fix the UnicornX_NFT startups mapping after UUPS upgrades
+// Verify and fix the AttentionX_NFT startups mapping after UUPS upgrades
 //
 // Usage: node scripts/reinitialize-startups.js [network]
 // Example: node scripts/reinitialize-startups.js rise
@@ -61,7 +61,7 @@ async function main() {
     }
 
     const deployment = JSON.parse(fs.readFileSync(deploymentFile, "utf8"));
-    const nftAddress = deployment.proxies.UnicornX_NFT;
+    const nftAddress = deployment.proxies.AttentionX_NFT;
 
     console.log(`\n🔍 Verifying startups mapping on ${networkArg}...`);
     console.log(`   NFT Contract: ${nftAddress}\n`);

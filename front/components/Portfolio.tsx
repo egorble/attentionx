@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { CardData, Rarity, sortByRarity } from '../types';
 import CardDetailModal, { CardDetailData } from './CardDetailModal';
 import Analytics from './Analytics';
-import { Wallet, ArrowUpRight, TrendingUp, Plus, ShoppingCart, Layers, Zap, X, Check, RefreshCw, Tag, Loader2, Gavel, Clock, Activity, DollarSign, History } from 'lucide-react';
+import { Wallet, ArrowUpRight, TrendingUp, Plus, ShoppingCart, Layers, Zap, X, Check, RefreshCw, Tag, Loader2, Gavel, Clock, Activity, DollarSign, History, Package } from 'lucide-react';
 import { useWalletContext } from '../context/WalletContext';
 import { useNFT } from '../hooks/useNFT';
+import { usePacks } from '../hooks/usePacks';
 import { useMarketplaceV2 } from '../hooks/useMarketplaceV2';
 import { usePollingData } from '../hooks/usePollingData';
 import { formatXTZ } from '../lib/contracts';
@@ -12,6 +13,7 @@ import { currencySymbol, getActiveNetworkId } from '../lib/networks';
 import gsap from 'gsap';
 import { useOnboarding } from '../hooks/useOnboarding';
 import OnboardingGuide, { OnboardingStep } from './OnboardingGuide';
+import ModelViewer3D from './ModelViewer3D';
 
 const PORTFOLIO_GUIDE: OnboardingStep[] = [
     {
@@ -32,7 +34,7 @@ const PORTFOLIO_GUIDE: OnboardingStep[] = [
 ];
 
 interface PortfolioProps {
-    onBuyPack: () => void;
+    onBuyPack: (packId?: number) => void;
 }
 
 const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
@@ -76,10 +78,22 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
     const animationRanRef = useRef(false); // Prevent animation from running twice
     const pendingCardFetchRef = useRef<Promise<CardData | null> | null>(null); // Pre-fetched card during animation
 
+    // Pack sell modal state
+    const [myPacks, setMyPacks] = useState<number[]>([]);
+    const [packSellModalOpen, setPackSellModalOpen] = useState(false);
+    const [packToSell, setPackToSell] = useState<number | null>(null);
+    const [packSellMode, setPackSellMode] = useState<'fixed' | 'auction'>('fixed');
+    const [packSellPrice, setPackSellPrice] = useState('');
+    const [packAuctionStartPrice, setPackAuctionStartPrice] = useState('');
+    const [packAuctionReservePrice, setPackAuctionReservePrice] = useState('');
+    const [packAuctionDuration, setPackAuctionDuration] = useState('24');
+    const [isSellingPack, setIsSellingPack] = useState(false);
+
     // Hooks
     const { isConnected, address, getSigner, connect } = useWalletContext();
     const { getCards, getCardInfo, getCardInfoWithRetry, mergeCards, isLoading, clearCache, updateServerCache } = useNFT();
-    const { listCard, createAuction, getBidsForToken, getTokenStats, getTokenSaleHistory, loading: marketplaceLoading } = useMarketplaceV2();
+    const { getUserPacks } = usePacks();
+    const { listCard, listPack, createAuction, createPackAuction, getBidsForToken, getTokenStats, getTokenSaleHistory, loading: marketplaceLoading } = useMarketplaceV2();
     const { isVisible: showGuide, currentStep: guideStep, nextStep: guideNext, dismiss: guideDismiss } = useOnboarding('portfolio');
 
     // Auto-refresh cards with polling (disabled when not connected)
@@ -99,6 +113,27 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
         }
     );
 
+    // Auto-refresh packs
+    const {
+        data: polledPacks,
+        refresh: refreshPacks
+    } = usePollingData<number[]>(
+        async () => {
+            if (!address) return [];
+            return await getUserPacks(address);
+        },
+        {
+            cacheKey: `portfolio:packs:${networkId}:${address || 'none'}`,
+            interval: 30000,
+            enabled: isConnected && !!address
+        }
+    );
+
+    // Update myPacks when polled data changes
+    useEffect(() => {
+        if (polledPacks) setMyPacks(polledPacks);
+    }, [polledPacks]);
+
     // Update myCards when polled data changes (sorted by rarity, rarest first)
     useEffect(() => {
         if (polledCards) {
@@ -113,13 +148,15 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
         }
     }, [pollingLoading]);
 
-    // Reload cards when address or network changes
+    // Reload cards and packs when address or network changes
     useEffect(() => {
         if (isConnected && address) {
             setIsRefreshing(true);
             refreshCards();
+            refreshPacks();
         } else {
             setMyCards([]);
+            setMyPacks([]);
         }
     }, [isConnected, address, networkId]);
 
@@ -437,6 +474,69 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
         setIsSelling(false);
     };
 
+    // Open pack sell modal
+    const openPackSellModal = (packTokenId: number) => {
+        setPackToSell(packTokenId);
+        setPackSellPrice('');
+        setPackAuctionStartPrice('');
+        setPackAuctionReservePrice('');
+        setPackAuctionDuration('24');
+        setPackSellMode('fixed');
+        setPackSellModalOpen(true);
+    };
+
+    // Handle listing a pack for sale (fixed price)
+    const handleSellPack = async () => {
+        if (packToSell === null || !packSellPrice || parseFloat(packSellPrice) <= 0) {
+            alert('Please enter a valid price');
+            return;
+        }
+
+        setIsSellingPack(true);
+        try {
+            await listPack(BigInt(packToSell), packSellPrice);
+
+            alert(`Pack listed for ${packSellPrice} ${currencySymbol()}!`);
+            setPackSellModalOpen(false);
+            setPackToSell(null);
+            refreshPacks();
+        } catch (e: any) {
+            alert(`Failed to list pack: ${e.message}`);
+        }
+        setIsSellingPack(false);
+    };
+
+    // Handle creating a pack auction
+    const handleCreatePackAuction = async () => {
+        if (packToSell === null) return;
+        if (!packAuctionStartPrice || parseFloat(packAuctionStartPrice) <= 0) {
+            alert('Please enter a valid start price');
+            return;
+        }
+
+        const reservePrice = packAuctionReservePrice || packAuctionStartPrice;
+        const durationHours = parseFloat(packAuctionDuration);
+        const durationDays = durationHours / 24;
+
+        setIsSellingPack(true);
+        try {
+            await createPackAuction(
+                BigInt(packToSell),
+                packAuctionStartPrice,
+                reservePrice,
+                durationDays
+            );
+
+            alert(`Pack auction created! Starting at ${packAuctionStartPrice} ${currencySymbol()} for ${packAuctionDuration} hours.`);
+            setPackSellModalOpen(false);
+            setPackToSell(null);
+            refreshPacks();
+        } catch (e: any) {
+            alert(`Failed to create pack auction: ${e.message}`);
+        }
+        setIsSellingPack(false);
+    };
+
     // Open NFT Stats modal
     const openStatsModal = async (card: CardData) => {
         setStatsCard(card);
@@ -466,35 +566,48 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
 
             {/* Header Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
-                <div className="col-span-1 md:col-span-2 p-4 md:p-6 bg-gradient-to-r from-yc-purple to-red-600 rounded-2xl text-white shadow-xl relative overflow-hidden">
+                <div className="col-span-1 md:col-span-2 p-4 md:p-6 bg-gradient-to-br from-purple-50 via-white to-indigo-50 dark:from-yc-purple/[0.08] dark:via-white/[0.03] dark:to-indigo-500/[0.04] border border-purple-200/60 dark:border-yc-purple/[0.15] rounded-2xl text-yc-text-primary dark:text-white relative overflow-hidden backdrop-blur-xl shadow-sm">
+                    {/* Decorative blob */}
+                    <div className="absolute -top-16 -right-16 w-48 h-48 bg-yc-purple/10 dark:bg-yc-purple/[0.08] rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-indigo-400/10 dark:bg-indigo-500/[0.06] rounded-full blur-2xl pointer-events-none" />
                     <div className="relative z-10">
-                        <p className="text-white/80 text-sm font-bold uppercase tracking-widest mb-1">Total Cards</p>
+                        <p className="text-gray-500 text-xs font-medium uppercase tracking-[0.2em] mb-1">Total Cards</p>
                         <h2 className="text-4xl font-black font-mono">{myCards.length}</h2>
-                        <div className="flex items-center mt-2 text-sm font-bold bg-white/20 w-fit px-2 py-1 rounded backdrop-blur-sm">
-                            <TrendingUp className="w-4 h-4 mr-1" />
-                            {uniqueStartups} / 19 Startups
+                        <div className="flex items-center gap-3 mt-2">
+                            <div className="flex items-center text-sm font-medium text-yc-purple dark:text-gray-400 bg-purple-100 dark:bg-white/[0.05] w-fit px-2 py-1 rounded-lg">
+                                <TrendingUp className="w-4 h-4 mr-1" />
+                                {uniqueStartups} / 19 Startups
+                            </div>
+                            {myPacks.length > 0 && (
+                                <div className="flex items-center text-sm font-medium text-yc-purple dark:text-gray-400 bg-purple-100 dark:bg-white/[0.05] w-fit px-2 py-1 rounded-lg">
+                                    <Package className="w-4 h-4 mr-1" />
+                                    {myPacks.length} Pack{myPacks.length !== 1 ? 's' : ''}
+                                </div>
+                            )}
                         </div>
                     </div>
-                    <Wallet className="absolute right-[-20px] bottom-[-40px] w-64 h-64 text-white/10 rotate-[-15deg]" />
+                    <Wallet className="absolute right-[-20px] bottom-[-40px] w-64 h-64 text-purple-200/40 dark:text-white/[0.03] rotate-[-15deg]" />
                 </div>
 
                 {/* Buy Pack Card */}
                 <div
-                    onClick={onBuyPack}
-                    className="bg-white dark:bg-[#121212] border border-yc-light-border dark:border-[#2A2A2A] rounded-2xl p-6 flex flex-col justify-between cursor-pointer group hover:border-yc-purple transition-all relative overflow-hidden"
+                    onClick={() => onBuyPack()}
+                    className="bg-gradient-to-br from-yc-purple via-purple-700 to-indigo-800 dark:from-yc-purple dark:via-purple-800 dark:to-indigo-900 border border-purple-400/30 dark:border-yc-purple/30 rounded-2xl p-6 flex flex-col justify-between cursor-pointer group hover:shadow-[0_8px_30px_rgba(147,51,234,0.25)] transition-all relative overflow-hidden"
                 >
-                    <div className="absolute inset-0 bg-yc-purple/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <div>
+                    {/* Decorative elements */}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-indigo-400/20 rounded-full blur-xl pointer-events-none" />
+                    <div className="relative z-10">
                         <div className="flex justify-between items-start">
-                            <div className="p-2 bg-yc-purple/10 rounded-lg text-yc-purple">
+                            <div className="p-2 bg-white/15 rounded-xl text-white">
                                 <ShoppingCart className="w-6 h-6" />
                             </div>
-                            <span className="bg-black dark:bg-white text-white dark:text-black text-xs font-bold px-2 py-1 rounded">{packPriceLabel} {currencySymbol()}</span>
+                            <span className="bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-lg border border-white/10">{packPriceLabel} {currencySymbol()}</span>
                         </div>
-                        <h3 className="text-xl font-bold text-yc-text-primary dark:text-white mt-4 group-hover:text-yc-purple transition-colors">Buy Starter Pack</h3>
-                        <p className="text-sm text-gray-500 mt-1">Contains 5 random startup cards.</p>
+                        <h3 className="text-xl font-bold text-white mt-4">Buy Starter Pack</h3>
+                        <p className="text-sm text-white/60 mt-1">Contains 5 random startup cards.</p>
                     </div>
-                    <div className="flex items-center text-sm font-bold text-yc-text-primary dark:text-white mt-4">
+                    <div className="flex items-center text-sm font-bold text-white mt-4 relative z-10">
                         Mint Now <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                     </div>
                 </div>
@@ -502,21 +615,21 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
 
             {/* Tab Switcher */}
             <div className="mb-6">
-                <div className="inline-flex bg-gray-100 dark:bg-[#0A0A0A] rounded-xl p-1">
+                <div className="inline-flex bg-gray-100 dark:bg-white/[0.03] rounded-2xl p-1 border border-transparent dark:border-white/[0.06]">
                     <button
                         onClick={() => { setActiveTab('cards'); setIsMergeMode(false); setSelectedCardIds([]); }}
-                        className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'cards'
-                                ? 'bg-white dark:bg-[#1A1A1A] text-yc-text-primary dark:text-white shadow-sm'
-                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                        className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all ${activeTab === 'cards'
+                                ? 'bg-yc-purple/10 dark:bg-yc-purple/[0.12] text-yc-purple'
+                                : 'text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                             }`}
                     >
                         My Cards
                     </button>
                     <button
                         onClick={() => { setActiveTab('performance'); setIsMergeMode(false); setSelectedCardIds([]); }}
-                        className={`px-5 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-1.5 ${activeTab === 'performance'
-                                ? 'bg-white dark:bg-[#1A1A1A] text-yc-text-primary dark:text-white shadow-sm'
-                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                        className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-1.5 ${activeTab === 'performance'
+                                ? 'bg-yc-purple/10 dark:bg-yc-purple/[0.12] text-yc-purple'
+                                : 'text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                             }`}
                     >
                         <TrendingUp className="w-4 h-4" />
@@ -530,18 +643,52 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
 
             {/* Cards Tab Content */}
             {activeTab === 'cards' && (<>
+                {/* My Packs Section */}
+                {!isMergeMode && myPacks.length > 0 && (
+                    <div className="mb-8">
+                        <h3 className="text-lg font-bold text-yc-text-primary dark:text-white flex items-center mb-4">
+                            <Package className="w-5 h-5 mr-2 text-gray-400" />
+                            Unopened Packs ({myPacks.length})
+                            <button
+                                onClick={() => loadCards(true)}
+                                disabled={isRefreshing}
+                                className="ml-3 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors"
+                            >
+                                <RefreshCw className={`w-4 h-4 text-gray-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+                            </button>
+                        </h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 md:gap-4">
+                            {myPacks.map((packId) => (
+                                <div
+                                    key={`pack-${packId}`}
+                                    className="group bg-gradient-to-b from-white to-yc-purple/[0.03] dark:from-white/[0.02] dark:to-yc-purple/[0.04] border border-yc-purple/20 dark:border-yc-purple/[0.12] rounded-2xl overflow-hidden hover:border-yc-purple/40 dark:hover:border-yc-purple/30 hover:-translate-y-1 hover:shadow-lg hover:shadow-yc-purple/10 transition-all duration-300"
+                                >
+                                    <div
+                                        className="relative bg-gradient-to-b from-yc-purple/5 to-gray-50 dark:from-yc-purple/[0.04] dark:to-transparent cursor-pointer"
+                                        style={{ aspectRatio: '591/1004' }}
+                                        onClick={() => onBuyPack(packId)}
+                                    >
+                                        <ModelViewer3D mode="static" cameraZ={3} modelScale={0.8} />
+                                        <div className="absolute bottom-2 left-0 right-0 flex flex-col items-center pointer-events-none group-hover:opacity-0 transition-opacity duration-200">
+                                            <span className="text-gray-700 dark:text-white/50 text-xs font-mono bg-white/60 dark:bg-black/40 px-2 py-0.5 rounded">#{packId}</span>
+                                        </div>
+                                        {/* Glass overlay Open button */}
+                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                                            <span className="px-6 py-3 rounded-2xl font-bold text-white text-sm backdrop-blur-xl bg-white/10 border border-white/20 shadow-lg">
+                                                Open Pack
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Assets Header & Controls */}
                 <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xl font-bold text-yc-text-primary dark:text-white flex items-center">
-                        <span className="w-2 h-6 bg-yc-green rounded-sm mr-3"></span>
                         Your Assets ({myCards.length})
-                        <button
-                            onClick={() => loadCards(true)}
-                            disabled={isRefreshing}
-                            className="ml-3 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                        >
-                            <RefreshCw className={`w-4 h-4 text-gray-500 ${isRefreshing ? 'animate-spin' : ''}`} />
-                        </button>
                     </h3>
 
                     <button
@@ -554,8 +701,8 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
                         className={`
                         flex items-center px-4 py-2 rounded-xl text-sm font-bold transition-all border
                         ${isMergeMode
-                                ? 'bg-yc-purple text-white border-yc-purple shadow-[0_0_15px_rgba(147,51,234,0.4)]'
-                                : 'bg-white dark:bg-[#121212] text-gray-500 hover:text-yc-text-primary dark:hover:text-white border-gray-200 dark:border-[#2A2A2A]'}
+                                ? 'bg-white dark:bg-white/[0.1] text-black dark:text-white border-gray-300 dark:border-white/[0.2]'
+                                : 'bg-white dark:bg-white/[0.02] text-gray-500 hover:text-yc-text-primary dark:hover:text-white border-gray-200 dark:border-white/[0.06]'}
                     `}
                     >
                         {isMergeMode ? <X className="w-4 h-4 mr-2" /> : <Layers className="w-4 h-4 mr-2" />}
@@ -565,13 +712,13 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
 
                 {/* Merge Instructions */}
                 {isMergeMode && (
-                    <div className="mb-6 p-4 bg-yc-purple/10 border border-yc-purple/30 rounded-xl flex items-center animate-[fadeIn_0.3s]">
-                        <div className="bg-yc-purple text-white p-2 rounded-lg mr-3">
+                    <div className="mb-6 p-4 bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.08] rounded-2xl flex items-center animate-[fadeIn_0.3s]">
+                        <div className="bg-gray-100 dark:bg-white/[0.08] text-gray-600 dark:text-white p-2 rounded-xl mr-3">
                             <Zap className="w-5 h-5 fill-current" />
                         </div>
                         <div>
-                            <h4 className="text-yc-text-primary dark:text-white font-bold text-sm">Fusion Reactor Online</h4>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Select <span className="text-yc-purple font-bold">3 cards of same rarity</span> to burn and forge 1 higher rarity card.</p>
+                            <h4 className="text-yc-text-primary dark:text-white font-semibold text-sm">Fusion Reactor Online</h4>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Select <span className="text-gray-900 dark:text-white font-semibold">3 cards of same rarity</span> to burn and forge 1 higher rarity card.</p>
                         </div>
                     </div>
                 )}
@@ -591,8 +738,8 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
                         <h3 className="text-xl font-bold text-gray-400 mb-2">No Cards Yet</h3>
                         <p className="text-gray-500 mb-6">{isConnected ? 'Buy a pack to get started!' : 'Connect your wallet and buy a pack to get started!'}</p>
                         <button
-                            onClick={isConnected ? onBuyPack : connect}
-                            className="bg-yc-purple hover:bg-purple-600 text-white px-8 py-3 rounded-xl font-bold"
+                            onClick={isConnected ? () => onBuyPack() : connect}
+                            className="bg-yc-purple text-white hover:bg-yc-purple/80 px-8 py-3 rounded-2xl font-bold transition-all hover:shadow-[0_0_20px_rgba(147,51,234,0.3)] hover:scale-[1.02]"
                         >
                             {isConnected ? 'Buy First Pack' : 'Connect Wallet'}
                         </button>
@@ -611,10 +758,10 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
                                     key={card.tokenId}
                                     onClick={() => handleCardClick(card)}
                                     className={`
-                                  bg-white dark:bg-[#121212] border rounded-xl overflow-hidden transition-all duration-300 relative cursor-pointer
+                                  bg-white dark:bg-white/[0.02] border rounded-xl overflow-hidden transition-all duration-300 relative cursor-pointer
                                   ${isSelected
                                             ? 'border-yc-purple ring-2 ring-yc-purple/50 shadow-[0_0_20px_rgba(147,51,234,0.2)] scale-[1.02] z-10'
-                                            : 'border-yc-light-border dark:border-[#2A2A2A] hover:border-yc-purple hover:-translate-y-1 hover:shadow-xl'}
+                                            : 'border-gray-200 dark:border-white/[0.06] hover:border-yc-purple/30 dark:hover:border-white/[0.15] hover:-translate-y-1 hover:shadow-xl'}
                                   ${isDimmed ? 'opacity-40 grayscale' : 'opacity-100'}
                                   ${card.isLocked ? 'ring-1 ring-red-500/50' : ''}
                               `}
@@ -643,8 +790,8 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
                         {/* Add New Asset Placeholder */}
                         {!isMergeMode && (
                             <button
-                                onClick={onBuyPack}
-                                className="border-2 border-dashed border-gray-300 dark:border-[#2A2A2A] rounded-xl flex flex-col items-center justify-center p-4 md:p-6 text-gray-400 hover:text-yc-purple hover:border-yc-purple transition-colors min-h-[120px] md:min-h-[280px]"
+                                onClick={() => onBuyPack()}
+                                className="border-2 border-dashed border-gray-300 dark:border-white/[0.06] rounded-xl flex flex-col items-center justify-center p-4 md:p-6 text-gray-400 hover:text-yc-purple hover:border-yc-purple/40 dark:hover:border-white/[0.15] transition-colors min-h-[120px] md:min-h-[280px]"
                             >
                                 <Plus className="w-8 h-8 mb-2" />
                                 <span className="font-bold text-sm">Add Asset</span>
@@ -798,7 +945,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
             {/* Sell Modal */}
             {sellModalOpen && cardToSell && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-                    <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl animate-[scaleIn_0.3s_cubic-bezier(0.34,1.56,0.64,1)]">
+                    <div className="bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/[0.06] rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl animate-[scaleIn_0.3s_cubic-bezier(0.34,1.56,0.64,1)]">
                         {/* Header */}
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-xl font-bold text-gray-900 dark:text-white">Sell Card</h3>
@@ -866,7 +1013,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
                                         placeholder="0.00"
                                         value={sellPrice}
                                         onChange={(e) => setSellPrice(e.target.value)}
-                                        className="w-full bg-gray-50 dark:bg-black border border-gray-300 dark:border-[#2A2A2A] rounded-xl px-4 py-3 text-gray-900 dark:text-white text-lg font-mono focus:outline-none focus:border-yc-purple transition-colors"
+                                        className="w-full bg-gray-50 dark:bg-black border border-gray-300 dark:border-white/[0.06] rounded-xl px-4 py-3 text-gray-900 dark:text-white text-lg font-mono focus:outline-none focus:border-yc-purple transition-colors"
                                     />
                                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">
                                         {currencySymbol()}
@@ -893,7 +1040,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
                                             placeholder="0.00"
                                             value={auctionStartPrice}
                                             onChange={(e) => setAuctionStartPrice(e.target.value)}
-                                            className="w-full bg-gray-50 dark:bg-black border border-gray-300 dark:border-[#2A2A2A] rounded-xl px-4 py-3 text-gray-900 dark:text-white text-lg font-mono focus:outline-none focus:border-purple-500 transition-colors"
+                                            className="w-full bg-gray-50 dark:bg-black border border-gray-300 dark:border-white/[0.06] rounded-xl px-4 py-3 text-gray-900 dark:text-white text-lg font-mono focus:outline-none focus:border-purple-500 transition-colors"
                                         />
                                         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">
                                             {currencySymbol()}
@@ -912,7 +1059,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
                                             placeholder="Same as start price"
                                             value={auctionReservePrice}
                                             onChange={(e) => setAuctionReservePrice(e.target.value)}
-                                            className="w-full bg-gray-50 dark:bg-black border border-gray-300 dark:border-[#2A2A2A] rounded-xl px-4 py-3 text-gray-900 dark:text-white text-lg font-mono focus:outline-none focus:border-purple-500 transition-colors"
+                                            className="w-full bg-gray-50 dark:bg-black border border-gray-300 dark:border-white/[0.06] rounded-xl px-4 py-3 text-gray-900 dark:text-white text-lg font-mono focus:outline-none focus:border-purple-500 transition-colors"
                                         />
                                         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">
                                             {currencySymbol()}
@@ -930,7 +1077,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
                                     <select
                                         value={auctionDuration}
                                         onChange={(e) => setAuctionDuration(e.target.value)}
-                                        className="w-full bg-gray-50 dark:bg-black border border-gray-300 dark:border-[#2A2A2A] rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors"
+                                        className="w-full bg-gray-50 dark:bg-black border border-gray-300 dark:border-white/[0.06] rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors"
                                     >
                                         <option value="1">1 Hour</option>
                                         <option value="6">6 Hours</option>
@@ -1009,7 +1156,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
             {/* NFT Stats Modal */}
             {statsModalOpen && statsCard && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-                    <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-2xl p-6 w-full max-w-lg mx-4 shadow-2xl animate-[scaleIn_0.3s_cubic-bezier(0.34,1.56,0.64,1)] max-h-[85vh] flex flex-col">
+                    <div className="bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/[0.06] rounded-2xl p-6 w-full max-w-lg mx-4 shadow-2xl animate-[scaleIn_0.3s_cubic-bezier(0.34,1.56,0.64,1)] max-h-[85vh] flex flex-col">
                         {/* Header */}
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-xl font-bold text-gray-900 dark:text-white">Card Details</h3>
@@ -1091,7 +1238,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
                                                 </div>
                                             ) : (
                                                 cardBids.map((bid, idx) => (
-                                                    <div key={idx} className="bg-gray-50 dark:bg-[#1A1A1A] rounded-xl p-4 border border-gray-200 dark:border-[#2A2A2A]">
+                                                    <div key={idx} className="bg-gray-50 dark:bg-[#1A1A1A] rounded-xl p-4 border border-gray-200 dark:border-white/[0.06]">
                                                         <div className="flex justify-between items-center">
                                                             <div>
                                                                 <p className="text-gray-900 dark:text-white font-bold">{formatXTZ(bid.amount)} {currencySymbol()}</p>
@@ -1125,7 +1272,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
                                                 </div>
                                             ) : (
                                                 cardSales.map((sale, idx) => (
-                                                    <div key={idx} className="bg-gray-50 dark:bg-[#1A1A1A] rounded-xl p-4 border border-gray-200 dark:border-[#2A2A2A]">
+                                                    <div key={idx} className="bg-gray-50 dark:bg-[#1A1A1A] rounded-xl p-4 border border-gray-200 dark:border-white/[0.06]">
                                                         <div className="flex justify-between items-center">
                                                             <div>
                                                                 <p className="text-gray-900 dark:text-white font-bold">{formatXTZ(sale.price)} {currencySymbol()}</p>
@@ -1157,30 +1304,30 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
                                             {cardStats ? (
                                                 <>
                                                     <div className="grid grid-cols-2 gap-3">
-                                                        <div className="bg-gray-50 dark:bg-[#1A1A1A] rounded-xl p-4 border border-gray-200 dark:border-[#2A2A2A]">
+                                                        <div className="bg-gray-50 dark:bg-[#1A1A1A] rounded-xl p-4 border border-gray-200 dark:border-white/[0.06]">
                                                             <p className="text-gray-500 text-xs uppercase mb-1">Total Sales</p>
                                                             <p className="text-gray-900 dark:text-white text-xl font-bold">{cardStats.salesCount?.toString() || '0'}</p>
                                                         </div>
-                                                        <div className="bg-gray-50 dark:bg-[#1A1A1A] rounded-xl p-4 border border-gray-200 dark:border-[#2A2A2A]">
+                                                        <div className="bg-gray-50 dark:bg-[#1A1A1A] rounded-xl p-4 border border-gray-200 dark:border-white/[0.06]">
                                                             <p className="text-gray-500 text-xs uppercase mb-1">Total Volume</p>
                                                             <p className="text-gray-900 dark:text-white text-xl font-bold">
                                                                 {cardStats.totalVolume ? formatXTZ(cardStats.totalVolume) : '0'} {currencySymbol()}
                                                             </p>
                                                         </div>
-                                                        <div className="bg-gray-50 dark:bg-[#1A1A1A] rounded-xl p-4 border border-gray-200 dark:border-[#2A2A2A]">
+                                                        <div className="bg-gray-50 dark:bg-[#1A1A1A] rounded-xl p-4 border border-gray-200 dark:border-white/[0.06]">
                                                             <p className="text-gray-500 text-xs uppercase mb-1">Highest Sale</p>
                                                             <p className="text-green-600 dark:text-green-400 text-xl font-bold">
                                                                 {cardStats.highestSale ? formatXTZ(cardStats.highestSale) : '0'} {currencySymbol()}
                                                             </p>
                                                         </div>
-                                                        <div className="bg-gray-50 dark:bg-[#1A1A1A] rounded-xl p-4 border border-gray-200 dark:border-[#2A2A2A]">
+                                                        <div className="bg-gray-50 dark:bg-[#1A1A1A] rounded-xl p-4 border border-gray-200 dark:border-white/[0.06]">
                                                             <p className="text-gray-500 text-xs uppercase mb-1">Lowest Sale</p>
                                                             <p className="text-blue-600 dark:text-blue-400 text-xl font-bold">
                                                                 {cardStats.lowestSale && cardStats.lowestSale > 0n ? formatXTZ(cardStats.lowestSale) : '-'} {currencySymbol()}
                                                             </p>
                                                         </div>
                                                     </div>
-                                                    <div className="bg-gray-50 dark:bg-[#1A1A1A] rounded-xl p-4 border border-gray-200 dark:border-[#2A2A2A]">
+                                                    <div className="bg-gray-50 dark:bg-[#1A1A1A] rounded-xl p-4 border border-gray-200 dark:border-white/[0.06]">
                                                         <p className="text-gray-500 text-xs uppercase mb-1">Last Sale Price</p>
                                                         <p className="text-yc-purple text-2xl font-bold">
                                                             {cardStats.lastSalePrice && cardStats.lastSalePrice > 0n ? formatXTZ(cardStats.lastSalePrice) : '-'} {currencySymbol()}
@@ -1196,6 +1343,212 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
                                         </div>
                                     )}
                                 </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Pack Sell Modal */}
+            {packSellModalOpen && packToSell !== null && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+                    <div className="bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/[0.06] rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl animate-[scaleIn_0.3s_cubic-bezier(0.34,1.56,0.64,1)]">
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Sell Pack</h3>
+                            <button
+                                onClick={() => {
+                                    setPackSellModalOpen(false);
+                                    setPackToSell(null);
+                                }}
+                                className="text-gray-400 hover:text-white transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Pack Preview */}
+                        <div className="flex items-center gap-4 mb-4 p-3 bg-gray-100 dark:bg-black/50 rounded-xl">
+                            <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-gradient-to-b from-gray-100 to-gray-50 dark:from-[#111] dark:to-[#0a0a0a]">
+                                <ModelViewer3D mode="static" cameraZ={3.2} modelScale={0.7} />
+                            </div>
+                            <div>
+                                <h4 className="text-gray-900 dark:text-white font-bold">AttentionX Pack</h4>
+                                <p className="text-gray-500 dark:text-gray-400 text-sm">
+                                    Pack #{packToSell} · 5 Random Cards
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Sale Type Tabs */}
+                        <div className="flex gap-2 mb-4">
+                            <button
+                                onClick={() => setPackSellMode('fixed')}
+                                className={`flex-1 py-2 px-4 rounded-lg font-bold flex items-center justify-center gap-2 transition-all ${packSellMode === 'fixed'
+                                    ? 'bg-yc-purple text-white'
+                                    : 'bg-gray-100 dark:bg-[#1A1A1A] text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#222]'
+                                    }`}
+                            >
+                                <Tag className="w-4 h-4" />
+                                Fixed Price
+                            </button>
+                            <button
+                                onClick={() => setPackSellMode('auction')}
+                                className={`flex-1 py-2 px-4 rounded-lg font-bold flex items-center justify-center gap-2 transition-all ${packSellMode === 'auction'
+                                    ? 'bg-purple-500 text-white'
+                                    : 'bg-gray-100 dark:bg-[#1A1A1A] text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#222]'
+                                    }`}
+                            >
+                                <Gavel className="w-4 h-4" />
+                                Auction
+                            </button>
+                        </div>
+
+                        {/* Fixed Price Form */}
+                        {packSellMode === 'fixed' && (
+                            <div className="mb-4">
+                                <label className="block text-sm font-bold text-gray-400 uppercase mb-2">
+                                    Sale Price ({currencySymbol()})
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0.01"
+                                        placeholder="0.00"
+                                        value={packSellPrice}
+                                        onChange={(e) => setPackSellPrice(e.target.value)}
+                                        className="w-full bg-gray-50 dark:bg-black border border-gray-300 dark:border-white/[0.06] rounded-xl px-4 py-3 text-gray-900 dark:text-white text-lg font-mono focus:outline-none focus:border-yc-purple transition-colors"
+                                    />
+                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">
+                                        {currencySymbol()}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-2">
+                                    2% royalty will be deducted on sale
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Auction Form */}
+                        {packSellMode === 'auction' && (
+                            <div className="space-y-4 mb-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-400 uppercase mb-2">
+                                        Starting Price ({currencySymbol()})
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            min="0.01"
+                                            placeholder="0.00"
+                                            value={packAuctionStartPrice}
+                                            onChange={(e) => setPackAuctionStartPrice(e.target.value)}
+                                            className="w-full bg-gray-50 dark:bg-black border border-gray-300 dark:border-white/[0.06] rounded-xl px-4 py-3 text-gray-900 dark:text-white text-lg font-mono focus:outline-none focus:border-purple-500 transition-colors"
+                                        />
+                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">
+                                            {currencySymbol()}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-400 uppercase mb-2">
+                                        Reserve Price (Optional)
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            placeholder="Same as start price"
+                                            value={packAuctionReservePrice}
+                                            onChange={(e) => setPackAuctionReservePrice(e.target.value)}
+                                            className="w-full bg-gray-50 dark:bg-black border border-gray-300 dark:border-white/[0.06] rounded-xl px-4 py-3 text-gray-900 dark:text-white text-lg font-mono focus:outline-none focus:border-purple-500 transition-colors"
+                                        />
+                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">
+                                            {currencySymbol()}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-400 uppercase mb-2">
+                                        <Clock className="w-3 h-3 inline mr-1" />
+                                        Duration
+                                    </label>
+                                    <select
+                                        value={packAuctionDuration}
+                                        onChange={(e) => setPackAuctionDuration(e.target.value)}
+                                        className="w-full bg-gray-50 dark:bg-black border border-gray-300 dark:border-white/[0.06] rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors"
+                                    >
+                                        <option value="1">1 Hour</option>
+                                        <option value="6">6 Hours</option>
+                                        <option value="12">12 Hours</option>
+                                        <option value="24">24 Hours</option>
+                                        <option value="48">48 Hours</option>
+                                        <option value="72">72 Hours</option>
+                                        <option value="168">1 Week</option>
+                                    </select>
+                                </div>
+                                <p className="text-xs text-gray-500">
+                                    2% royalty will be deducted on final sale
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Actions */}
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setPackSellModalOpen(false);
+                                    setPackToSell(null);
+                                }}
+                                className="flex-1 py-3 rounded-xl font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-[#1A1A1A] hover:bg-gray-200 dark:hover:bg-[#222] transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            {packSellMode === 'fixed' ? (
+                                <button
+                                    onClick={handleSellPack}
+                                    disabled={isSellingPack || !packSellPrice || parseFloat(packSellPrice) <= 0}
+                                    className={`flex-1 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${isSellingPack || !packSellPrice || parseFloat(packSellPrice) <= 0
+                                        ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                                        : 'bg-yc-purple text-white hover:bg-purple-600'
+                                        }`}
+                                >
+                                    {isSellingPack ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Listing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Tag className="w-4 h-4" />
+                                            List Pack
+                                        </>
+                                    )}
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleCreatePackAuction}
+                                    disabled={isSellingPack || !packAuctionStartPrice || parseFloat(packAuctionStartPrice) <= 0}
+                                    className={`flex-1 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${isSellingPack || !packAuctionStartPrice || parseFloat(packAuctionStartPrice) <= 0
+                                        ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                                        : 'bg-purple-500 text-white hover:bg-purple-600'
+                                        }`}
+                                >
+                                    {isSellingPack ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Creating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Gavel className="w-4 h-4" />
+                                            Create Auction
+                                        </>
+                                    )}
+                                </button>
                             )}
                         </div>
                     </div>
