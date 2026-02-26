@@ -3,6 +3,7 @@ import { BrowserProvider, ethers } from 'ethers';
 import { getMarketplaceV2Contract, getNFTContract, getPackNFTContract, CONTRACTS, formatXTZ } from '@/lib/contracts';
 import { getActiveContracts } from '@/lib/contracts';
 import { blockchainCache, CacheKeys, CacheTTL } from '../lib/cache';
+import { getActiveNetworkId } from '../lib/networks';
 import { useWalletContext } from '../context/WalletContext';
 
 // ============ Constants ============
@@ -624,6 +625,49 @@ export function useMarketplaceV2() {
         }, CacheTTL.DEFAULT);
     }, []);
 
+    // ============ User Sold Items ============
+    // Queries on-chain CardSold + BidAccepted events where seller = address
+    const getUserSoldItems = useCallback(async (sellerAddress: string): Promise<Sale[]> => {
+        try {
+            const cacheKey = `${getActiveNetworkId()}:marketplace:sold:${sellerAddress.toLowerCase()}`;
+            const cached = blockchainCache.get<Sale[]>(cacheKey);
+            if (cached && !blockchainCache.isStale(cacheKey, CacheTTL.LONG)) return cached;
+
+            const { getReadProvider } = await import('../lib/contracts');
+            const provider = getReadProvider();
+            const contract = getMarketplaceV2Contract(provider);
+
+            const [soldEvents, bidEvents] = await Promise.all([
+                contract.queryFilter(contract.filters.CardSold(null, sellerAddress)).catch(() => []),
+                contract.queryFilter(contract.filters.BidAccepted(null, sellerAddress)).catch(() => []),
+            ]);
+
+            const allEvents = [...soldEvents, ...bidEvents];
+
+            // Fetch block timestamps in parallel
+            const timestamps = await Promise.all(
+                allEvents.map(e => provider.getBlock(e.blockNumber).then(b => b?.timestamp ?? 0).catch(() => 0))
+            );
+
+            const result: Sale[] = allEvents.map((e: any, i) => ({
+                tokenId: e.args.tokenId,
+                seller: e.args.seller,
+                buyer: e.args.buyer ?? e.args.bidder,
+                price: e.args.price ?? e.args.amount,
+                timestamp: BigInt(timestamps[i]),
+                saleType: i < soldEvents.length ? 0 : 1, // 0=Listing, 1=Bid
+            }));
+
+            // Sort newest first
+            result.sort((a, b) => Number(b.timestamp - a.timestamp));
+
+            blockchainCache.set(cacheKey, result);
+            return result;
+        } catch {
+            return [];
+        }
+    }, []);
+
     // ============ History & Stats ============
     const getTokenSaleHistory = useCallback(async (tokenId: bigint): Promise<Sale[]> => {
         try {
@@ -707,6 +751,7 @@ export function useMarketplaceV2() {
         getActiveAuctions,
 
         // History & Stats
+        getUserSoldItems,
         getTokenSaleHistory,
         getTokenStats,
         getMarketplaceStats,

@@ -303,7 +303,7 @@ const AppContent: React.FC = () => {
                                             {sortBy === 'price' ? 'Price' : sortBy === 'rarity' ? 'Rarity' : 'Recent'}
                                             <Filter className="w-3 h-3 ml-1 text-gray-400" />
                                         </button>
-                                        <div className="absolute right-0 top-full mt-2 bg-white dark:bg-white/[0.04] backdrop-blur-xl border border-gray-200 dark:border-white/[0.08] rounded-2xl shadow-lg py-2 min-w-[120px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                                        <div className="absolute right-0 top-full mt-2 bg-white dark:bg-[#111113] backdrop-blur-xl border border-gray-200 dark:border-white/[0.08] rounded-2xl shadow-lg py-2 min-w-[120px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                                             <button
                                                 onClick={() => setSortBy('recent')}
                                                 className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/[0.06] text-gray-900 dark:text-white rounded-lg"

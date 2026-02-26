@@ -157,3 +157,17 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 .animate-marquee:hover {
   animation-play-state: paused;
 }
+
+/* Native select — dark mode: force browser to use dark native dropdown */
+.dark select,
+html.dark select {
+  color-scheme: dark;
+  background-color: #111113;
+  color: #f3f4f6;
+}
+
+.dark select option,
+html.dark select option {
+  background-color: #111113;
+  color: #f3f4f6;
+}
