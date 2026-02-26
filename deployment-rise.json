@@ -18,10 +18,19 @@
     "PackNFT": "0xC2a9303871BaD267A640B3722cAC3bd18374fDAA",
     "PackOpener": "0x6517D801951e42d63A4C70c9E8c38436C000755c",
     "TournamentManager": "0x7736536001681f441e7EbE007D421dd760112088",
-    "MarketplaceV2": "0xf5aB9F696c64Dc6Cdd1865Eec40f7B9F79976CC6"
+    "MarketplaceV2": "0x1A85a3D1aF1516E9C864d48D549c7d5c859CC747"
   },
   "configuration": {
     "owner": "0x233c8C54F25734B744E522bdC1Eed9cbc8C97D0c",
     "treasury": "0x233c8C54F25734B744E522bdC1Eed9cbc8C97D0c"
-  }
+  },
+  "upgradeHistory": [
+    {
+      "contract": "MarketplaceV2",
+      "oldImplementation": "0xf5aB9F696c64Dc6Cdd1865Eec40f7B9F79976CC6",
+      "newImplementation": "0x1A85a3D1aF1516E9C864d48D549c7d5c859CC747",
+      "timestamp": "2026-02-26T12:11:34.532Z",
+      "txHash": "0x796883a9fcfe20176ca73b8be627c7b9410ffc6b3beea021743bc1ee42f8eca5"
+    }
+  ]
 }

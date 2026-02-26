@@ -72,6 +72,34 @@ export interface Listing {
     isPack?: boolean;
 }
 
+// ============ Contract error selectors ============
+// Maps 4-byte selector → human-readable message for MarketplaceV2 custom errors
+const MARKETPLACE_ERRORS: Record<string, string> = {
+    '0xc066bae7': 'This card is in your active tournament lineup. Remove it from your lineup before listing.',
+    '0x59dc379f': 'You are not the owner of this NFT.',
+    '0xdeaabdc2': 'This NFT is already listed on the marketplace.',
+    '0xc2d7fd6b': 'This NFT is already in an auction.',
+    '0x4dfba023': 'Price must be greater than zero.',
+    '0x66cb03e9': 'This listing is no longer active.',
+    '0xcd1c8867': 'Insufficient payment sent.',
+    '0xa0d26eb6': 'Bid amount is too low.',
+    '0x76166401': 'Invalid auction duration.',
+    '0xf684d685': 'This NFT type is not allowed on the marketplace.',
+};
+
+function decodeMarketplaceError(err: any): string | null {
+    const data: string | undefined =
+        err?.data ||
+        err?.error?.data ||
+        err?.info?.error?.data ||
+        err?.cause?.data;
+    if (typeof data === 'string' && data.length >= 10) {
+        const selector = data.slice(0, 10).toLowerCase();
+        return MARKETPLACE_ERRORS[selector] ?? null;
+    }
+    return null;
+}
+
 // ============ Hook ============
 export function useMarketplaceV2() {
     const { address, isConnected, walletProvider } = useWalletContext();
@@ -208,8 +236,10 @@ export function useMarketplaceV2() {
             invalidateMarketplaceCache();
             return true;
         } catch (err: any) {
-            setError(err.message || 'Failed to list card');
-            throw err;
+            const decoded = decodeMarketplaceError(err);
+            const msg = decoded ?? (err.message || 'Failed to list card');
+            setError(msg);
+            throw new Error(msg);
         } finally {
             setLoading(false);
         }
@@ -469,8 +499,10 @@ export function useMarketplaceV2() {
             invalidateMarketplaceCache();
             return true;
         } catch (err: any) {
-            setError(err.message || 'Failed to create auction');
-            throw err;
+            const decoded = decodeMarketplaceError(err);
+            const msg = decoded ?? (err.message || 'Failed to create auction');
+            setError(msg);
+            throw new Error(msg);
         } finally {
             setLoading(false);
         }
@@ -626,40 +658,28 @@ export function useMarketplaceV2() {
     }, []);
 
     // ============ User Sold Items ============
-    // Queries on-chain CardSold + BidAccepted events where seller = address
+    // Reads _userSales from MarketplaceV2 (covers listings, bids, and auctions)
     const getUserSoldItems = useCallback(async (sellerAddress: string): Promise<Sale[]> => {
         try {
             const cacheKey = `${getActiveNetworkId()}:marketplace:sold:${sellerAddress.toLowerCase()}`;
             const cached = blockchainCache.get<Sale[]>(cacheKey);
             if (cached && !blockchainCache.isStale(cacheKey, CacheTTL.LONG)) return cached;
 
-            const { getReadProvider } = await import('../lib/contracts');
-            const provider = getReadProvider();
-            const contract = getMarketplaceV2Contract(provider);
+            const contract = getMarketplaceV2Contract();
+            const history = await contract.getUserSaleHistory(sellerAddress);
 
-            const [soldEvents, bidEvents] = await Promise.all([
-                contract.queryFilter(contract.filters.CardSold(null, sellerAddress)).catch(() => []),
-                contract.queryFilter(contract.filters.BidAccepted(null, sellerAddress)).catch(() => []),
-            ]);
-
-            const allEvents = [...soldEvents, ...bidEvents];
-
-            // Fetch block timestamps in parallel
-            const timestamps = await Promise.all(
-                allEvents.map(e => provider.getBlock(e.blockNumber).then(b => b?.timestamp ?? 0).catch(() => 0))
-            );
-
-            const result: Sale[] = allEvents.map((e: any, i) => ({
-                tokenId: e.args.tokenId,
-                seller: e.args.seller,
-                buyer: e.args.buyer ?? e.args.bidder,
-                price: e.args.price ?? e.args.amount,
-                timestamp: BigInt(timestamps[i]),
-                saleType: i < soldEvents.length ? 0 : 1, // 0=Listing, 1=Bid
-            }));
-
-            // Sort newest first
-            result.sort((a, b) => Number(b.timestamp - a.timestamp));
+            const result: Sale[] = history
+                .map((s: any) => ({
+                    tokenId: s.tokenId,
+                    seller: s.seller,
+                    buyer: s.buyer,
+                    price: s.price,
+                    timestamp: s.timestamp,
+                    saleType: Number(s.saleType),
+                }))
+                // Show only where this address was the seller
+                .filter((s: Sale) => s.seller.toLowerCase() === sellerAddress.toLowerCase())
+                .sort((a: Sale, b: Sale) => Number(b.timestamp - a.timestamp));
 
             blockchainCache.set(cacheKey, result);
             return result;

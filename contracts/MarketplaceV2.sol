@@ -645,6 +645,15 @@ contract MarketplaceV2 is Initializable, Ownable2StepUpgradeable, PausableUpgrad
         return result;
     }
 
+    function getUserSaleHistory(address user) external view returns (Sale[] memory) {
+        uint256[] memory ids = _userSales[user];
+        Sale[] memory result = new Sale[](ids.length);
+        for (uint256 i = 0; i < ids.length; i++) {
+            result[i] = sales[ids[i]];
+        }
+        return result;
+    }
+
     function getTokenStats(uint256 tokenId) external view returns (TokenStats memory) {
         return tokenStats[tokenId];
     }
