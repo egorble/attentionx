@@ -71,21 +71,21 @@ export function useActiveTournament() {
         fetchActiveTournament,
         {
             cacheKey: sharedKeys.activeTournament(),
-            interval: POLLING_INTERVALS.SLOW, // 60s
+            interval: POLLING_INTERVALS.ONCE, // fetch once on load, data changes only when scorer runs
         }
     );
 }
 
 /**
  * Shared leaderboard data for a specific tournament.
- * Polls every 30s. Disabled when no tournamentId.
+ * Fetched once on load (preloaded). No auto-polling — scores update daily via scorer.
  */
 export function useSharedLeaderboard(tournamentId: number | null) {
     return usePollingData<LeaderboardPlayer[]>(
         () => fetchLeaderboard(tournamentId!),
         {
             cacheKey: tournamentId ? sharedKeys.leaderboard(tournamentId) : 'disabled:leaderboard',
-            interval: POLLING_INTERVALS.NORMAL, // 30s
+            interval: POLLING_INTERVALS.ONCE,
             enabled: !!tournamentId,
         }
     );
@@ -93,14 +93,14 @@ export function useSharedLeaderboard(tournamentId: number | null) {
 
 /**
  * Shared top startups data for a specific tournament.
- * Polls every 60s. Disabled when no tournamentId.
+ * Fetched once on load (preloaded). No auto-polling — data changes only when scorer runs.
  */
 export function useSharedTopStartups(tournamentId: number | null) {
     return usePollingData<TopStartup[]>(
         () => fetchTopStartups(tournamentId!),
         {
             cacheKey: tournamentId ? sharedKeys.topStartups(tournamentId) : 'disabled:topStartups',
-            interval: POLLING_INTERVALS.SLOW, // 60s
+            interval: POLLING_INTERVALS.ONCE,
             enabled: !!tournamentId,
         }
     );

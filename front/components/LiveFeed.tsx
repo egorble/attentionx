@@ -77,11 +77,13 @@ const LiveFeed: React.FC = () => {
     };
 
     useEffect(() => {
-        // If preloaded, delay first fetch; otherwise fetch immediately
-        const delay = preloaded ? 60000 : 0;
-        const timeout = setTimeout(fetchFeed, delay);
-        const interval = setInterval(fetchFeed, 60000);
-        return () => { clearTimeout(timeout); clearInterval(interval); };
+        // Fetch once on mount only if no preloaded data exists
+        // Live feed changes only when the daily scorer runs — no need to poll
+        if (!preloaded) {
+            fetchFeed();
+        } else {
+            setLoading(false);
+        }
     }, []);
 
     // Already sorted by points DESC from backend

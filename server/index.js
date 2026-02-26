@@ -28,7 +28,7 @@ app.use(express.json({ limit: '2mb' }));
 // Rate limiting
 const globalLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: 100,
+    max: 600,
     standardHeaders: true,
     legacyHeaders: false,
     message: { success: false, error: 'Too many requests, please try again later' }
@@ -37,15 +37,50 @@ app.use(globalLimiter);
 
 const writeLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: 10,
+    max: 30,
     message: { success: false, error: 'Too many write requests' }
 });
 
 const adminLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: 5,
+    max: 20,
     message: { success: false, error: 'Admin rate limit exceeded' }
 });
+
+// ── Server-side in-memory response cache ──
+// Prevents redundant DB reads on hot read endpoints.
+// Scorer updates data once/day — 30s TTL is safe.
+// On DB errors: serve stale cache so users see data instead of errors.
+const _sc = new Map(); // key → { data, exp }
+
+const SRV_TTL = {
+    TOURNAMENT:   20_000,    // 20s
+    LEADERBOARD:  30_000,    // 30s
+    TOP_STARTUPS: 30_000,    // 30s
+    STATS:        60_000,    // 60s
+    FEED:         20_000,    // 20s
+    DAILY_SCORES: 300_000,   // 5min — only changes when scorer runs
+};
+
+function sc_get(key) {
+    const e = _sc.get(key);
+    if (!e || Date.now() > e.exp) return null;
+    return e.data;
+}
+
+function sc_get_stale(key) {
+    return _sc.get(key)?.data ?? null; // returns even if expired (for DB error fallback)
+}
+
+function sc_set(key, data, ttl) {
+    _sc.set(key, { data, exp: Date.now() + ttl });
+}
+
+function sc_del(prefix) {
+    for (const k of _sc.keys()) {
+        if (k.startsWith(prefix)) _sc.delete(k);
+    }
+}
 
 // ============= API ROUTES =============
 
@@ -54,17 +89,15 @@ const adminLimiter = rateLimit({
  * Get current active tournament
  */
 app.get('/api/tournaments/active', (req, res) => {
+    const cacheKey = 'tournament:active';
+    const hit = sc_get(cacheKey);
+    if (hit) return res.json(hit);
     try {
         const tournament = db.getActiveTournament();
-
         if (!tournament) {
-            return res.json({
-                success: false,
-                message: 'No active tournament'
-            });
+            return res.json({ success: false, message: 'No active tournament' });
         }
-
-        return res.json({
+        const resp = {
             success: true,
             data: {
                 id: tournament.blockchain_id,
@@ -74,12 +107,13 @@ app.get('/api/tournaments/active', (req, res) => {
                 entryCount: tournament.entry_count,
                 status: tournament.status
             }
-        });
+        };
+        sc_set(cacheKey, resp, SRV_TTL.TOURNAMENT);
+        return res.json(resp);
     } catch (error) {
-        return res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        const stale = sc_get_stale(cacheKey);
+        if (stale) return res.json(stale);
+        return res.status(500).json({ success: false, error: error.message });
     }
 });
 
@@ -88,20 +122,18 @@ app.get('/api/tournaments/active', (req, res) => {
  * Get specific tournament by ID
  */
 app.get('/api/tournaments/:id', (req, res) => {
+    if (!isValidTournamentId(req.params.id)) {
+        return res.status(400).json({ success: false, error: 'Invalid tournament ID' });
+    }
+    const cacheKey = `tournament:${req.params.id}`;
+    const hit = sc_get(cacheKey);
+    if (hit) return res.json(hit);
     try {
-        if (!isValidTournamentId(req.params.id)) {
-            return res.status(400).json({ success: false, error: 'Invalid tournament ID' });
-        }
         const tournament = db.getTournament(parseInt(req.params.id));
-
         if (!tournament) {
-            return res.status(404).json({
-                success: false,
-                message: 'Tournament not found'
-            });
+            return res.status(404).json({ success: false, message: 'Tournament not found' });
         }
-
-        return res.json({
+        const resp = {
             success: true,
             data: {
                 id: tournament.blockchain_id,
@@ -111,12 +143,13 @@ app.get('/api/tournaments/:id', (req, res) => {
                 entryCount: tournament.entry_count,
                 status: tournament.status
             }
-        });
+        };
+        sc_set(cacheKey, resp, SRV_TTL.TOURNAMENT);
+        return res.json(resp);
     } catch (error) {
-        return res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        const stale = sc_get_stale(cacheKey);
+        if (stale) return res.json(stale);
+        return res.status(500).json({ success: false, error: error.message });
     }
 });
 
@@ -125,16 +158,17 @@ app.get('/api/tournaments/:id', (req, res) => {
  * Get leaderboard for a tournament
  */
 app.get('/api/leaderboard/:tournamentId', (req, res) => {
+    if (!isValidTournamentId(req.params.tournamentId)) {
+        return res.status(400).json({ success: false, error: 'Invalid tournament ID' });
+    }
+    const tournamentId = parseInt(req.params.tournamentId);
+    const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+    const cacheKey = `leaderboard:${tournamentId}:${limit}`;
+    const hit = sc_get(cacheKey);
+    if (hit) return res.json(hit);
     try {
-        if (!isValidTournamentId(req.params.tournamentId)) {
-            return res.status(400).json({ success: false, error: 'Invalid tournament ID' });
-        }
-        const tournamentId = parseInt(req.params.tournamentId);
-        const limit = Math.min(parseInt(req.query.limit) || 100, 500);
-
         const leaderboard = db.getLeaderboard(tournamentId, limit);
 
-        // Enrich with user profile data + HMAC integrity verification
         const addresses = leaderboard.map(e => e.address);
         const profiles = db.getUserProfiles(addresses);
         const profileMap = {};
@@ -160,15 +194,13 @@ app.get('/api/leaderboard/:tournamentId', (req, res) => {
             };
         });
 
-        return res.json({
-            success: true,
-            data: enriched
-        });
+        const resp = { success: true, data: enriched };
+        sc_set(cacheKey, resp, SRV_TTL.LEADERBOARD);
+        return res.json(resp);
     } catch (error) {
-        return res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        const stale = sc_get_stale(cacheKey);
+        if (stale) return res.json(stale);
+        return res.status(500).json({ success: false, error: error.message });
     }
 });
 
@@ -309,21 +341,21 @@ app.get('/api/player/:address/card-scores/:tournamentId', (req, res) => {
  * Get tournament statistics
  */
 app.get('/api/stats/:tournamentId', (req, res) => {
+    if (!isValidTournamentId(req.params.tournamentId)) {
+        return res.status(400).json({ success: false, error: 'Invalid tournament ID' });
+    }
+    const cacheKey = `stats:${req.params.tournamentId}`;
+    const hit = sc_get(cacheKey);
+    if (hit) return res.json(hit);
     try {
-        if (!isValidTournamentId(req.params.tournamentId)) {
-            return res.status(400).json({ success: false, error: 'Invalid tournament ID' });
-        }
         const stats = db.getTournamentStats(parseInt(req.params.tournamentId));
-
-        return res.json({
-            success: true,
-            data: stats
-        });
+        const resp = { success: true, data: stats };
+        sc_set(cacheKey, resp, SRV_TTL.STATS);
+        return res.json(resp);
     } catch (error) {
-        return res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        const stale = sc_get_stale(cacheKey);
+        if (stale) return res.json(stale);
+        return res.status(500).json({ success: false, error: error.message });
     }
 });
 
@@ -332,13 +364,15 @@ app.get('/api/stats/:tournamentId', (req, res) => {
  * Get daily startup scores for a specific date
  */
 app.get('/api/daily-scores/:tournamentId/:date', (req, res) => {
+    const { tournamentId, date } = req.params;
+    if (!isValidTournamentId(tournamentId)) return res.status(400).json({ success: false, error: 'Invalid tournament ID' });
+    if (!isValidDate(date)) return res.status(400).json({ success: false, error: 'Invalid date format (YYYY-MM-DD)' });
+    const cacheKey = `dailyScores:${tournamentId}:${date}`;
+    const hit = sc_get(cacheKey);
+    if (hit) return res.json(hit);
     try {
-        const { tournamentId, date } = req.params;
-        if (!isValidTournamentId(tournamentId)) return res.status(400).json({ success: false, error: 'Invalid tournament ID' });
-        if (!isValidDate(date)) return res.status(400).json({ success: false, error: 'Invalid date format (YYYY-MM-DD)' });
         const scores = db.getDailyScores(parseInt(tournamentId), date);
-
-        return res.json({
+        const resp = {
             success: true,
             data: scores.map(s => ({
                 startup: s.startup_name,
@@ -346,12 +380,13 @@ app.get('/api/daily-scores/:tournamentId/:date', (req, res) => {
                 tweetsAnalyzed: s.tweets_analyzed,
                 events: s.events_detected || []
             }))
-        });
+        };
+        sc_set(cacheKey, resp, SRV_TTL.DAILY_SCORES);
+        return res.json(resp);
     } catch (error) {
-        return res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        const stale = sc_get_stale(cacheKey);
+        if (stale) return res.json(stale);
+        return res.status(500).json({ success: false, error: error.message });
     }
 });
 
@@ -360,26 +395,29 @@ app.get('/api/daily-scores/:tournamentId/:date', (req, res) => {
  * Get top startups by points in a tournament
  */
 app.get('/api/top-startups/:tournamentId', (req, res) => {
+    if (!isValidTournamentId(req.params.tournamentId)) {
+        return res.status(400).json({ success: false, error: 'Invalid tournament ID' });
+    }
+    const tournamentId = parseInt(req.params.tournamentId);
+    const limit = Math.min(parseInt(req.query.limit) || 5, 50);
+    const cacheKey = `topStartups:${tournamentId}:${limit}`;
+    const hit = sc_get(cacheKey);
+    if (hit) return res.json(hit);
     try {
-        if (!isValidTournamentId(req.params.tournamentId)) {
-            return res.status(400).json({ success: false, error: 'Invalid tournament ID' });
-        }
-        const tournamentId = parseInt(req.params.tournamentId);
-        const limit = Math.min(parseInt(req.query.limit) || 5, 50);
         const startups = db.getTopStartups(tournamentId, limit);
-
-        return res.json({
+        const resp = {
             success: true,
             data: startups.map(s => ({
                 name: s.startup_name,
                 points: s.total_points
             }))
-        });
+        };
+        sc_set(cacheKey, resp, SRV_TTL.TOP_STARTUPS);
+        return res.json(resp);
     } catch (error) {
-        return res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        const stale = sc_get_stale(cacheKey);
+        if (stale) return res.json(stale);
+        return res.status(500).json({ success: false, error: error.message });
     }
 });
 
@@ -388,11 +426,13 @@ app.get('/api/top-startups/:tournamentId', (req, res) => {
  * Get latest live feed events from tweet analysis
  */
 app.get('/api/live-feed', (req, res) => {
+    const limit = parseInt(req.query.limit) || 20;
+    const cacheKey = `liveFeed:${limit}`;
+    const hit = sc_get(cacheKey);
+    if (hit) return res.json(hit);
     try {
-        const limit = parseInt(req.query.limit) || 20;
         const events = db.getLiveFeed(limit);
-
-        return res.json({
+        const resp = {
             success: true,
             data: events.map(e => ({
                 id: e.id,
@@ -405,12 +445,13 @@ app.get('/api/live-feed', (req, res) => {
                 createdAt: e.created_at,
                 summary: e.ai_summary || null
             }))
-        });
+        };
+        sc_set(cacheKey, resp, SRV_TTL.FEED);
+        return res.json(resp);
     } catch (error) {
-        return res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        const stale = sc_get_stale(cacheKey);
+        if (stale) return res.json(stale);
+        return res.status(500).json({ success: false, error: error.message });
     }
 });
 
@@ -419,13 +460,15 @@ app.get('/api/live-feed', (req, res) => {
  * Paginated feed with full details and AI summaries
  */
 app.get('/api/feed', (req, res) => {
+    const limit = Math.min(parseInt(req.query.limit) || 20, 50);
+    const offset = parseInt(req.query.offset) || 0;
+    const cacheKey = `feed:${limit}:${offset}`;
+    const hit = sc_get(cacheKey);
+    if (hit) return res.json(hit);
     try {
-        const limit = Math.min(parseInt(req.query.limit) || 20, 50);
-        const offset = parseInt(req.query.offset) || 0;
         const events = db.getLiveFeedPaginated(limit, offset);
         const total = db.getLiveFeedCount();
-
-        return res.json({
+        const resp = {
             success: true,
             data: events.map(e => ({
                 id: e.id,
@@ -438,18 +481,14 @@ app.get('/api/feed', (req, res) => {
                 createdAt: e.created_at,
                 summary: e.ai_summary || null
             })),
-            pagination: {
-                total,
-                limit,
-                offset,
-                hasMore: offset + limit < total
-            }
-        });
+            pagination: { total, limit, offset, hasMore: offset + limit < total }
+        };
+        sc_set(cacheKey, resp, SRV_TTL.FEED);
+        return res.json(resp);
     } catch (error) {
-        return res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        const stale = sc_get_stale(cacheKey);
+        if (stale) return res.json(stale);
+        return res.status(500).json({ success: false, error: error.message });
     }
 });
 
@@ -911,7 +950,10 @@ app.post('/api/run-scorer', adminLimiter, requireAdmin, async (req, res) => {
         // Note: daily-scorer step [7] already runs the AI summarizer internally
         runDailyScoring(date, force).then(() => {
             db.saveDatabase();
-            console.log('Scorer complete, DB saved.');
+            // Invalidate server cache so next request returns fresh scored data
+            sc_del('leaderboard:'); sc_del('topStartups:'); sc_del('stats:');
+            sc_del('feed:'); sc_del('liveFeed:'); sc_del('dailyScores:'); sc_del('tournament:');
+            console.log('Scorer complete, DB saved, cache invalidated.');
         }).catch(err => {
             console.error('Scorer error:', err.message);
         });
@@ -944,7 +986,8 @@ app.post('/api/admin/clear-nft-cache', adminLimiter, requireAdmin, (req, res) =>
 app.post('/api/reload-db', adminLimiter, requireAdmin, async (req, res) => {
     try {
         await db.initDatabase(true);
-        console.log('[RELOAD] Database reloaded from disk');
+        _sc.clear(); // full cache wipe — DB may have completely new data
+        console.log('[RELOAD] Database reloaded from disk, cache cleared');
         return res.json({ success: true, message: 'Database reloaded' });
     } catch (error) {
         return res.status(500).json({ success: false, error: error.message });
@@ -974,6 +1017,7 @@ app.post('/api/admin/clear-news', adminLimiter, requireAdmin, (req, res) => {
     try {
         db.clearAllLiveFeed();
         db.saveDatabase();
+        sc_del('feed:'); sc_del('liveFeed:');
         console.log('[Admin] All live feed events cleared');
         return res.json({ success: true, message: 'All news cleared' });
     } catch (error) {
@@ -989,6 +1033,8 @@ app.post('/api/admin/reset-scores', adminLimiter, requireAdmin, (req, res) => {
     try {
         db.resetAllScores();
         db.saveDatabase();
+        sc_del('leaderboard:'); sc_del('topStartups:'); sc_del('stats:');
+        sc_del('feed:'); sc_del('liveFeed:'); sc_del('dailyScores:');
         console.log('[Admin] All scores reset (daily_scores, score_history, leaderboard)');
         return res.json({ success: true, message: 'All scores reset' });
     } catch (error) {

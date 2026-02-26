@@ -52,10 +52,11 @@ const LONG_TTL = 5 * 60 * 1000;
 
 // Polling intervals
 const POLLING_INTERVALS = {
-    FAST: 10 * 1000,      // 10s - for balances
-    NORMAL: 30 * 1000,    // 30s - for NFTs, marketplace
-    SLOW: 60 * 1000,      // 60s - for tournaments
-    RARE: 5 * 60 * 1000,  // 5min - for pack prices
+    FAST: 10 * 1000,                 // 10s - for balances
+    NORMAL: 30 * 1000,               // 30s - for NFTs, marketplace
+    SLOW: 60 * 1000,                 // 60s - for tournaments
+    RARE: 5 * 60 * 1000,             // 5min - for pack prices
+    ONCE: Number.MAX_SAFE_INTEGER,   // fetch once on load, never re-poll automatically
 };
 
 class BlockchainCache {
