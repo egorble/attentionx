@@ -40,7 +40,7 @@ export const NETWORKS: Record<string, NetworkConfig> = {
         },
         apiBase: '/api',
         metadataBase: '/metadata',
-        packPrice: BigInt('10000000000000000'),    // 0.01 ETH
+        packPrice: BigInt('900000000000000'),       // 0.0009 ETH
         icon: '',
         deployed: true,
     },

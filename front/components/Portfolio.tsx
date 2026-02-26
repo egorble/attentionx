@@ -38,7 +38,7 @@ interface PortfolioProps {
 }
 
 const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
-    const packPriceLabel = '0.01';
+    const packPriceLabel = '0.0009';
     const networkId = getActiveNetworkId();
     const [activeTab, setActiveTab] = useState<'cards' | 'performance'>('cards');
     const [myCards, setMyCards] = useState<CardData[]>([]);
