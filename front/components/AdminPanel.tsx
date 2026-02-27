@@ -455,7 +455,7 @@ const AdminPanel: React.FC = () => {
                 )}
 
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                     <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl p-4">
                         <p className="text-gray-500 text-xs uppercase mb-1">Packs Sold</p>
                         <p className="text-2xl font-bold text-gray-900 dark:text-white font-mono">{stats?.packsSold || 0}</p>
@@ -471,6 +471,53 @@ const AdminPanel: React.FC = () => {
                     <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl p-4">
                         <p className="text-gray-500 text-xs uppercase mb-1">Active Tournament</p>
                         <p className="text-2xl font-bold text-yc-green font-mono">#{stats?.activeTournamentId || 0}</p>
+                    </div>
+                    <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl p-4">
+                        <p className="text-gray-500 text-xs uppercase mb-1 flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            Unique Users
+                        </p>
+                        <p className="text-2xl font-bold text-[#00D4FF] font-mono">{stats?.uniqueBuyers ?? '—'}</p>
+                        <p className="text-gray-400 text-xs mt-0.5">bought ≥1 pack</p>
+                    </div>
+                </div>
+
+                {/* Marketplace Stats + Royalties */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl p-4">
+                        <p className="text-gray-500 text-xs uppercase mb-1">Marketplace Volume</p>
+                        <p className="text-2xl font-bold text-yc-purple font-mono">
+                            {stats ? Number(ethers.formatEther(stats.marketplaceVolume)).toFixed(3) : '0'} {currencySymbol()}
+                        </p>
+                        <p className="text-gray-400 text-xs mt-1">{stats?.marketplaceSales || 0} sales total</p>
+                    </div>
+                    <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl p-4">
+                        <p className="text-gray-500 text-xs uppercase mb-1">Royalties Earned (2%)</p>
+                        <p className="text-2xl font-bold text-yc-green font-mono">
+                            {stats ? Number(ethers.formatEther(stats.royaltiesEarned)).toFixed(4) : '0'} {currencySymbol()}
+                        </p>
+                        <p className="text-gray-400 text-xs mt-1">From secondary market sales</p>
+                    </div>
+                    <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-[#2A2A2A] rounded-xl p-4">
+                        <p className="text-gray-500 text-xs uppercase mb-1">Cards by Rarity</p>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-bold text-yellow-500">Legendary</span>
+                                <span className="text-[13px] font-mono font-bold text-gray-900 dark:text-white">{stats?.rarityStats.legendary ?? '—'}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-bold text-purple-400">Epic</span>
+                                <span className="text-[13px] font-mono font-bold text-gray-900 dark:text-white">{stats?.rarityStats.epic ?? '—'}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-bold text-blue-400">Rare</span>
+                                <span className="text-[13px] font-mono font-bold text-gray-900 dark:text-white">{stats?.rarityStats.rare ?? '—'}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-bold text-gray-400">Common</span>
+                                <span className="text-[13px] font-mono font-bold text-gray-900 dark:text-white">{stats?.rarityStats.common ?? '—'}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

@@ -95,13 +95,22 @@ const ModelViewer3D: React.FC<ModelViewer3DProps> = ({
     const packMode = (isInteractive || isStatic) ? 'static' : mode as 'gentle' | 'auto';
     const [canvasKey, setCanvasKey] = useState(0);
     const wrapRef = useRef<HTMLDivElement>(null!);
-    // Delay Canvas mount by one frame so the wrapper div is committed to the DOM.
+    // Delay Canvas mount until the wrapper div is committed to the DOM.
     // This prevents R3F's event system from calling addEventListener on a null parentElement.
     const [domReady, setDomReady] = useState(false);
-    useEffect(() => { setDomReady(true); }, []);
+    useEffect(() => {
+        // Use rAF to ensure the wrapper div is fully painted before mounting Canvas
+        const raf = requestAnimationFrame(() => setDomReady(true));
+        return () => cancelAnimationFrame(raf);
+    }, []);
 
     const handleContextLost = useCallback(() => {
-        setTimeout(() => setCanvasKey(k => k + 1), 500);
+        // Temporarily unmount Canvas, then remount after DOM settles
+        setDomReady(false);
+        setTimeout(() => {
+            setCanvasKey(k => k + 1);
+            requestAnimationFrame(() => setDomReady(true));
+        }, 600);
     }, []);
 
     return (

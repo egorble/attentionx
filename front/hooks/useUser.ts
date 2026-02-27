@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useWalletContext } from '../context/WalletContext';
 import { generatePixelAvatar } from '../lib/pixelAvatar';
-import { createSignedAuth } from '../lib/auth';
 
 import { apiUrl } from '../lib/api';
 import { getActiveNetworkId } from '../lib/networks';
@@ -37,7 +36,7 @@ function clearProfileCache() {
 }
 
 export function useUser() {
-    const { address, isConnected, getSigner } = useWalletContext();
+    const { address, isConnected } = useWalletContext();
     const [profile, setProfile] = useState<UserProfileData | null>(null);
     const [needsRegistration, setNeedsRegistration] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -104,11 +103,6 @@ export function useUser() {
         try {
             setLoading(true);
 
-            // Sign message to prove wallet ownership
-            const signer = await getSigner();
-            if (!signer) return false;
-            const { message, signature } = await createSignedAuth(signer, address);
-
             // Check for stored referrer to send with registration
             let referrer = localStorage.getItem(`attentionx_referrer_${getActiveNetworkId()}`);
             if (!referrer) {
@@ -127,8 +121,6 @@ export function useUser() {
                     username,
                     avatar: avatarDataUrl || null,
                     referrer: referrer || null,
-                    message,
-                    signature,
                 }),
             });
             const data = await res.json();
@@ -151,7 +143,7 @@ export function useUser() {
         } finally {
             setLoading(false);
         }
-    }, [address, getSigner]);
+    }, [address]);
 
     // Update existing profile
     const updateProfile = useCallback(async (username: string, avatarDataUrl?: string) => {
@@ -160,11 +152,6 @@ export function useUser() {
         try {
             setLoading(true);
 
-            // Sign message to prove wallet ownership
-            const signer = await getSigner();
-            if (!signer) return false;
-            const { message, signature } = await createSignedAuth(signer, address);
-
             const res = await fetch(apiUrl(`/users/${address.toLowerCase()}`), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -172,8 +159,6 @@ export function useUser() {
                     address: address.toLowerCase(),
                     username,
                     avatar: avatarDataUrl || null,
-                    message,
-                    signature,
                 }),
             });
             const data = await res.json();
@@ -194,7 +179,7 @@ export function useUser() {
         } finally {
             setLoading(false);
         }
-    }, [address, getSigner]);
+    }, [address]);
 
     // Get generated pixel avatar for address
     const getPixelAvatar = useCallback((addr?: string) => {

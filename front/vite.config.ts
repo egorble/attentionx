@@ -32,7 +32,10 @@ export default defineConfig(({ mode }) => {
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
-        }
+        },
+        // Deduplicate React to avoid "multiple copies of React" error when
+        // wagmi / @tanstack/react-query bundle their own React resolution
+        dedupe: ['react', 'react-dom'],
       }
     };
 });

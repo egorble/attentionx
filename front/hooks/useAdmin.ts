@@ -5,8 +5,10 @@ import {
     getNFTContract,
     getPackOpenerContract,
     getTournamentContract,
+    getMarketplaceV2Contract,
     formatXTZ,
     getActiveContracts,
+    STARTUPS,
 } from '../lib/contracts';
 import { getActiveNetwork } from '../lib/networks';
 
@@ -27,12 +29,24 @@ export interface ContractBalances {
     tournament: bigint;
 }
 
+export interface RarityStats {
+    common: number;
+    rare: number;
+    epic: number;
+    legendary: number;
+}
+
 export interface AdminStats {
     packsSold: number;
     packPrice: bigint;
     totalNFTs: number;
     activeTournamentId: number;
     nextTournamentId: number;
+    rarityStats: RarityStats;
+    marketplaceVolume: bigint;
+    marketplaceSales: number;
+    royaltiesEarned: bigint;
+    uniqueBuyers: number;
 }
 
 export interface TournamentData {
@@ -72,18 +86,53 @@ export function useAdmin() {
 
     // Get admin stats
     const getAdminStats = useCallback(async (): Promise<AdminStats> => {
+        const emptyRarity: RarityStats = { common: 0, rare: 0, epic: 0, legendary: 0 };
         try {
             const packContract = getPackOpenerContract();
             const nftContract = getNFTContract();
             const tournamentContract = getTournamentContract();
+            const marketplaceContract = getMarketplaceV2Contract();
 
-            const [packsSold, packPrice, totalNFTs, activeTournamentId, nextTournamentId] = await Promise.all([
+            // Fetch basic stats + marketplace global stats in parallel
+            const [packsSold, packPrice, totalNFTs, activeTournamentId, nextTournamentId, globalStats] = await Promise.all([
                 packContract.packsSold(),
                 packContract.currentPackPrice(),
                 nftContract.totalSupply(),
                 packContract.activeTournamentId(),
                 tournamentContract.nextTournamentId(),
+                marketplaceContract.getGlobalStats(),
             ]);
+
+            // Fetch mint count for each of the 19 startups to build rarity breakdown
+            const startupIds = Array.from({ length: 19 }, (_, i) => i + 1);
+            const mintCounts = await Promise.all(
+                startupIds.map(id => nftContract.startupMintCount(id).catch(() => 0n))
+            );
+
+            // Aggregate by rarity using the STARTUPS constant (no extra RPC calls needed)
+            const rarityStats: RarityStats = { common: 0, rare: 0, epic: 0, legendary: 0 };
+            startupIds.forEach((id, idx) => {
+                const count = Number(mintCounts[idx]);
+                const rarity = STARTUPS[id]?.rarity;
+                if (rarity === 'Legendary') rarityStats.legendary += count;
+                else if (rarity === 'Epic') rarityStats.epic += count;
+                else if (rarity === 'Rare') rarityStats.rare += count;
+                else rarityStats.common += count;
+            });
+
+            const marketplaceVolume = globalStats[0] as bigint;
+            const marketplaceSales = Number(globalStats[1]);
+            // Royalties = 2% of total marketplace volume (ERC-2981: ROYALTY_FEE = 200 bp)
+            const royaltiesEarned = marketplaceVolume * 200n / 10000n;
+
+            // Count unique buyers — query PackPurchased events and deduplicate buyer addresses
+            let uniqueBuyers = 0;
+            try {
+                const filter = packContract.filters.PackPurchased();
+                const events = await packContract.queryFilter(filter, 0, 'latest');
+                const buyers = new Set(events.map(e => (e as any).args?.buyer?.toLowerCase()).filter(Boolean));
+                uniqueBuyers = buyers.size;
+            } catch { /* event query failed — non-critical */ }
 
             return {
                 packsSold: Number(packsSold),
@@ -91,9 +140,19 @@ export function useAdmin() {
                 totalNFTs: Number(totalNFTs),
                 activeTournamentId: Number(activeTournamentId),
                 nextTournamentId: Number(nextTournamentId),
+                rarityStats,
+                marketplaceVolume,
+                marketplaceSales,
+                royaltiesEarned,
+                uniqueBuyers,
             };
         } catch (e) {
-            return { packsSold: 0, packPrice: BigInt(5e18), totalNFTs: 0, activeTournamentId: 0, nextTournamentId: 0 };
+            return {
+                packsSold: 0, packPrice: BigInt(5e18), totalNFTs: 0,
+                activeTournamentId: 0, nextTournamentId: 0,
+                rarityStats: emptyRarity, marketplaceVolume: 0n, marketplaceSales: 0, royaltiesEarned: 0n,
+                uniqueBuyers: 0,
+            };
         }
     }, []);
 

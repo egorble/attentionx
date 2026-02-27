@@ -14,6 +14,7 @@ import gsap from 'gsap';
 import { useOnboarding } from '../hooks/useOnboarding';
 import OnboardingGuide, { OnboardingStep } from './OnboardingGuide';
 import ModelViewer3D from './ModelViewer3D';
+import { blockchainCache, CacheKeys } from '../lib/cache';
 
 const PORTFOLIO_GUIDE: OnboardingStep[] = [
     {
@@ -35,9 +36,11 @@ const PORTFOLIO_GUIDE: OnboardingStep[] = [
 
 interface PortfolioProps {
     onBuyPack: (packId?: number) => void;
+    /** Increment to force an immediate pack refresh (e.g. after buying packs) */
+    packRefreshSignal?: number;
 }
 
-const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
+const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, packRefreshSignal }) => {
     const packPriceLabel = '0.0009';
     const networkId = getActiveNetworkId();
     const [activeTab, setActiveTab] = useState<'cards' | 'performance'>('cards');
@@ -160,16 +163,27 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
         }
     }, [isConnected, address, networkId]);
 
+    // Immediately refresh packs when signal changes (e.g. after buying packs in modal)
+    useEffect(() => {
+        if (!packRefreshSignal || !address) return;
+        blockchainCache.invalidate(CacheKeys.userUnopenedPacks(address));
+        refreshPacks();
+    }, [packRefreshSignal]);
+
     const loadCards = async (forceBlockchain = false) => {
         if (!address) return;
         setIsRefreshing(true);
         if (forceBlockchain) {
             clearCache();
-            const fresh = await getCards(address, true);
+            blockchainCache.invalidate(CacheKeys.userUnopenedPacks(address));
+            const [fresh] = await Promise.all([
+                getCards(address, true),
+                refreshPacks(),
+            ]);
             setMyCards(sortByRarity(fresh));
             setIsRefreshing(false);
         } else {
-            await refreshCards();
+            await Promise.all([refreshCards(), refreshPacks()]);
         }
     };
 
@@ -649,13 +663,6 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
                         <h3 className="text-lg font-bold text-yc-text-primary dark:text-white flex items-center mb-4">
                             <Package className="w-5 h-5 mr-2 text-gray-400" />
                             Unopened Packs ({myPacks.length})
-                            <button
-                                onClick={() => loadCards(true)}
-                                disabled={isRefreshing}
-                                className="ml-3 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors"
-                            >
-                                <RefreshCw className={`w-4 h-4 text-gray-500 ${isRefreshing ? 'animate-spin' : ''}`} />
-                            </button>
                         </h3>
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 md:gap-4">
                             {myPacks.map((packId) => (
@@ -687,8 +694,16 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack }) => {
 
                 {/* Assets Header & Controls */}
                 <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-bold text-yc-text-primary dark:text-white flex items-center">
+                    <h3 className="text-xl font-bold text-yc-text-primary dark:text-white flex items-center gap-2">
                         Your Assets ({myCards.length})
+                        <button
+                            onClick={() => loadCards(true)}
+                            disabled={isRefreshing}
+                            title="Refresh cards & packs"
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-yc-purple hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors"
+                        >
+                            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        </button>
                     </h3>
 
                     <button

@@ -12,7 +12,7 @@ import { dirname, join } from 'path';
 import { ethers } from 'ethers';
 import * as db from './db/database.js';
 import { CHAIN, CONTRACTS, NETWORK_NAME } from './config.js';
-import { verifyWalletSignature, requireAdmin, isValidAddress, isValidTournamentId, isValidDate } from './middleware/auth.js';
+import { requireAdmin, isValidAddress, isValidTournamentId, isValidDate } from './middleware/auth.js';
 import { computeLeaderboardHmac, verifyHmac } from './middleware/integrity.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -496,10 +496,14 @@ app.get('/api/feed', (req, res) => {
  * POST /api/users/register
  * Register a new user profile
  */
-app.post('/api/users/register', writeLimiter, verifyWalletSignature, (req, res) => {
+app.post('/api/users/register', writeLimiter, (req, res) => {
     try {
-        const address = req.verifiedAddress; // From verified signature
-        const { username, avatar, referrer } = req.body;
+        const { address: rawAddress, username, avatar, referrer } = req.body;
+
+        if (!rawAddress || !isValidAddress(rawAddress)) {
+            return res.status(400).json({ success: false, error: 'Invalid or missing address' });
+        }
+        const address = rawAddress.toLowerCase();
 
         if (!username) {
             return res.status(400).json({
@@ -588,15 +592,10 @@ app.get('/api/users/:address', (req, res) => {
  * PUT /api/users/:address
  * Update user profile
  */
-app.put('/api/users/:address', writeLimiter, verifyWalletSignature, (req, res) => {
+app.put('/api/users/:address', writeLimiter, (req, res) => {
     try {
         const address = req.params.address.toLowerCase();
         const { username, avatar } = req.body;
-
-        // Verify the signer owns this address
-        if (address !== req.verifiedAddress) {
-            return res.status(403).json({ success: false, error: 'Cannot modify another user\'s profile' });
-        }
 
         if (!username || username.length < 3 || username.length > 20) {
             return res.status(400).json({
@@ -703,10 +702,14 @@ app.get('/api/referrals/:address', (req, res) => {
  * POST /api/referrals/track
  * Track a referral from pack purchase
  */
-app.post('/api/referrals/track', writeLimiter, verifyWalletSignature, (req, res) => {
+app.post('/api/referrals/track', writeLimiter, (req, res) => {
     try {
-        const referred = req.verifiedAddress; // The signer is the referred user
-        const { referrer, packId, amount } = req.body;
+        const { address: rawReferred, referrer, packId, amount } = req.body;
+
+        if (!rawReferred || !isValidAddress(rawReferred)) {
+            return res.status(400).json({ success: false, error: 'Invalid or missing address' });
+        }
+        const referred = rawReferred.toLowerCase();
 
         if (!referrer) {
             return res.status(400).json({

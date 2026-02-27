@@ -12,6 +12,8 @@ interface PackOpeningModalProps {
     isOpen: boolean;
     onClose: () => void;
     onCardsAcquired?: (cards: CardData[]) => void;
+    /** Called after pack(s) are successfully purchased — before opening */
+    onPacksBought?: (packIds: number[]) => void;
     /** If provided, skip to 'bought' stage with this pack ready to open */
     initialPackId?: number | null;
 }
@@ -19,7 +21,7 @@ interface PackOpeningModalProps {
 // Stages: select → buying → bought → opening → exploding → dealing → finished
 type Stage = 'select' | 'buying' | 'bought' | 'opening' | 'exploding' | 'dealing' | 'finished';
 
-const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, onCardsAcquired, initialPackId }) => {
+const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, onCardsAcquired, onPacksBought, initialPackId }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const flashRef = useRef<HTMLDivElement>(null);
     const cardsContainerRef = useRef<HTMLDivElement>(null);
@@ -173,6 +175,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                 setBoughtPackIds(result.packTokenIds);
                 setSelectedPackId(result.packTokenIds[0]);
                 refreshBalance();
+                onPacksBought?.(result.packTokenIds);
                 setStage('bought');
             } else {
                 setTxError(result.error || 'Failed to buy pack');

@@ -20,11 +20,29 @@ import MobileWidgets from './components/MobileWidgets';
 import SplashScreen from './components/SplashScreen';
 import ModelViewer3D from './components/ModelViewer3D';
 import { NavSection, UserProfile, Rarity, CardData } from './types';
-import { Filter, Search, Wallet, Loader2, Sun, Moon, LogOut, User } from 'lucide-react';
+import { Filter, Wallet, Loader2, Sun, Moon, LogOut, User } from 'lucide-react';
 import { useTheme } from './context/ThemeContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { WalletProvider, useWalletContext } from './context/WalletContext';
 import { NetworkProvider, useNetwork } from './context/NetworkContext';
+import { PrivyProvider } from '@privy-io/react-auth';
+import { WagmiProvider } from 'wagmi';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { wagmiConfig } from './lib/wagmiConfig';
+import { defineChain } from 'viem';
+
+// RISE Testnet chain definition for Privy
+const riseTestnet = defineChain({
+    id: 11155931,
+    name: 'RISE Testnet',
+    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+    rpcUrls: {
+        default: { http: ['https://testnet.riselabs.xyz'] },
+    },
+    blockExplorers: {
+        default: { name: 'RISE Explorer', url: 'https://explorer.testnet.riselabs.xyz' },
+    },
+});
 import { formatXTZ, CHAIN_NAME } from './lib/contracts';
 import { currencySymbol } from './lib/networks';
 import { isAdmin } from './hooks/useAdmin';
@@ -35,6 +53,15 @@ import { useMarketplaceV2, Listing } from './hooks/useMarketplaceV2';
 import { useNFT } from './hooks/useNFT';
 import { usePacks } from './hooks/usePacks';
 import { checkContractChange } from './lib/cache';
+
+// RISE Wallet inline SVG logo
+const RiseWalletIcon = () => (
+    <svg viewBox="0 0 32 32" width="16" height="16" fill="none" aria-hidden="true">
+        <circle cx="16" cy="16" r="16" fill="#00D4FF" fillOpacity="0.15"/>
+        <path d="M8 22L16 10L24 22" stroke="#00D4FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M11 18H21" stroke="#00D4FF" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+);
 
 // Inner component that uses wallet context
 const AppContent: React.FC = () => {
@@ -64,6 +91,7 @@ const AppContent: React.FC = () => {
         balanceLoading,
         isCorrectChain,
         connect,
+        connectRiseWallet,
         disconnect,
         switchChain,
         refreshBalance,
@@ -83,6 +111,9 @@ const AppContent: React.FC = () => {
     // Profile edit modal state
     const [isProfileEditOpen, setIsProfileEditOpen] = useState(false);
 
+    // Pack refresh signal — incremented after buying packs so Portfolio refreshes immediately
+    const [packRefreshSignal, setPackRefreshSignal] = useState(0);
+
     // Mobile menu state
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const { theme, toggleTheme } = useTheme();
@@ -100,7 +131,7 @@ const AppContent: React.FC = () => {
     // Dynamic user from wallet + profile
     const user: UserProfile = {
         name: isConnected
-            ? (profile?.username || formatAddress(address!))
+            ? (profile?.username || (address ? formatAddress(address) : ''))
             : 'Not Connected',
         handle: isConnected ? `@${address?.slice(2, 8)}` : '@connect',
         balanceXTZ: isConnected ? Number(ethers.formatEther(balance)) : 0,
@@ -244,7 +275,7 @@ const AppContent: React.FC = () => {
             case NavSection.MARKETPLACE:
                 return <Marketplace />;
             case NavSection.PORTFOLIO:
-                return <Portfolio onBuyPack={(packId?: number) => { setOpenPackId(packId ?? null); setIsPackModalOpen(true); }} />;
+                return <Portfolio onBuyPack={(packId?: number) => { setOpenPackId(packId ?? null); setIsPackModalOpen(true); }} packRefreshSignal={packRefreshSignal} />;
             case NavSection.LEAGUES:
                 return <Leagues />;
             case NavSection.FEED:
@@ -412,7 +443,7 @@ const AppContent: React.FC = () => {
                 activeSection={activeSection}
                 setActiveSection={handleSectionChange}
                 user={user}
-                onSettingsClick={() => isConnected && profile && setIsProfileEditOpen(true)}
+                onSettingsClick={() => isConnected && setIsProfileEditOpen(true)}
             />
 
             {/* Main Content Area */}
@@ -461,7 +492,7 @@ const AppContent: React.FC = () => {
                                             {isConnected && (
                                                 <div
                                                     className="flex items-center gap-3 p-2 rounded-xl bg-gray-50 dark:bg-white/[0.03] cursor-pointer active:scale-[0.98] transition-transform"
-                                                    onClick={() => { setIsMobileMenuOpen(false); if (profile) setIsProfileEditOpen(true); }}
+                                                    onClick={() => { setIsMobileMenuOpen(false); setIsProfileEditOpen(true); }}
                                                 >
                                                     <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-gray-200 dark:border-gray-700">
                                                         <img
@@ -473,7 +504,7 @@ const AppContent: React.FC = () => {
                                                     </div>
                                                     <div className="min-w-0">
                                                         <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{user.name}</p>
-                                                        <p className="text-[10px] text-gray-400 font-mono">{formatAddress(address!)}</p>
+                                                        <p className="text-[10px] text-gray-400 font-mono">{address ? formatAddress(address) : ''}</p>
                                                     </div>
                                                 </div>
                                             )}
@@ -495,13 +526,30 @@ const AppContent: React.FC = () => {
 
                                             {/* Connect / Switch */}
                                             {!isConnected ? (
-                                                <button
-                                                    onClick={() => { setIsMobileMenuOpen(false); connect(); }}
-                                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-yc-purple text-white font-bold text-sm active:scale-95 transition-transform hover:bg-yc-purple/80"
-                                                >
-                                                    <Wallet className="w-4 h-4" />
-                                                    Connect Wallet
-                                                </button>
+                                                <div className="space-y-2">
+                                                    {/* Connect Wallet via Privy */}
+                                                    <button
+                                                        onClick={() => { setIsMobileMenuOpen(false); connect(); }}
+                                                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-yc-purple text-white font-bold text-sm active:scale-95 transition-transform hover:bg-yc-purple/80"
+                                                    >
+                                                        <Wallet className="w-4 h-4" />
+                                                        Connect Wallet
+                                                    </button>
+                                                    {/* Divider */}
+                                                    <div className="flex items-center gap-2 py-0.5">
+                                                        <div className="flex-1 h-px bg-gray-200 dark:bg-white/[0.06]" />
+                                                        <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-widest">or</span>
+                                                        <div className="flex-1 h-px bg-gray-200 dark:bg-white/[0.06]" />
+                                                    </div>
+                                                    {/* RISE Wallet */}
+                                                    <button
+                                                        onClick={() => { setIsMobileMenuOpen(false); connectRiseWallet(); }}
+                                                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-[#00D4FF]/30 bg-[#00D4FF]/5 text-[#00D4FF] font-bold text-sm active:scale-95 transition-transform hover:bg-[#00D4FF]/10"
+                                                    >
+                                                        <RiseWalletIcon />
+                                                        RISE Wallet
+                                                    </button>
+                                                </div>
                                             ) : !isCorrectChain ? (
                                                 <button
                                                     onClick={() => { setIsMobileMenuOpen(false); switchChain(); }}
@@ -581,6 +629,7 @@ const AppContent: React.FC = () => {
                 isOpen={isPackModalOpen}
                 initialPackId={openPackId}
                 onClose={() => { setIsPackModalOpen(false); setOpenPackId(null); }}
+                onPacksBought={() => setPackRefreshSignal(p => p + 1)}
                 onCardsAcquired={(cards) => {
                     if (address) {
                         updateServerCache(address, cards);
@@ -626,6 +675,9 @@ const AppContent: React.FC = () => {
 // No key={networkId} — data is shared across networks, components stay alive
 // Network-specific UI (pack visual, price, currency) re-renders via useNetwork context
 
+// Singleton QueryClient for wagmi/react-query
+const queryClient = new QueryClient();
+
 // Main App with providers + splash screen
 const App: React.FC = () => {
     const [showSplash, setShowSplash] = useState(true);
@@ -635,14 +687,42 @@ const App: React.FC = () => {
     }, []);
 
     return (
-        <ThemeProvider>
-            <NetworkProvider>
-                <WalletProvider>
-                    {showSplash && <SplashScreen onReady={handleSplashReady} />}
-                    <AppContent />
-                </WalletProvider>
-            </NetworkProvider>
-        </ThemeProvider>
+        <WagmiProvider config={wagmiConfig}>
+            <QueryClientProvider client={queryClient}>
+                <PrivyProvider
+                    appId={import.meta.env.VITE_PRIVY_APP_ID as string}
+                    config={{
+                        supportedChains: [riseTestnet],
+                        defaultChain: riseTestnet,
+                        loginMethods: ['wallet', 'email', 'google', 'twitter'],
+                        embeddedWallets: {
+                            ethereum: { createOnLogin: 'users-without-wallets' },
+                        },
+                        appearance: {
+                            theme: 'dark',
+                            accentColor: '#9333ea',
+                            showWalletLoginFirst: true,
+                            landingHeader: 'Welcome to AttentionX',
+                            loginMessage: 'Connect your wallet or sign in to play',
+                            walletChainType: 'ethereum-only',
+                            walletList: [
+                                'detected_ethereum_wallets',
+                                'wallet_connect',
+                            ],
+                        },
+                    }}
+                >
+                    <ThemeProvider>
+                        <NetworkProvider>
+                            <WalletProvider>
+                                {showSplash && <SplashScreen onReady={handleSplashReady} />}
+                                <AppContent />
+                            </WalletProvider>
+                        </NetworkProvider>
+                    </ThemeProvider>
+                </PrivyProvider>
+            </QueryClientProvider>
+        </WagmiProvider>
     );
 };
 

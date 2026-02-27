@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Upload, Loader2, X, LogOut } from 'lucide-react';
+import { User, Upload, Loader2, X, LogOut, Copy, Check } from 'lucide-react';
 import { generatePixelAvatar } from '../lib/pixelAvatar';
 
 interface ProfileEditModalProps {
@@ -27,7 +27,14 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
     const [pixelAvatar, setPixelAvatar] = useState<string>('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [addressCopied, setAddressCopied] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleCopyAddress = () => {
+        navigator.clipboard.writeText(address);
+        setAddressCopied(true);
+        setTimeout(() => setAddressCopied(false), 2000);
+    };
 
     useEffect(() => {
         if (address) {
@@ -179,6 +186,22 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
                             onChange={handleFileUpload}
                             className="hidden"
                         />
+                    </div>
+
+                    {/* Wallet Address */}
+                    <div className="flex items-center justify-between bg-gray-50 dark:bg-[#050505] rounded-xl px-4 py-2.5 border border-gray-200 dark:border-[#2A2A2A]">
+                        <div className="min-w-0">
+                            <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Wallet Address</span>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 font-mono truncate">{address}</p>
+                        </div>
+                        <button
+                            onClick={handleCopyAddress}
+                            className="ml-3 shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-[#2A2A2A] transition-all text-[11px] font-semibold"
+                            style={{ color: addressCopied ? '#22c55e' : undefined, borderColor: addressCopied ? '#22c55e' : undefined }}
+                        >
+                            {addressCopied ? <Check size={12} /> : <Copy size={12} />}
+                            <span>{addressCopied ? 'Copied!' : 'Copy'}</span>
+                        </button>
                     </div>
 
                     {/* Username Input */}

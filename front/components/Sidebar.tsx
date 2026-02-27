@@ -1,10 +1,19 @@
 import React from 'react';
 import { NavSection, UserProfile } from '../types';
-import { Flame, Store, Wallet, Swords, Newspaper, Settings, Sun, Moon, ShieldCheck } from 'lucide-react';
+import { Flame, Store, Wallet, Swords, Newspaper, Settings, Sun, Moon, ShieldCheck, Copy, Check } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { isAdmin } from '../hooks/useAdmin';
 import { useWalletContext } from '../context/WalletContext';
 import { ethers } from 'ethers';
+
+// RISE Wallet inline SVG logo
+const RiseWalletIcon = () => (
+  <svg viewBox="0 0 32 32" width="15" height="15" fill="none" aria-hidden="true">
+    <circle cx="16" cy="16" r="16" fill="#00D4FF" fillOpacity="0.15"/>
+    <path d="M8 22L16 10L24 22" stroke="#00D4FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M11 18H21" stroke="#00D4FF" strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
 
 interface SidebarProps {
   activeSection: NavSection;
@@ -17,7 +26,17 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user, isOpen = false, onClose, onSettingsClick }) => {
   const { theme, toggleTheme } = useTheme();
-  const { connect, isConnecting, isConnected, balance, balanceLoading } = useWalletContext();
+  const { connect, connectRiseWallet, isConnecting, isConnected, balance, balanceLoading, address } = useWalletContext();
+  const [addressCopied, setAddressCopied] = React.useState(false);
+
+  const handleCopyAddress = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!address) return;
+    navigator.clipboard.writeText(address);
+    setAddressCopied(true);
+    setTimeout(() => setAddressCopied(false), 2000);
+  };
+
   const userIsAdmin = isAdmin(user.address || null);
 
   const navItems = [
@@ -88,9 +107,18 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user
               </div>
               <div className="ml-3 flex-1 min-w-0">
                 <p className="text-sm font-semibold text-yc-text-primary dark:text-white truncate">{user.name}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 font-mono font-medium">
-                  {balanceLoading ? '...' : `${Number(ethers.formatEther(balance)).toFixed(3)} ETH`}
-                </p>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 font-mono font-medium">
+                    {balanceLoading ? '...' : `${Number(ethers.formatEther(balance)).toFixed(3)} ETH`}
+                  </p>
+                  <button
+                    onClick={handleCopyAddress}
+                    className="shrink-0 p-0.5 text-gray-300 dark:text-gray-600 hover:text-yc-purple dark:hover:text-yc-purple transition-colors"
+                    title="Copy wallet address"
+                  >
+                    {addressCopied ? <Check size={11} className="text-green-500" /> : <Copy size={11} />}
+                  </button>
+                </div>
               </div>
               <Settings className="w-5 h-5 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400 transition-colors shrink-0" />
             </div>
@@ -114,15 +142,38 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user
             </div>
           </>
         ) : (
-          /* Not connected: show Connect button + theme toggle */
+          /* Not connected: Privy + RISE Wallet options */
           <>
+            {/* Powered by Privy — above connect button */}
+            <p className="text-center text-[10px] text-gray-400 dark:text-gray-600 font-medium tracking-wide">
+              Powered by{' '}
+              <span className="text-gray-500 dark:text-gray-500 font-semibold">Privy</span>
+            </p>
+
+            {/* Connect Wallet (opens Privy modal) */}
             <button
               onClick={connect}
               disabled={isConnecting}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-yc-purple text-white font-bold text-sm transition-all hover:bg-yc-purple/80 hover:shadow-[0_0_20px_rgba(147,51,234,0.3)] hover:scale-[1.02] active:scale-95"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-yc-purple text-white font-bold text-sm transition-all hover:bg-yc-purple/80 hover:shadow-[0_0_20px_rgba(147,51,234,0.3)] hover:scale-[1.02] active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Wallet size={18} />
-              {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+              {isConnecting ? 'Loading...' : 'Connect Wallet'}
+            </button>
+
+            {/* Divider */}
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-px bg-gray-200 dark:bg-white/[0.06]" />
+              <span className="text-[10px] text-gray-400 dark:text-gray-600 font-semibold uppercase tracking-widest">or</span>
+              <div className="flex-1 h-px bg-gray-200 dark:bg-white/[0.06]" />
+            </div>
+
+            {/* RISE Wallet */}
+            <button
+              onClick={connectRiseWallet}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border border-[#00D4FF]/25 bg-[#00D4FF]/5 text-[#00D4FF] font-bold text-sm transition-all hover:bg-[#00D4FF]/10 hover:border-[#00D4FF]/40 hover:scale-[1.02] active:scale-95"
+            >
+              <RiseWalletIcon />
+              RISE Wallet
             </button>
 
             {/* Theme Toggle */}
