@@ -264,34 +264,42 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         }
     }, [riseIsConnected, wagmiSignMessage, privyWallet]);
 
-    // ── getSigner ─────────────────────────────────────────────────────────────
-    const getSigner = useCallback(async (): Promise<ethers.Signer | null> => {
+    // ── getSigner (with retry — provider may lag behind isConnected) ─────────
+    const getSignerOnce = useCallback(async (): Promise<ethers.Signer | null> => {
         // When RISE Wallet is active — NEVER fall through to Privy.
-        // Privy signs with a different key/address → backend signature check would fail (401).
         if (riseIsConnected) {
             // Try cached walletProvider first
             if (walletProvider) {
                 try {
-                    return new BrowserProvider(walletProvider as any).getSigner();
+                    return await new BrowserProvider(walletProvider as any).getSigner();
                 } catch { /* try direct below */ }
             }
             // walletProvider may not be cached yet — ask connector directly
             if (riseConnector) {
                 try {
                     const eip1193 = await (riseConnector as any).getProvider();
-                    if (eip1193) return new BrowserProvider(eip1193 as any).getSigner();
+                    if (eip1193) return await new BrowserProvider(eip1193 as any).getSigner();
                 } catch { /* connector doesn't expose provider */ }
             }
-            return null; // RISE connected but provider unavailable — don't sign with wrong key
+            return null;
         }
         if (!privyWallet) return null;
         try {
             const eip1193 = await privyWallet.getEthereumProvider();
-            return new BrowserProvider(eip1193 as any).getSigner();
+            return await new BrowserProvider(eip1193 as any).getSigner();
         } catch {
             return null;
         }
     }, [riseIsConnected, walletProvider, riseConnector, privyWallet]);
+
+    const getSigner = useCallback(async (): Promise<ethers.Signer | null> => {
+        // First attempt
+        const signer = await getSignerOnce();
+        if (signer) return signer;
+        // Provider may not be ready yet (Privy async init) — retry after short delay
+        await new Promise(r => setTimeout(r, 600));
+        return getSignerOnce();
+    }, [getSignerOnce]);
 
     // ── Context value ─────────────────────────────────────────────────────────
     const value: WalletContextType = {

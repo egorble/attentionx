@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { BrowserProvider, ethers } from 'ethers';
+import { ethers } from 'ethers';
 import { getMarketplaceV2Contract, getNFTContract, getPackNFTContract, CONTRACTS, formatXTZ } from '@/lib/contracts';
 import { getActiveContracts } from '@/lib/contracts';
 import { blockchainCache, CacheKeys, CacheTTL } from '../lib/cache';
@@ -102,7 +102,7 @@ function decodeMarketplaceError(err: any): string | null {
 
 // ============ Hook ============
 export function useMarketplaceV2() {
-    const { address, isConnected, walletProvider } = useWalletContext();
+    const { address, isConnected, getSigner: ctxGetSigner } = useWalletContext();
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -119,12 +119,12 @@ export function useMarketplaceV2() {
         }
     }, [address]);
 
-    // Get signer
+    // Get signer — delegates to WalletContext (handles Privy + RISE Wallet)
     const getSigner = useCallback(async () => {
-        if (!walletProvider) throw new Error('Wallet not connected');
-        const provider = new BrowserProvider(walletProvider as any);
-        return provider.getSigner();
-    }, [walletProvider]);
+        const signer = await ctxGetSigner();
+        if (!signer) throw new Error('Wallet not connected');
+        return signer;
+    }, [ctxGetSigner]);
 
     // ============ Listings ============
     // ============ Listings ============
