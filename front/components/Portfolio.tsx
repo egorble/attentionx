@@ -817,7 +817,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, packRefreshSignal }) =
 
                 {/* Floating Action Bar for Merge */}
                 {isMergeMode && (
-                    <div className="fixed bottom-24 md:bottom-8 left-1/2 transform -translate-x-1/2 z-40 animate-[slideUp_0.3s_cubic-bezier(0.2,0.8,0.2,1)]">
+                    <div className="fixed bottom-28 md:bottom-8 left-1/2 transform -translate-x-1/2 z-40 animate-[slideUp_0.3s_cubic-bezier(0.2,0.8,0.2,1)]">
                         <div className="bg-white dark:bg-[#1A1A1A] border border-gray-300 dark:border-[#333] p-2 pl-6 pr-2 rounded-2xl shadow-2xl flex items-center gap-6">
                             <div className="flex flex-col">
                                 <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Fusion Chamber</span>

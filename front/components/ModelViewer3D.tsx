@@ -118,8 +118,6 @@ const ModelViewer3D: React.FC<ModelViewer3DProps> = ({
             {domReady && (
                 <Canvas
                     key={canvasKey}
-                    eventSource={wrapRef}
-                    eventPrefix="offset"
                     camera={{ position: [0, cameraY, cameraZ], fov }}
                     gl={{
                         alpha: true,
@@ -128,7 +126,8 @@ const ModelViewer3D: React.FC<ModelViewer3DProps> = ({
                         ...(mode === 'gentle' ? { pixelRatio: 1 } : {}),
                     }}
                     frameloop={paused ? 'never' : (mode === 'gentle' || mode === 'static' ? 'demand' : 'always')}
-                    style={{ background: 'transparent' }}
+                    style={{ background: 'transparent', pointerEvents: isInteractive ? 'auto' : 'none' }}
+                    {...(!isInteractive ? { events: () => ({ enabled: false, priority: 0, compute: () => false }) as any } : {})}
                 >
                     <ContextGuard onLost={handleContextLost} />
                     <ambientLight intensity={0.6} />

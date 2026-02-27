@@ -20,7 +20,7 @@ import MobileWidgets from './components/MobileWidgets';
 import SplashScreen from './components/SplashScreen';
 import ModelViewer3D from './components/ModelViewer3D';
 import { NavSection, UserProfile, Rarity, CardData } from './types';
-import { Filter, Wallet, Loader2, Sun, Moon, LogOut, User } from 'lucide-react';
+import { Filter, Wallet, Loader2, Sun, Moon, LogOut, User, Copy, Check } from 'lucide-react';
 import { useTheme } from './context/ThemeContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { WalletProvider, useWalletContext } from './context/WalletContext';
@@ -116,6 +116,7 @@ const AppContent: React.FC = () => {
 
     // Mobile menu state
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [addressCopied, setAddressCopied] = useState(false);
     const { theme, toggleTheme } = useTheme();
 
     // Marketplace hook
@@ -447,7 +448,7 @@ const AppContent: React.FC = () => {
             />
 
             {/* Main Content Area */}
-            <main className="w-full md:pl-72 xl:pr-64 min-h-screen pb-24 md:pb-6 overflow-x-hidden">
+            <main className="w-full md:pl-72 xl:pr-64 min-h-screen pb-36 md:pb-6 overflow-x-hidden">
                 <div className="w-full mx-auto p-4 md:p-6 max-w-full overflow-hidden">
 
                     {/* Top Bar (Mobile Only now) */}
@@ -458,9 +459,24 @@ const AppContent: React.FC = () => {
                         </div>
 
                         <div className="flex items-center space-x-2 md:space-x-6 ml-2 md:ml-6">
-                            {/* Balance Display - desktop removed and moved to Sidebar */}
-
-                            {/* Wallet Button - desktop removed and moved to Sidebar */}
+                            {/* Mobile: Copy address button */}
+                            {isConnected && address && (
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(address);
+                                        setAddressCopied(true);
+                                        setTimeout(() => setAddressCopied(false), 2000);
+                                    }}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold font-mono transition-all active:scale-95 border ${
+                                        addressCopied
+                                            ? 'bg-green-500/10 text-green-500 border-green-500/20'
+                                            : 'bg-gray-100 dark:bg-white/[0.04] text-gray-500 dark:text-gray-400 border-gray-200 dark:border-white/[0.08]'
+                                    }`}
+                                >
+                                    {addressCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                    {addressCopied ? 'Copied' : formatAddress(address)}
+                                </button>
+                            )}
 
                             {/* Mobile: Profile avatar button */}
                             <div className="relative md:hidden">
@@ -665,8 +681,8 @@ const AppContent: React.FC = () => {
                 onDisconnect={disconnect}
             />
 
-            {/* Bottom Navigation (mobile only) */}
-            <BottomNav activeSection={activeSection} onNavigate={handleSectionChange} />
+            {/* Bottom Navigation (mobile only) — hidden when fullscreen modals are open */}
+            {!isPackModalOpen && <BottomNav activeSection={activeSection} onNavigate={handleSectionChange} />}
 
         </div>
     );
@@ -694,14 +710,14 @@ const App: React.FC = () => {
                     config={{
                         supportedChains: [riseTestnet],
                         defaultChain: riseTestnet,
-                        loginMethods: ['wallet', 'email', 'google', 'twitter'],
+                        loginMethods: ['email', 'google', 'discord', 'wallet'],
                         embeddedWallets: {
                             ethereum: { createOnLogin: 'users-without-wallets' },
                         },
                         appearance: {
                             theme: 'dark',
                             accentColor: '#9333ea',
-                            showWalletLoginFirst: true,
+                            showWalletLoginFirst: false,
                             landingHeader: 'Welcome to AttentionX',
                             loginMessage: 'Connect your wallet or sign in to play',
                             walletChainType: 'ethereum-only',
