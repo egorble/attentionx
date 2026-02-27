@@ -1,3 +1,9 @@
+// Buffer polyfill — required by WalletConnect / Privy embedded wallets in browsers
+import { Buffer } from 'buffer';
+if (typeof window !== 'undefined' && !window.Buffer) {
+    window.Buffer = Buffer;
+}
+
 // Preload fires all API calls immediately — before React mounts
 import './lib/preload';
 import './index.css';
