@@ -8,6 +8,28 @@ import { currencySymbol, getActiveNetwork } from '../lib/networks';
 import ModelViewer3D from './ModelViewer3D';
 import gsap from 'gsap';
 
+/** Parse raw blockchain/wallet errors into short, user-friendly messages */
+function friendlyError(raw: string): string {
+    const l = raw.toLowerCase();
+    if (l.includes('insufficient funds') || l.includes('have 0 want'))
+        return 'Not enough ETH in your wallet. Top up and try again.';
+    if (l.includes('user rejected') || l.includes('user denied') || l.includes('rejected the request'))
+        return 'Transaction cancelled.';
+    if (l.includes('gas limit too high') || l.includes('exceeds block gas'))
+        return 'Transaction too large. Try buying fewer packs.';
+    if (l.includes('nonce'))
+        return 'Transaction conflict. Please wait a moment and try again.';
+    if (l.includes('timeout') || l.includes('timed out'))
+        return 'Network timeout. Check your connection and try again.';
+    if (l.includes('network') || l.includes('disconnected'))
+        return 'Network error. Check your connection.';
+    if (l.includes('unpredictable gas'))
+        return 'Transaction would fail. Check your balance or try again later.';
+    // Fallback: trim to first sentence, max 120 chars
+    const first = raw.split('\n')[0].slice(0, 120);
+    return first.length < raw.length ? first + '...' : first;
+}
+
 interface PackOpeningModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -178,11 +200,11 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                 onPacksBought?.(result.packTokenIds);
                 setStage('bought');
             } else {
-                setTxError(result.error || 'Failed to buy pack');
+                setTxError(friendlyError(result.error || 'Failed to buy pack'));
                 setStage('select');
             }
         } catch (e: any) {
-            setTxError(e.message);
+            setTxError(friendlyError(e.message || 'Something went wrong'));
             setStage('select');
         }
     };
@@ -212,11 +234,11 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                 setBoughtPackIds(prev => prev.filter(id => id !== packTokenId));
                 setOwnedPacks(prev => prev.filter(id => id !== packTokenId));
             } else {
-                setTxError(result.error || 'Failed to open pack');
+                setTxError(friendlyError(result.error || 'Failed to open pack'));
                 setStage(errorStage);
             }
         } catch (e: any) {
-            setTxError(e.message);
+            setTxError(friendlyError(e.message || 'Something went wrong'));
             setStage(errorStage);
         }
     };
@@ -318,7 +340,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                             <p className="text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider">{packCount === 1 ? 'Pack' : 'Packs'}</p>
                         </div>
                         <button
-                            onClick={() => setPackCount(Math.min(10, packCount + 1))}
+                            onClick={() => setPackCount(Math.min(5, packCount + 1))}
                             className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors active:scale-90"
                         >
                             <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -335,7 +357,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
 
                     {/* Error */}
                     {txError && (
-                        <div className="bg-red-500/20 border border-red-500 rounded-lg px-4 py-2 text-red-400 text-sm max-w-xs text-center mb-3 shrink-0">
+                        <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-2.5 text-red-400 text-xs font-medium max-w-xs text-center mb-3 shrink-0">
                             {txError}
                         </div>
                     )}
@@ -395,7 +417,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
 
                     {/* Error */}
                     {txError && (
-                        <div className="bg-red-500/20 border border-red-500 rounded-lg px-4 py-2 text-red-400 text-sm max-w-xs text-center mb-3 shrink-0">
+                        <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-2.5 text-red-400 text-xs font-medium max-w-xs text-center mb-3 shrink-0">
                             {txError}
                         </div>
                     )}
@@ -437,7 +459,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                         </div>
                     ) : (
                         <div className="flex flex-col items-center shrink-0">
-                            <div className="bg-red-500/20 border border-red-500 rounded-lg px-4 py-2 text-red-400 text-sm max-w-xs text-center mb-4">
+                            <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-2.5 text-red-400 text-xs font-medium max-w-xs text-center mb-4">
                                 {txError}
                             </div>
                             <div className="flex gap-3">

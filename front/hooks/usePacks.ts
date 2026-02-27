@@ -156,7 +156,6 @@ export function usePacks() {
             if (count === 1) {
                 const tx = await packContract.buyPack(referrerAddress, {
                     value: BigInt(price.toString()),
-                    gasLimit: 3_000_000n
                 });
                 const receipt = await tx.wait();
 
@@ -184,10 +183,14 @@ export function usePacks() {
                 }
                 packTokenIds = mintedIds;
             } else {
+                // Cap at 5 packs per tx to stay within block gas limit
+                if (count > 5) {
+                    return { success: false, error: 'Maximum 5 packs per transaction. Buy multiple times for more.' };
+                }
                 const totalPrice = BigInt(price.toString()) * BigInt(count);
+
                 const tx = await packContract.buyMultiplePacks(referrerAddress, count, {
                     value: totalPrice,
-                    gasLimit: 2_000_000n * BigInt(count) + 1_000_000n
                 });
                 const receipt = await tx.wait();
 
@@ -232,9 +235,7 @@ export function usePacks() {
             const nftContract = getNFTContract(signer);
             const signerAddress = await signer.getAddress();
 
-            const tx = await packContract.openPack(packTokenId, {
-                gasLimit: 10_000_000n
-            });
+            const tx = await packContract.openPack(packTokenId);
 
             const receipt = await tx.wait();
 
