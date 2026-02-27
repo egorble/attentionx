@@ -125,14 +125,34 @@ export function useAdmin() {
             // Royalties = 2% of total marketplace volume (ERC-2981: ROYALTY_FEE = 200 bp)
             const royaltiesEarned = marketplaceVolume * 200n / 10000n;
 
-            // Count unique buyers — query PackPurchased events and deduplicate buyer addresses
+            // Count unique buyers — query PackPurchased events in chunks
+            // (RISE Testnet RPC rejects large block ranges, so we chunk)
             let uniqueBuyers = 0;
             try {
+                const readProvider = new ethers.JsonRpcProvider(getActiveNetwork().rpcUrl);
+                const latestBlock = await readProvider.getBlockNumber();
+                // Contract deployed ~Feb 23 — 500k blocks (~11 days at 2s) is plenty
+                const startBlock = Math.max(0, latestBlock - 500_000);
+                const CHUNK = 10_000;
+                const buyers = new Set<string>();
                 const filter = packContract.filters.PackPurchased();
-                const events = await packContract.queryFilter(filter, 0, 'latest');
-                const buyers = new Set(events.map(e => (e as any).args?.buyer?.toLowerCase()).filter(Boolean));
+
+                for (let from = startBlock; from <= latestBlock; from += CHUNK) {
+                    const to = Math.min(from + CHUNK - 1, latestBlock);
+                    try {
+                        const events = await packContract.queryFilter(filter, from, to);
+                        events.forEach(e => {
+                            const buyer = (e as any).args?.buyer?.toLowerCase();
+                            if (buyer) buyers.add(buyer);
+                        });
+                    } catch {
+                        // chunk failed — skip silently
+                    }
+                }
                 uniqueBuyers = buyers.size;
-            } catch { /* event query failed — non-critical */ }
+            } catch (err) {
+                console.warn('[Admin] uniqueBuyers query failed:', err);
+            }
 
             return {
                 packsSold: Number(packsSold),
