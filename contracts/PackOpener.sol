@@ -69,6 +69,10 @@ contract PackOpener is Initializable, Ownable2StepUpgradeable, PausableUpgradeab
     mapping(address => uint256) public referralEarnings;
     mapping(address => uint256) public referralCount;
 
+    // Unique buyer tracking (added in upgrade v2)
+    mapping(address => bool) public hasBought;
+    uint256 public uniqueBuyerCount;
+
     // ============ Events ============
 
     event PackPurchased(address indexed buyer, uint256 indexed packTokenId, uint256 price, uint256 timestamp);
@@ -167,6 +171,7 @@ contract PackOpener is Initializable, Ownable2StepUpgradeable, PausableUpgradeab
         if (packsSold >= MAX_PACKS) revert MaxPacksReached();
 
         _trySetReferrer(msg.sender, referrer);
+        _trackBuyer(msg.sender);
 
         packsSold++;
 
@@ -200,6 +205,7 @@ contract PackOpener is Initializable, Ownable2StepUpgradeable, PausableUpgradeab
         if (packsSold + count > MAX_PACKS) revert MaxPacksReached();
 
         _trySetReferrer(msg.sender, referrer);
+        _trackBuyer(msg.sender);
 
         packTokenIds = new uint256[](count);
 
@@ -245,6 +251,13 @@ contract PackOpener is Initializable, Ownable2StepUpgradeable, PausableUpgradeab
     }
 
     // ============ Internal Functions ============
+
+    function _trackBuyer(address buyer) internal {
+        if (!hasBought[buyer]) {
+            hasBought[buyer] = true;
+            uniqueBuyerCount++;
+        }
+    }
 
     function _generateRandomCards(uint256 seed) internal view returns (uint256[5] memory startupIds) {
         for (uint256 i = 0; i < CARDS_PER_PACK; i++) {
@@ -384,6 +397,16 @@ contract PackOpener is Initializable, Ownable2StepUpgradeable, PausableUpgradeab
                 emit PendingFundsForwarded(tournamentId, amount);
             } catch {
                 pendingPrizePool = amount;
+            }
+        }
+    }
+
+    /// @notice Backfill unique buyer data after upgrade (call once per existing buyer)
+    function backfillBuyers(address[] calldata buyers) external onlyAdmin {
+        for (uint256 i = 0; i < buyers.length; i++) {
+            if (!hasBought[buyers[i]]) {
+                hasBought[buyers[i]] = true;
+                uniqueBuyerCount++;
             }
         }
     }

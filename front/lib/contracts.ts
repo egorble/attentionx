@@ -89,6 +89,7 @@ export const PACK_OPENER_ABI = [
     'function getReferralStats(address referrer) view returns (uint256 count, uint256 totalEarned)',
     'function referralEarnings(address referrer) view returns (uint256)',
     'function referralCount(address referrer) view returns (uint256)',
+    'function uniqueBuyerCount() view returns (uint256)',
     // Write functions — two-step: buy pack NFT, then open it
     'function buyPack(address referrer) payable returns (uint256)',
     'function buyMultiplePacks(address referrer, uint256 count) payable returns (uint256[])',

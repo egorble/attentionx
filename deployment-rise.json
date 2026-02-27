@@ -16,7 +16,7 @@
   "implementations": {
     "AttentionX_NFT": "0x83a576f3344E2684644E884e759DbcA38d93ED5f",
     "PackNFT": "0xC2a9303871BaD267A640B3722cAC3bd18374fDAA",
-    "PackOpener": "0x6517D801951e42d63A4C70c9E8c38436C000755c",
+    "PackOpener": "0x02483f5CD96CfcA9834EeF591EfF6d1860a2dC10",
     "TournamentManager": "0x7736536001681f441e7EbE007D421dd760112088",
     "MarketplaceV2": "0x1A85a3D1aF1516E9C864d48D549c7d5c859CC747"
   },
@@ -31,6 +31,13 @@
       "newImplementation": "0x1A85a3D1aF1516E9C864d48D549c7d5c859CC747",
       "timestamp": "2026-02-26T12:11:34.532Z",
       "txHash": "0x796883a9fcfe20176ca73b8be627c7b9410ffc6b3beea021743bc1ee42f8eca5"
+    },
+    {
+      "contract": "PackOpener",
+      "oldImplementation": "0x6517D801951e42d63A4C70c9E8c38436C000755c",
+      "newImplementation": "0x02483f5CD96CfcA9834EeF591EfF6d1860a2dC10",
+      "timestamp": "2026-02-27T22:11:40.559Z",
+      "txHash": "0xcf784e3cc87e4d061e6cdf69c823f8b2eade72cabfa164a956a71612a26b5197"
     }
   ]
 }
