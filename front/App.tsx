@@ -18,6 +18,7 @@ import TournamentCTA from './components/TournamentCTA';
 import DashboardLeaderboard from './components/DashboardLeaderboard';
 import MobileWidgets from './components/MobileWidgets';
 import SplashScreen from './components/SplashScreen';
+import ErrorBoundary from './components/ErrorBoundary';
 import ModelViewer3D from './components/ModelViewer3D';
 import { NavSection, UserProfile, Rarity, CardData } from './types';
 import { Filter, Wallet, Loader2, Sun, Moon, LogOut, User, Copy, Check } from 'lucide-react';
@@ -729,12 +730,14 @@ const App: React.FC = () => {
                     }}
                 >
                     <ThemeProvider>
-                        <NetworkProvider>
-                            <WalletProvider>
-                                {showSplash && <SplashScreen onReady={handleSplashReady} />}
-                                <AppContent />
-                            </WalletProvider>
-                        </NetworkProvider>
+                        <ErrorBoundary>
+                            <NetworkProvider>
+                                <WalletProvider>
+                                    {showSplash && <SplashScreen onReady={handleSplashReady} />}
+                                    <AppContent />
+                                </WalletProvider>
+                            </NetworkProvider>
+                        </ErrorBoundary>
                     </ThemeProvider>
                 </PrivyProvider>
             </QueryClientProvider>
