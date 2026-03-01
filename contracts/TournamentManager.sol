@@ -516,6 +516,81 @@ contract TournamentManager is Initializable, Ownable2StepUpgradeable, PausableUp
         return "Ended";
     }
 
+    // ============ Batch View Functions (added in upgrade v2) ============
+
+    /// @notice Returns summary of all tournaments the user participated in
+    struct UserTournamentInfo {
+        uint256 tournamentId;
+        uint256 startTime;
+        uint256 endTime;
+        uint256 prizePool;
+        uint256 entryCount;
+        TournamentStatus status;
+        uint256 userScore;
+        uint256 userPrize;
+        bool claimed;
+    }
+
+    function getUserTournamentHistory(address user) external view returns (UserTournamentInfo[] memory) {
+        // Count how many tournaments user entered
+        uint256 count = 0;
+        for (uint256 i = 1; i < nextTournamentId; i++) {
+            if (hasEntered[i][user] && !lineups[i][user].cancelled) {
+                count++;
+            }
+        }
+
+        UserTournamentInfo[] memory result = new UserTournamentInfo[](count);
+        uint256 idx = 0;
+        for (uint256 i = 1; i < nextTournamentId; i++) {
+            if (hasEntered[i][user] && !lineups[i][user].cancelled) {
+                Tournament storage t = tournaments[i];
+                result[idx] = UserTournamentInfo({
+                    tournamentId: i,
+                    startTime: t.startTime,
+                    endTime: t.endTime,
+                    prizePool: t.prizePool,
+                    entryCount: t.entryCount,
+                    status: t.status,
+                    userScore: userScores[i][user],
+                    userPrize: prizes[i][user],
+                    claimed: lineups[i][user].claimed
+                });
+                idx++;
+            }
+        }
+        return result;
+    }
+
+    /// @notice Returns summary of all tournaments (for history page)
+    struct TournamentSummary {
+        uint256 id;
+        uint256 registrationStart;
+        uint256 startTime;
+        uint256 endTime;
+        uint256 prizePool;
+        uint256 entryCount;
+        TournamentStatus status;
+    }
+
+    function getAllTournamentsSummary() external view returns (TournamentSummary[] memory) {
+        uint256 count = nextTournamentId > 1 ? nextTournamentId - 1 : 0;
+        TournamentSummary[] memory result = new TournamentSummary[](count);
+        for (uint256 i = 1; i <= count; i++) {
+            Tournament storage t = tournaments[i];
+            result[i - 1] = TournamentSummary({
+                id: t.id,
+                registrationStart: t.registrationStart,
+                startTime: t.startTime,
+                endTime: t.endTime,
+                prizePool: t.prizePool,
+                entryCount: t.entryCount,
+                status: t.status
+            });
+        }
+        return result;
+    }
+
     // ============ Receive ============
 
     receive() external payable {}

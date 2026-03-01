@@ -11,6 +11,8 @@ const AI_MODELS = [
     'arcee-ai/trinity-large-preview:free',
     'google/gemma-3-4b-it:free',
     'stepfun/step-3.5-flash:free',
+    'z-ai/glm-4.5-air:free',
+    'qwen/qwen3-vl-235b-a22b-thinking',
 ];
 
 const SYSTEM_PROMPT = `You are AttentionX AI — the chief analyst of the AttentionX fantasy startup league. You are an expert in the tech startup ecosystem and specialize in predicting which startups will generate the most social media traction.

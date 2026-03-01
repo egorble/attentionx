@@ -14,6 +14,7 @@ import { useNetwork } from '../context/NetworkContext';
 import gsap from 'gsap';
 import { useOnboarding } from '../hooks/useOnboarding';
 import OnboardingGuide, { OnboardingStep } from './OnboardingGuide';
+import TournamentHistory from './TournamentHistory';
 
 const LEAGUES_GUIDE: OnboardingStep[] = [
     {
@@ -942,6 +943,11 @@ const Leagues: React.FC = () => {
                         )}
                     </div>
                 </div>
+            )}
+
+            {/* Past Tournaments History */}
+            {activeTournamentId > 1 && (
+                <TournamentHistory activeTournamentId={activeTournamentId} />
             )}
 
             {/* Onboarding Guide */}

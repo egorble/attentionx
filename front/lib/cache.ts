@@ -437,6 +437,8 @@ export const CacheKeys = {
     userEntered: (id: number, address: string) => `${n()}:tournament:entered:${id}:${address}`,
     userLineup: (id: number, address: string) => `${n()}:tournament:lineup:${id}:${address}`,
     tournamentPhase: (id: number) => `${n()}:tournament:phase:${id}`,
+    nextTournamentId: () => `${n()}:tournament:nextId`,
+    userScoreInfo: (id: number, address: string) => `${n()}:tournament:scoreInfo:${id}:${address}`,
 
     // Marketplace data
     activeListings: () => `${n()}:marketplace:listings`,

@@ -82,7 +82,7 @@ const API_BASE_URL = 'https://api.twitterapi.io/twitter';
 // Twitter handle -> game startup name
 const STARTUP_MAPPING = {
     'openclaw': 'Openclaw',
-    'lovable_dev': 'Lovable',
+    'Lovable': 'Lovable',
     'cursor_ai': 'Cursor',
     'OpenAI': 'OpenAI',
     'AnthropicAI': 'Anthropic',
@@ -358,6 +358,8 @@ const AI_MODELS = [
     'google/gemma-3-4b-it:free',
     'stepfun/step-3.5-flash:free',
     'arcee-ai/trinity-large-preview:free',
+    'z-ai/glm-4.5-air:free',
+    'qwen/qwen3-vl-235b-a22b-thinking',
 ].filter((v, i, arr) => arr.indexOf(v) === i); // deduplicate
 
 const AI_SCORER_PROMPT = `You are a senior financial news analyst covering the tech startup ecosystem. Your job is to analyze tweets from startups and:
@@ -376,10 +378,12 @@ EVENT TYPES AND SCORING GUIDE:
 - ENGAGEMENT (50-500): General post with high social engagement but no specific news event. Score based on likes/retweets
 
 SCORING RULES:
+- Score ONLY events that directly involve the tweeting company itself. If the company is merely reporting, reposting, or commenting on another company's news (e.g. "BREAKING: Microsoft partners with Starlink"), that is NOT the tweeting company's own partnership — score it as ENGAGEMENT (50-100).
+- News aggregation, market commentary, or sharing other companies' achievements = ENGAGEMENT (50-100), never FUNDING/PARTNERSHIP/ACQUISITION.
 - Score ONLY based on information actually in the tweet. Never invent facts.
 - A routine product update with no significant news = ENGAGEMENT with low score (50-150)
 - Mundane tweets (greetings, memes, polls, casual posts) = ENGAGEMENT with score 50
-- Major announcements deserve higher scores
+- Major announcements about the company's OWN achievements deserve higher scores
 - One tweet can only have ONE event type (pick the most significant)
 
 HEADLINE RULES:
@@ -572,7 +576,17 @@ async function fetchTweetsByDate(userName, date) {
             }
 
             const tweets = data.tweets || data.data?.tweets || [];
-            allTweets.push(...tweets);
+
+            // Validate author — API sometimes ignores `from:` and returns random tweets
+            const nameLower = userName.toLowerCase();
+            const verified = tweets.filter(t => {
+                const author = (t.author?.userName || t.user?.screen_name || '').toLowerCase();
+                return author === nameLower;
+            });
+            if (verified.length < tweets.length) {
+                console.warn(`   ⚠ Filtered ${tweets.length - verified.length}/${tweets.length} tweets from wrong authors`);
+            }
+            allTweets.push(...verified);
 
             if (!data.has_next_page || !data.next_cursor) break;
             cursor = data.next_cursor;

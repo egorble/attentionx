@@ -244,6 +244,31 @@ export function useTournament() {
         }
     }, []);
 
+    // Get total tournament count (nextTournamentId = count + 1)
+    const getNextTournamentId = useCallback(async (): Promise<number> => {
+        const key = CacheKeys.nextTournamentId();
+
+        const cached = blockchainCache.get<number>(key);
+        if (cached !== undefined) {
+            if (blockchainCache.isStale(key, CacheTTL.LONG)) {
+                blockchainCache.fetchInBackground(key, async () => {
+                    try {
+                        const contract = getTournamentContract();
+                        return Number(await contract.nextTournamentId());
+                    } catch { return 1; }
+                });
+            }
+            return cached;
+        }
+
+        return blockchainCache.getOrFetch(key, async () => {
+            try {
+                const contract = getTournamentContract();
+                return Number(await contract.nextTournamentId());
+            } catch { return 1; }
+        }, CacheTTL.LONG);
+    }, []);
+
     // Claim prize after tournament finalized
     const claimPrize = useCallback(async (
         signer: ethers.Signer,
@@ -270,6 +295,7 @@ export function useTournament() {
         isLoading,
         error,
         getActiveTournamentId,
+        getNextTournamentId,
         getTournament,
         canRegister,
         hasEntered,

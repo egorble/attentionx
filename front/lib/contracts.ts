@@ -125,6 +125,8 @@ export const TOURNAMENT_ABI = [
     'function getTournamentPoints(uint256 tournamentId) view returns (uint256[19])',
     'function totalTournamentScore(uint256 tournamentId) view returns (uint256)',
     'function userScores(uint256 tournamentId, address user) view returns (uint256)',
+    'function getUserTournamentHistory(address user) view returns (tuple(uint256 tournamentId, uint256 startTime, uint256 endTime, uint256 prizePool, uint256 entryCount, uint8 status, uint256 userScore, uint256 userPrize, bool claimed)[])',
+    'function getAllTournamentsSummary() view returns (tuple(uint256 id, uint256 registrationStart, uint256 startTime, uint256 endTime, uint256 prizePool, uint256 entryCount, uint8 status)[])',
     // Write functions
     'function enterTournament(uint256 tournamentId, uint256[5] cardIds)',
     'function cancelEntry(uint256 tournamentId)',

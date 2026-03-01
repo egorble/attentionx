@@ -45,6 +45,8 @@ const AI_MODELS = [
     'google/gemma-3-4b-it:free',
     'stepfun/step-3.5-flash:free',
     'arcee-ai/trinity-large-preview:free',
+    'z-ai/glm-4.5-air:free',
+    'qwen/qwen3-vl-235b-a22b-thinking',
 ].filter((v, i, arr) => arr.indexOf(v) === i); // deduplicate
 
 const SYSTEM_PROMPT = `You are a senior financial news editor at Bloomberg or BBC Business. Your job is to transform raw social media posts from tech startups into authoritative, professional news headlines.
