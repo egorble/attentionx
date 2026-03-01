@@ -189,6 +189,14 @@ export function getActiveTournament() {
     `);
 }
 
+export function getLatestTournament() {
+    return get(`
+        SELECT * FROM tournaments
+        ORDER BY blockchain_id DESC
+        LIMIT 1
+    `);
+}
+
 export function deactivateOtherTournaments(activeBlockchainId) {
     exec(
         `UPDATE tournaments SET status = 'ended', updated_at = CURRENT_TIMESTAMP

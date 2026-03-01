@@ -116,6 +116,7 @@ const Leagues: React.FC = () => {
         getUserScoreInfo,
         claimPrize,
         getUserLineup,
+        getNextTournamentId,
         isLoading: tournamentLoading
     } = useTournament();
 
@@ -127,10 +128,19 @@ const Leagues: React.FC = () => {
     const loadTournamentData = async () => {
         // Get active tournament ID from PackOpener
         const activeId = await fetchActiveTournamentId();
-        setActiveTournamentId(activeId);
 
-        if (activeId > 0) {
-            const tournament = await getTournament(activeId);
+        // Fallback: when no active tournament, show the last one
+        let tournamentIdToLoad = activeId;
+        if (activeId === 0) {
+            const nextId = await getNextTournamentId();
+            if (nextId > 1) {
+                tournamentIdToLoad = nextId - 1;
+            }
+        }
+        setActiveTournamentId(tournamentIdToLoad);
+
+        if (tournamentIdToLoad > 0) {
+            const tournament = await getTournament(tournamentIdToLoad);
             if (tournament) {
                 setActiveTournament(tournament);
 
@@ -149,17 +159,17 @@ const Leagues: React.FC = () => {
                 }
 
                 if (address) {
-                    const entered = await hasEntered(activeId, address);
+                    const entered = await hasEntered(tournamentIdToLoad, address);
                     setHasUserEntered(entered);
 
                     // If finalized, check prize info
                     if (tournament.status === 'Finalized' && entered) {
-                        const scoreInfo = await getUserScoreInfo(activeId, address);
+                        const scoreInfo = await getUserScoreInfo(tournamentIdToLoad, address);
                         if (scoreInfo) {
                             setUserPrize(scoreInfo.prize);
                         }
                         // Check if already claimed
-                        const lineup = await getUserLineup(activeId, address);
+                        const lineup = await getUserLineup(tournamentIdToLoad, address);
                         if (lineup) {
                             setHasClaimed(lineup.claimed);
                         }
@@ -946,7 +956,7 @@ const Leagues: React.FC = () => {
             )}
 
             {/* Past Tournaments History */}
-            {activeTournamentId > 1 && (
+            {activeTournamentId > 0 && (
                 <TournamentHistory activeTournamentId={activeTournamentId} />
             )}
 

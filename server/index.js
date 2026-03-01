@@ -93,7 +93,11 @@ app.get('/api/tournaments/active', (req, res) => {
     const hit = sc_get(cacheKey);
     if (hit) return res.json(hit);
     try {
-        const tournament = db.getActiveTournament();
+        let tournament = db.getActiveTournament();
+        // Fallback: when no active tournament, return the latest one (e.g. finalized)
+        if (!tournament) {
+            tournament = db.getLatestTournament();
+        }
         if (!tournament) {
             return res.json({ success: false, message: 'No active tournament' });
         }
