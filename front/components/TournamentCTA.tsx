@@ -63,17 +63,29 @@ const TournamentCTA: React.FC<TournamentCTAProps> = ({ onNavigate }) => {
                             <span className="px-2.5 py-1 bg-purple-100 dark:bg-white/[0.06] text-yc-purple dark:text-gray-300 text-[10px] font-bold uppercase rounded-lg border border-purple-200/60 dark:border-white/[0.08]">
                                 Tournament #{tournament.id}
                             </span>
-                            <span className="px-2.5 py-1 bg-green-500/10 text-green-500 text-[10px] font-bold uppercase rounded-lg flex items-center">
-                                <Zap size={10} className="mr-1" /> {tournament.status === 'active' ? 'Live Now' : 'Open'}
+                            <span className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-lg flex items-center ${
+                                tournament.status === 'active' ? 'bg-green-500/10 text-green-500' :
+                                tournament.status === 'finalized' ? 'bg-yellow-500/10 text-yellow-500' :
+                                tournament.status === 'ended' ? 'bg-gray-500/10 text-gray-400' :
+                                'bg-green-500/10 text-green-500'
+                            }`}>
+                                <Zap size={10} className="mr-1" /> {
+                                    tournament.status === 'active' ? 'Live Now' :
+                                    tournament.status === 'finalized' ? 'Finalized' :
+                                    tournament.status === 'ended' ? 'Ended' :
+                                    'Open'
+                                }
                             </span>
                         </div>
 
                         <h3 className="text-xl md:text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight mb-1 md:mb-2">
-                            Win the Prize Pool
+                            {tournament.status === 'finalized' ? 'Tournament Results' : 'Win the Prize Pool'}
                         </h3>
                         <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm max-w-lg hidden md:block">
-                            Join the tournament, lock your 5 best NFT cards, and compete against other players.
-                            Top scorers win from the prize pool!
+                            {tournament.status === 'finalized'
+                                ? 'The tournament has ended. Check the leaderboard and claim your prize!'
+                                : 'Join the tournament, lock your 5 best NFT cards, and compete against other players. Top scorers win from the prize pool!'
+                            }
                         </p>
                     </div>
 
@@ -114,7 +126,7 @@ const TournamentCTA: React.FC<TournamentCTAProps> = ({ onNavigate }) => {
                         onClick={() => onNavigate(NavSection.LEAGUES)}
                         className="bg-yc-purple text-white w-full md:w-auto md:self-start px-8 py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-center active:scale-95 group hover:bg-yc-purple/80 hover:shadow-[0_0_20px_rgba(147,51,234,0.3)] hover:scale-[1.02]"
                     >
-                        Join Tournament
+                        {tournament.status === 'finalized' ? 'View Results' : 'Join Tournament'}
                         <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                     </button>
                 </div>

@@ -1125,19 +1125,12 @@ async function syncTournamentFromBlockchain() {
         // Check PackOpener active tournament first
         let activeId = Number(await packOpener.activeTournamentId());
 
-        // If PackOpener has no active tournament, check TournamentManager directly
-        // (tournament may exist but not yet set as active in PackOpener)
+        // If PackOpener has no active tournament, sync the latest tournament from TournamentManager
         if (activeId === 0) {
             const nextId = Number(await tournamentContract.nextTournamentId());
             if (nextId > 1) {
-                // Check the latest tournament
-                const latestId = nextId - 1;
-                const t = await tournamentContract.getTournament(latestId);
-                // status 0=Created, 1=Active — both are valid for sync
-                if (Number(t.status) <= 1 && Number(t.id) > 0) {
-                    activeId = latestId;
-                    console.log(`   PackOpener has no active tournament, found Tournament #${activeId} in TournamentManager`);
-                }
+                activeId = nextId - 1;
+                console.log(`   PackOpener has no active tournament, syncing latest Tournament #${activeId}`);
             }
         }
 
@@ -1147,13 +1140,17 @@ async function syncTournamentFromBlockchain() {
         }
 
         const t = await tournamentContract.getTournament(activeId);
+        const contractStatus = Number(t.status); // 0=Created, 1=Active, 2=Finalized, 3=Cancelled
         const currentTime = Math.floor(Date.now() / 1000);
         const startTime = Number(t.startTime);
         const endTime = Number(t.endTime);
         const registrationStart = Number(t.registrationStart);
 
+        // Use contract status for finalized/cancelled, otherwise determine from timestamps
         let status = 'upcoming';
-        if (currentTime < registrationStart) status = 'upcoming';
+        if (contractStatus === 2) status = 'finalized';
+        else if (contractStatus === 3) status = 'cancelled';
+        else if (currentTime < registrationStart) status = 'upcoming';
         else if (currentTime >= registrationStart && currentTime < startTime) status = 'registration';
         else if (currentTime >= startTime && currentTime < endTime) status = 'active';
         else if (currentTime >= endTime) status = 'ended';
