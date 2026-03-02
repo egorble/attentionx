@@ -345,15 +345,20 @@ const Marketplace: React.FC = () => {
     }, [activeTab]);
 
     // Refresh both listings and auctions with a delayed re-fetch for RPC lag.
-    // Cache is already invalidated by the hook, so first call fetches fresh from chain.
     const refreshAfterAction = useCallback(async () => {
+        // Invalidate cache so refresh fetches fresh data from blockchain
+        blockchainCache.invalidate(CacheKeys.activeListings());
+        blockchainCache.invalidate(CacheKeys.activeAuctions());
+        if (address) blockchainCache.invalidate(CacheKeys.userListings(address));
         await Promise.all([refreshListings(), refreshAuctions()]);
         // Second fetch after 3s handles RPC node indexing lag
         setTimeout(() => {
+            blockchainCache.invalidate(CacheKeys.activeListings());
+            blockchainCache.invalidate(CacheKeys.activeAuctions());
             refreshListings();
             refreshAuctions();
         }, 3000);
-    }, [refreshListings, refreshAuctions]);
+    }, [refreshListings, refreshAuctions, address]);
 
     // Handle buy listing
     const handleBuy = async (listing: ListingWithMeta) => {

@@ -539,7 +539,7 @@ async function analyzeTweetsWithAI(startupName, tweets) {
  */
 async function fetchTweetsByDate(userName, date) {
     const nextDate = getNextDate(date);
-    const query = `from:${userName} since:${date}_00:00:00_UTC until:${nextDate}_00:00:00_UTC -filter:replies`;
+    const query = `from:${userName} since:${date} until:${nextDate} -filter:replies`;
     const allTweets = [];
     let cursor = '';
     let page = 0;
@@ -556,40 +556,57 @@ async function fetchTweetsByDate(userName, date) {
         console.log(`   Fetching page ${page + 1}: ${userName} (${date})`);
 
         try {
-            const response = await fetch(url, {
-                headers: { 'X-API-Key': API_KEY }
-            });
+            const RETRY_DELAYS = [1 * 3600000, 5 * 3600000]; // retry after 1h, then 5h
+            let verified = [];
+            let hasNextPage = false;
+            let nextCursor = '';
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error(`   API error: ${response.status} - ${errorText}`);
-                break;
+            for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+                const response = await fetch(url, {
+                    headers: { 'X-API-Key': API_KEY }
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`   API error: ${response.status} - ${errorText}`);
+                    break;
+                }
+
+                const data = await response.json();
+
+                if (!data.tweets && data.status !== 'success') {
+                    console.error(`   API returned: ${data.msg || data.message || 'Unknown error'}`);
+                    break;
+                }
+
+                const tweets = data.tweets || data.data?.tweets || [];
+                hasNextPage = !!data.has_next_page && !!data.next_cursor;
+                nextCursor = data.next_cursor || '';
+
+                // Validate author — API sometimes ignores `from:` and returns random tweets
+                const nameLower = userName.toLowerCase();
+                verified = tweets.filter(t => {
+                    const author = (t.author?.userName || t.user?.screen_name || '').toLowerCase();
+                    return author === nameLower;
+                });
+
+                const wrongCount = tweets.length - verified.length;
+                if (wrongCount === 0 || tweets.length === 0) break; // clean response
+
+                // Wrong-author tweets detected — retry if attempts remain
+                if (attempt < RETRY_DELAYS.length) {
+                    const delay = RETRY_DELAYS[attempt];
+                    console.warn(`   ⚠ ${wrongCount}/${tweets.length} wrong-author tweets, retrying in ${delay / 3600000}h (attempt ${attempt + 2}/3)...`);
+                    await new Promise(r => setTimeout(r, delay));
+                } else {
+                    console.warn(`   ⚠ Filtered ${wrongCount}/${tweets.length} wrong-author tweets after 3 attempts`);
+                }
             }
 
-            const data = await response.json();
-
-            // advanced_search returns { tweets: [...], has_next_page, next_cursor }
-            // No "status" field - presence of tweets array means success
-            if (!data.tweets && data.status !== 'success') {
-                console.error(`   API returned: ${data.msg || data.message || 'Unknown error'}`);
-                break;
-            }
-
-            const tweets = data.tweets || data.data?.tweets || [];
-
-            // Validate author — API sometimes ignores `from:` and returns random tweets
-            const nameLower = userName.toLowerCase();
-            const verified = tweets.filter(t => {
-                const author = (t.author?.userName || t.user?.screen_name || '').toLowerCase();
-                return author === nameLower;
-            });
-            if (verified.length < tweets.length) {
-                console.warn(`   ⚠ Filtered ${tweets.length - verified.length}/${tweets.length} tweets from wrong authors`);
-            }
             allTweets.push(...verified);
 
-            if (!data.has_next_page || !data.next_cursor) break;
-            cursor = data.next_cursor;
+            if (!hasNextPage) break;
+            cursor = nextCursor;
             page++;
 
             // rate limit between pages
