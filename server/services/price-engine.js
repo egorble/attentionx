@@ -53,7 +53,8 @@ export const TOKEN_LIST = TOKENS;
 
 const WS_URL = 'wss://ws.testnet.rise.trade/ws';
 const REST_URL = 'https://api.testnet.rise.trade/v1/markets';
-const RECONNECT_DELAY = 3000;
+const RECONNECT_BASE = 3000;   // 3s initial
+const RECONNECT_MAX = 60000;   // 60s max
 const REST_POLL_INTERVAL = 10000;
 const HISTORY_MAX_POINTS = 54000;     // ~15 hours at 1s intervals
 const HISTORY_RECORD_INTERVAL = 1000; // record every 1s
@@ -69,6 +70,8 @@ class PriceEngine extends EventEmitter {
         this.wsConnected = false;
         this.restInterval = null;
         this.reconnectTimeout = null;
+        this._reconnectDelay = RECONNECT_BASE;
+        this._reconnectAttempt = 0;
         this._historyInterval = null;
         this._saveInterval = null;
         this._started = false;
@@ -223,6 +226,8 @@ class PriceEngine extends EventEmitter {
 
             this.ws.on('open', () => {
                 this.wsConnected = true;
+                this._reconnectDelay = RECONNECT_BASE;
+                this._reconnectAttempt = 0;
                 console.log('[PriceEngine] WebSocket connected');
 
                 // Subscribe to orderbook for all market IDs
@@ -260,7 +265,13 @@ class PriceEngine extends EventEmitter {
     _scheduleReconnect() {
         if (!this._started) return;
         if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
-        this.reconnectTimeout = setTimeout(() => this._connectWS(), RECONNECT_DELAY);
+        this._reconnectAttempt++;
+        // Exponential backoff: 3s → 6s → 12s → 24s → 48s → 60s (capped)
+        const jitter = Math.random() * 1000;
+        const delay = Math.min(this._reconnectDelay + jitter, RECONNECT_MAX);
+        console.log(`[PriceEngine] Reconnecting in ${(delay / 1000).toFixed(1)}s (attempt #${this._reconnectAttempt})`);
+        this.reconnectTimeout = setTimeout(() => this._connectWS(), delay);
+        this._reconnectDelay = Math.min(this._reconnectDelay * 2, RECONNECT_MAX);
     }
 
     _handleWSMessage(msg) {

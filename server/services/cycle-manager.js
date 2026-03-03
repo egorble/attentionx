@@ -23,6 +23,26 @@ import { TOKEN_LIST } from './price-engine.js';
 const CYCLE_DURATION = 10 * 60; // 10 minutes in seconds
 const LEVERAGE = 5; // 5x simulated leverage
 const TICK_INTERVAL = 5000; // update live scores every 5s
+const RETRY_MAX = 5;           // max retries for on-chain ops
+const RETRY_BASE_MS = 2000;    // 2s initial delay
+
+/** Retry an async function with exponential backoff */
+async function retryAsync(fn, label, maxRetries = RETRY_MAX, baseMs = RETRY_BASE_MS) {
+    let lastErr;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            return await fn();
+        } catch (err) {
+            lastErr = err;
+            if (attempt < maxRetries) {
+                const delay = baseMs * Math.pow(2, attempt - 1) + Math.random() * 1000;
+                console.warn(`[CycleManager] ${label} failed (attempt ${attempt}/${maxRetries}): ${err.message}. Retrying in ${(delay / 1000).toFixed(1)}s...`);
+                await new Promise(r => setTimeout(r, delay));
+            }
+        }
+    }
+    throw lastErr;
+}
 
 const TOKEN_LEAGUES_ABI = [
     'function currentCycleId() view returns (uint256)',
@@ -149,12 +169,15 @@ class CycleManager extends EventEmitter {
         const startTime = now;
         const endTime = now + CYCLE_DURATION;
 
-        // Try to create on-chain cycle (if contract deployed and admin key available)
+        // Try to create on-chain cycle with retries
         let cycleId;
         try {
-            cycleId = await this._createCycleOnChain(startTime, endTime);
+            cycleId = await retryAsync(
+                () => this._createCycleOnChain(startTime, endTime),
+                'Create cycle on-chain'
+            );
         } catch (err) {
-            console.warn('[CycleManager] On-chain cycle creation failed, using local ID:', err.message);
+            console.error('[CycleManager] On-chain cycle creation failed after retries, using local ID:', err.message);
             // Fallback: use local incrementing ID
             const lastCycle = db.getActiveTokenCycle();
             cycleId = lastCycle ? lastCycle.cycle_id + 1 : 1;
@@ -312,13 +335,15 @@ class CycleManager extends EventEmitter {
         const winners = results.filter(r => r.score > 0);
         const totalPositiveScore = winners.reduce((sum, w) => sum + w.score, 0);
 
-        // Get prize pool from contract or DB
+        // Get prize pool from contract or DB (with retries)
         let prizePool = '0';
         try {
-            const provider = new ethers.JsonRpcProvider(CHAIN.RPC_URL);
-            const contract = new ethers.Contract(CONTRACTS.TokenLeagues, TOKEN_LEAGUES_ABI, provider);
-            const onChainCycle = await contract.getCycle(cycleId);
-            prizePool = onChainCycle.prizePool.toString();
+            prizePool = await retryAsync(async () => {
+                const provider = new ethers.JsonRpcProvider(CHAIN.RPC_URL);
+                const contract = new ethers.Contract(CONTRACTS.TokenLeagues, TOKEN_LEAGUES_ABI, provider);
+                const onChainCycle = await contract.getCycle(cycleId);
+                return onChainCycle.prizePool.toString();
+            }, 'Read prize pool', 3, 1000);
         } catch {
             prizePool = cycle?.prize_pool || '0';
         }
@@ -344,20 +369,22 @@ class CycleManager extends EventEmitter {
             prizeAmount: r.prizeAmount || '0',
         })));
 
-        // Finalize on-chain
+        // Finalize on-chain with retries
         try {
             if (ADMIN_PRIVATE_KEY && CONTRACTS.TokenLeagues !== '0x0000000000000000000000000000000000000000') {
-                const provider = new ethers.JsonRpcProvider(CHAIN.RPC_URL);
-                const wallet = new ethers.Wallet(ADMIN_PRIVATE_KEY, provider);
-                const contract = new ethers.Contract(CONTRACTS.TokenLeagues, TOKEN_LEAGUES_ABI, wallet);
+                await retryAsync(async () => {
+                    const provider = new ethers.JsonRpcProvider(CHAIN.RPC_URL);
+                    const wallet = new ethers.Wallet(ADMIN_PRIVATE_KEY, provider);
+                    const contract = new ethers.Contract(CONTRACTS.TokenLeagues, TOKEN_LEAGUES_ABI, wallet);
 
-                const tx = await contract.finalizeCycle(cycleId, winnerAddresses, winnerAmounts);
-                console.log(`[CycleManager] Finalize TX: ${tx.hash}`);
-                await tx.wait();
-                console.log(`[CycleManager] Cycle #${cycleId} finalized on-chain`);
+                    const tx = await contract.finalizeCycle(cycleId, winnerAddresses, winnerAmounts);
+                    console.log(`[CycleManager] Finalize TX: ${tx.hash}`);
+                    await tx.wait();
+                    console.log(`[CycleManager] Cycle #${cycleId} finalized on-chain`);
+                }, 'Finalize cycle on-chain');
             }
         } catch (err) {
-            console.error(`[CycleManager] On-chain finalization failed:`, err.message);
+            console.error(`[CycleManager] On-chain finalization failed after retries:`, err.message);
         }
 
         db.updateTokenCycleStatus(cycleId, 'finalized', prizePool);
@@ -405,10 +432,14 @@ class CycleManager extends EventEmitter {
         }
 
         try {
-            const provider = new ethers.JsonRpcProvider(CHAIN.RPC_URL);
-            const wallet = new ethers.Wallet(ADMIN_PRIVATE_KEY, provider);
-            const contract = new ethers.Contract(CONTRACTS.TokenLeagues, TOKEN_LEAGUES_ABI, wallet);
-            const entryFee = await contract.entryFee();
+            // Get provider+contract with retry (handles DNS/RPC failures)
+            const { contract, entryFee } = await retryAsync(async () => {
+                const provider = new ethers.JsonRpcProvider(CHAIN.RPC_URL);
+                const wallet = new ethers.Wallet(ADMIN_PRIVATE_KEY, provider);
+                const c = new ethers.Contract(CONTRACTS.TokenLeagues, TOKEN_LEAGUES_ABI, wallet);
+                const fee = await c.entryFee();
+                return { contract: c, entryFee: fee };
+            }, 'AutoPlay connect', 3, 2000);
 
             for (const player of autoPlayers) {
                 try {
@@ -419,16 +450,14 @@ class CycleManager extends EventEmitter {
                     const tx = await contract.enterCycleFor(player.player_address, tokenIds, { value: entryFee });
                     await tx.wait();
 
-                    // Save entry to DB
                     db.saveTokenEntry(cycleId, player.player_address, tokenIds);
-
                     console.log(`[CycleManager] Auto-entered ${player.player_address.substring(0, 10)}...`);
                 } catch (err) {
                     console.error(`[CycleManager] Auto-enter failed for ${player.player_address.substring(0, 10)}:`, err.message);
                 }
             }
         } catch (err) {
-            console.error('[CycleManager] AutoPlay batch failed:', err.message);
+            console.error('[CycleManager] AutoPlay batch failed after retries:', err.message);
         }
     }
 }
