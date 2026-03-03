@@ -14,6 +14,7 @@ export interface NetworkConfig {
         PackOpener: string;
         TournamentManager: string;
         MarketplaceV2: string;
+        TokenLeagues: string;
     };
     apiBase: string;
     metadataBase: string;   // prefix for metadata server routes
@@ -37,6 +38,7 @@ export const NETWORKS: Record<string, NetworkConfig> = {
             PackOpener: '0x85C031EbBBf859B2b376622a74D8fEe74753bDC0',
             TournamentManager: '0x59948cdE98f923A4653fBc5A0Fae594EE5a680cB',
             MarketplaceV2: '0xA7f02B767e5E86f70271D3D1D8B73342aC7034DE',
+            TokenLeagues: '0x088659F051b82BD10EA6F1B5FC464cf05d3A4e18',
         },
         apiBase: '/api',
         metadataBase: '/metadata',

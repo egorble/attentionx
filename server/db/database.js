@@ -748,6 +748,182 @@ export function getWaitlistCount() {
     return row ? row.count : 0;
 }
 
+// ============ Token Leagues Functions ============
+
+export function runTokenLeaguesMigrations() {
+    if (!db) throw new Error('Database not initialized');
+    const tables = [
+        `CREATE TABLE IF NOT EXISTS token_cycles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cycle_id INTEGER NOT NULL UNIQUE,
+            start_time INTEGER NOT NULL,
+            end_time INTEGER NOT NULL,
+            prize_pool TEXT DEFAULT '0',
+            entry_count INTEGER DEFAULT 0,
+            status TEXT CHECK(status IN ('active','finalizing','finalized')) DEFAULT 'active',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE TABLE IF NOT EXISTS token_entries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cycle_id INTEGER NOT NULL,
+            player_address TEXT NOT NULL,
+            token_ids TEXT NOT NULL,
+            entry_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(cycle_id, player_address)
+        )`,
+        `CREATE TABLE IF NOT EXISTS token_prices (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cycle_id INTEGER NOT NULL,
+            token_id INTEGER NOT NULL,
+            start_price REAL NOT NULL,
+            end_price REAL,
+            pct_change REAL,
+            UNIQUE(cycle_id, token_id)
+        )`,
+        `CREATE TABLE IF NOT EXISTS token_leaderboard (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cycle_id INTEGER NOT NULL,
+            player_address TEXT NOT NULL,
+            score REAL DEFAULT 0,
+            rank INTEGER,
+            prize_amount TEXT DEFAULT '0',
+            UNIQUE(cycle_id, player_address)
+        )`,
+        `CREATE TABLE IF NOT EXISTS token_autoplay (
+            player_address TEXT PRIMARY KEY,
+            enabled INTEGER DEFAULT 0,
+            token_ids TEXT NOT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`,
+        'CREATE INDEX IF NOT EXISTS idx_token_entries_cycle ON token_entries(cycle_id)',
+        'CREATE INDEX IF NOT EXISTS idx_token_leaderboard_cycle ON token_leaderboard(cycle_id, rank)',
+        'CREATE INDEX IF NOT EXISTS idx_token_prices_cycle ON token_prices(cycle_id)',
+    ];
+    for (const sql of tables) {
+        try { db.run(sql); } catch (e) { /* already exists */ }
+    }
+}
+
+export function saveTokenCycle(cycleId, startTime, endTime) {
+    exec(`
+        INSERT OR REPLACE INTO token_cycles (cycle_id, start_time, end_time, status)
+        VALUES (?, ?, ?, 'active')
+    `, [cycleId, startTime, endTime]);
+}
+
+export function getActiveTokenCycle() {
+    return get(`SELECT * FROM token_cycles WHERE status = 'active' ORDER BY cycle_id DESC LIMIT 1`);
+}
+
+export function getTokenCycle(cycleId) {
+    return get('SELECT * FROM token_cycles WHERE cycle_id = ?', [cycleId]);
+}
+
+export function updateTokenCycleStatus(cycleId, status, prizePool = null) {
+    if (prizePool !== null) {
+        exec('UPDATE token_cycles SET status = ?, prize_pool = ? WHERE cycle_id = ?', [status, prizePool, cycleId]);
+    } else {
+        exec('UPDATE token_cycles SET status = ? WHERE cycle_id = ?', [status, cycleId]);
+    }
+}
+
+export function updateTokenCycleEntry(cycleId, entryCount, prizePool) {
+    exec('UPDATE token_cycles SET entry_count = ?, prize_pool = ? WHERE cycle_id = ?',
+        [entryCount, prizePool, cycleId]);
+}
+
+export function saveTokenEntry(cycleId, playerAddress, tokenIds) {
+    exec(`
+        INSERT OR IGNORE INTO token_entries (cycle_id, player_address, token_ids)
+        VALUES (?, ?, ?)
+    `, [cycleId, playerAddress.toLowerCase(), JSON.stringify(tokenIds)]);
+}
+
+export function getTokenEntries(cycleId) {
+    const rows = all('SELECT * FROM token_entries WHERE cycle_id = ?', [cycleId]);
+    return rows.map(r => ({ ...r, token_ids: JSON.parse(r.token_ids) }));
+}
+
+export function getTokenEntry(cycleId, playerAddress) {
+    const row = get('SELECT * FROM token_entries WHERE cycle_id = ? AND player_address = ?',
+        [cycleId, playerAddress.toLowerCase()]);
+    if (row) row.token_ids = JSON.parse(row.token_ids);
+    return row;
+}
+
+export function saveTokenPrices(cycleId, prices) {
+    for (const { tokenId, startPrice } of prices) {
+        exec(`
+            INSERT OR REPLACE INTO token_prices (cycle_id, token_id, start_price)
+            VALUES (?, ?, ?)
+        `, [cycleId, tokenId, startPrice]);
+    }
+}
+
+export function updateTokenEndPrices(cycleId, prices) {
+    for (const { tokenId, endPrice, pctChange } of prices) {
+        exec(`
+            UPDATE token_prices SET end_price = ?, pct_change = ?
+            WHERE cycle_id = ? AND token_id = ?
+        `, [endPrice, pctChange, cycleId, tokenId]);
+    }
+}
+
+export function getTokenPrices(cycleId) {
+    return all('SELECT * FROM token_prices WHERE cycle_id = ?', [cycleId]);
+}
+
+export function saveTokenLeaderboard(cycleId, entries) {
+    for (const { playerAddress, score, rank, prizeAmount } of entries) {
+        exec(`
+            INSERT OR REPLACE INTO token_leaderboard (cycle_id, player_address, score, rank, prize_amount)
+            VALUES (?, ?, ?, ?, ?)
+        `, [cycleId, playerAddress.toLowerCase(), score, rank, prizeAmount || '0']);
+    }
+}
+
+export function getTokenLeaderboard(cycleId) {
+    return all(`
+        SELECT * FROM token_leaderboard
+        WHERE cycle_id = ?
+        ORDER BY rank ASC
+    `, [cycleId]);
+}
+
+export function getRecentTokenCycles(limit = 10) {
+    return all('SELECT * FROM token_cycles ORDER BY cycle_id DESC LIMIT ?', [limit]);
+}
+
+export function getTokenPlayerStats(playerAddress) {
+    const addr = playerAddress.toLowerCase();
+    const totalEntries = get('SELECT COUNT(*) as count FROM token_entries WHERE player_address = ?', [addr]);
+    const totalWins = get(`SELECT COUNT(*) as count FROM token_leaderboard WHERE player_address = ? AND rank = 1`, [addr]);
+    const totalEarned = get(`SELECT SUM(CAST(prize_amount AS REAL)) as total FROM token_leaderboard WHERE player_address = ?`, [addr]);
+    return {
+        totalEntries: totalEntries?.count || 0,
+        totalWins: totalWins?.count || 0,
+        totalEarned: totalEarned?.total || 0,
+    };
+}
+
+export function saveAutoPlay(playerAddress, enabled, tokenIds) {
+    exec(`
+        INSERT OR REPLACE INTO token_autoplay (player_address, enabled, token_ids, updated_at)
+        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+    `, [playerAddress.toLowerCase(), enabled ? 1 : 0, JSON.stringify(tokenIds)]);
+}
+
+export function getAutoPlay(playerAddress) {
+    const row = get('SELECT * FROM token_autoplay WHERE player_address = ?', [playerAddress.toLowerCase()]);
+    if (row) row.token_ids = JSON.parse(row.token_ids);
+    return row;
+}
+
+export function getAllAutoPlayUsers() {
+    const rows = all('SELECT * FROM token_autoplay WHERE enabled = 1');
+    return rows.map(r => ({ ...r, token_ids: JSON.parse(r.token_ids) }));
+}
+
 // Auto-save database every 5 seconds if there were changes
 setInterval(() => {
     if (db) {

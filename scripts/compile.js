@@ -24,6 +24,7 @@ const contractFiles = [
     "PackOpener.sol",
     "TournamentManager.sol",
     "MarketplaceV2.sol",
+    "TokenLeagues.sol",
     "ERC1967Proxy.sol"
 ];
 
@@ -181,6 +182,7 @@ console.log("   - PackNFT.json");
 console.log("   - PackOpener.json");
 console.log("   - TournamentManager.json");
 console.log("   - MarketplaceV2.json");
+console.log("   - TokenLeagues.json");
 console.log("   - ERC1967Proxy.json");
 console.log("   - contracts.json (combined)");
 console.log("");

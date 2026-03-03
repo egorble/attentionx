@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import RightPanel from './components/RightPanel';
+import TokenLeaguesRightPanel from './components/TokenLeaguesRightPanel';
 import HeroBanner from './components/HeroBanner';
 import LiveFeed from './components/LiveFeed';
 import PackOpeningModal from './components/PackOpeningModal';
@@ -9,6 +10,7 @@ import Portfolio from './components/Portfolio';
 import Leagues from './components/Leagues';
 import Analytics from './components/Analytics';
 import Feed from './components/Feed';
+import TokenLeagues from './components/TokenLeagues';
 import AdminPanel from './components/AdminPanel';
 import CardDetailModal, { CardDetailData } from './components/CardDetailModal';
 import ProfileSetupModal from './components/ProfileSetupModal';
@@ -58,9 +60,9 @@ import { checkContractChange } from './lib/cache';
 // RISE Wallet inline SVG logo
 const RiseWalletIcon = () => (
     <svg viewBox="0 0 32 32" width="16" height="16" fill="none" aria-hidden="true">
-        <circle cx="16" cy="16" r="16" fill="#00D4FF" fillOpacity="0.15"/>
-        <path d="M8 22L16 10L24 22" stroke="#00D4FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M11 18H21" stroke="#00D4FF" strokeWidth="2" strokeLinecap="round"/>
+        <circle cx="16" cy="16" r="16" fill="#00D4FF" fillOpacity="0.15" />
+        <path d="M8 22L16 10L24 22" stroke="#00D4FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M11 18H21" stroke="#00D4FF" strokeWidth="2" strokeLinecap="round" />
     </svg>
 );
 
@@ -280,6 +282,8 @@ const AppContent: React.FC = () => {
                 return <Portfolio onBuyPack={(packId?: number) => { setOpenPackId(packId ?? null); setIsPackModalOpen(true); }} packRefreshSignal={packRefreshSignal} />;
             case NavSection.LEAGUES:
                 return <Leagues />;
+            case NavSection.TOKEN_LEAGUES:
+                return <TokenLeagues />;
             case NavSection.FEED:
                 return <Feed />;
             case NavSection.ADMIN:
@@ -468,11 +472,10 @@ const AppContent: React.FC = () => {
                                         setAddressCopied(true);
                                         setTimeout(() => setAddressCopied(false), 2000);
                                     }}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold font-mono transition-all active:scale-95 border ${
-                                        addressCopied
-                                            ? 'bg-green-500/10 text-green-500 border-green-500/20'
-                                            : 'bg-gray-100 dark:bg-white/[0.04] text-gray-500 dark:text-gray-400 border-gray-200 dark:border-white/[0.08]'
-                                    }`}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold font-mono transition-all active:scale-95 border ${addressCopied
+                                        ? 'bg-green-500/10 text-green-500 border-green-500/20'
+                                        : 'bg-gray-100 dark:bg-white/[0.04] text-gray-500 dark:text-gray-400 border-gray-200 dark:border-white/[0.08]'
+                                        }`}
                                 >
                                     {addressCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                                     {addressCopied ? 'Copied' : formatAddress(address)}
@@ -639,7 +642,11 @@ const AppContent: React.FC = () => {
             </main>
 
             {/* Right Widget Panel */}
-            <RightPanel onOpenPack={() => setIsPackModalOpen(true)} />
+            {activeSection === NavSection.TOKEN_LEAGUES ? (
+                <TokenLeaguesRightPanel />
+            ) : (
+                <RightPanel onOpenPack={() => setIsPackModalOpen(true)} />
+            )}
 
             {/* Pack Opening Modal */}
             <PackOpeningModal

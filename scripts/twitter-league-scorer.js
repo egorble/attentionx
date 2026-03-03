@@ -539,7 +539,7 @@ async function analyzeTweetsWithAI(startupName, tweets) {
  */
 async function fetchTweetsByDate(userName, date) {
     const nextDate = getNextDate(date);
-    const query = `from:${userName} since:${date} until:${nextDate} -filter:replies`;
+    const query = `from:${userName} since:${date}_00:00:00_UTC until:${nextDate}_00:00:00_UTC -filter:replies`;
     const allTweets = [];
     let cursor = '';
     let page = 0;

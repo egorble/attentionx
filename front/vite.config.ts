@@ -22,6 +22,11 @@ export default defineConfig(({ mode }) => {
             target: 'http://localhost:3007',
             changeOrigin: true,
           },
+          '/ws/token-leagues': {
+            target: 'http://localhost:3007',
+            ws: true,
+            changeOrigin: true,
+          },
         },
       },
       plugins: [react()],

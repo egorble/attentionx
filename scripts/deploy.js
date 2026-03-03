@@ -103,6 +103,9 @@ async function main() {
     const MarketplaceV2 = JSON.parse(
         fs.readFileSync(path.join(buildDir, "MarketplaceV2.json"), "utf8")
     );
+    const TokenLeagues = JSON.parse(
+        fs.readFileSync(path.join(buildDir, "TokenLeagues.json"), "utf8")
+    );
     const ERC1967Proxy = JSON.parse(
         fs.readFileSync(path.join(buildDir, "ERC1967Proxy.json"), "utf8")
     );
@@ -146,8 +149,16 @@ async function main() {
     console.log(`✅ MarketplaceV2 proxy: ${marketplace.proxyAddress}`);
     console.log("");
 
-    // ============ Step 6: Configuration ============
-    console.log("🛠️ Step 6: Configuring Contracts...");
+    // ============ Step 6: Deploy TokenLeagues (Proxy) ============
+    console.log("📦 Step 6: Deploying TokenLeagues...");
+    const ENTRY_FEE = ethers.parseEther("0.001"); // 0.001 ETH
+    const tokenLeagues = await deployProxy(wallet, TokenLeagues, ERC1967Proxy,
+        [TREASURY_ADDRESS, ENTRY_FEE, wallet.address], "TokenLeagues");
+    console.log(`✅ TokenLeagues proxy: ${tokenLeagues.proxyAddress}`);
+    console.log("");
+
+    // ============ Step 7: Configuration ============
+    console.log("🛠️ Step 7: Configuring Contracts...");
 
     // 1. Set PackOpener as authorized minter on AttentionX_NFT (cards)
     console.log("   Setting PackOpener as authorized card minter...");
@@ -209,6 +220,7 @@ async function main() {
     console.log("   PackOpener:         ", pack.proxyAddress);
     console.log("   TournamentManager:  ", tournament.proxyAddress);
     console.log("   MarketplaceV2:      ", marketplace.proxyAddress);
+    console.log("   TokenLeagues:       ", tokenLeagues.proxyAddress);
     console.log("");
     console.log("📋 Implementation Addresses (upgradeable):");
     console.log('   AttentionX_NFT:       ', nft.implAddress);
@@ -216,6 +228,7 @@ async function main() {
     console.log("   PackOpener:         ", pack.implAddress);
     console.log("   TournamentManager:  ", tournament.implAddress);
     console.log("   MarketplaceV2:      ", marketplace.implAddress);
+    console.log("   TokenLeagues:       ", tokenLeagues.implAddress);
     console.log("");
 
     // Save deployment info
@@ -232,14 +245,16 @@ async function main() {
             PackNFT: packNft.proxyAddress,
             PackOpener: pack.proxyAddress,
             TournamentManager: tournament.proxyAddress,
-            MarketplaceV2: marketplace.proxyAddress
+            MarketplaceV2: marketplace.proxyAddress,
+            TokenLeagues: tokenLeagues.proxyAddress
         },
         implementations: {
             AttentionX_NFT: nft.implAddress,
             PackNFT: packNft.implAddress,
             PackOpener: pack.implAddress,
             TournamentManager: tournament.implAddress,
-            MarketplaceV2: marketplace.implAddress
+            MarketplaceV2: marketplace.implAddress,
+            TokenLeagues: tokenLeagues.implAddress
         },
         configuration: {
             owner: wallet.address,

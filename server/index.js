@@ -1255,6 +1255,178 @@ async function runAiSummarizer() {
     }
 }
 
+// ============= TOKEN LEAGUES ENDPOINTS =============
+
+import { priceEngine, TOKEN_LIST } from './services/price-engine.js';
+import { cycleManager } from './services/cycle-manager.js';
+import { wsServer } from './services/ws-server.js';
+
+// Active cycle
+app.get('/api/token-leagues/cycle/active', (req, res) => {
+    try {
+        const cycle = cycleManager.getCurrentCycle();
+        if (!cycle) return res.json({ success: false, error: 'No active cycle' });
+        const dbCycle = db.getActiveTokenCycle();
+        res.json({
+            success: true,
+            data: {
+                ...cycle,
+                prizePool: dbCycle?.prize_pool || '0',
+                entryCount: dbCycle?.entry_count || 0,
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Specific cycle
+app.get('/api/token-leagues/cycle/:id', (req, res) => {
+    try {
+        const cycleId = parseInt(req.params.id);
+        const cycle = db.getTokenCycle(cycleId);
+        if (!cycle) return res.json({ success: false, error: 'Cycle not found' });
+        const leaderboard = db.getTokenLeaderboard(cycleId);
+        const prices = db.getTokenPrices(cycleId);
+        res.json({ success: true, data: { cycle, leaderboard, prices } });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Current prices
+app.get('/api/token-leagues/prices', (req, res) => {
+    try {
+        const prices = priceEngine.getPrices();
+        const tokens = TOKEN_LIST.map(t => ({
+            id: t.id,
+            symbol: t.symbol,
+            marketId: t.marketId,
+            price: prices[t.id]?.price || 0,
+            change24h: prices[t.id]?.change24h || 0,
+        }));
+        res.json({ success: true, data: tokens });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Live token performance for current cycle
+app.get('/api/token-leagues/performance', (req, res) => {
+    try {
+        const performance = cycleManager.getLiveTokenPerformance();
+        res.json({ success: true, data: performance });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Cycle leaderboard
+app.get('/api/token-leagues/leaderboard/:id', (req, res) => {
+    try {
+        const cycleId = parseInt(req.params.id);
+        const active = cycleManager.getCurrentCycle();
+
+        // If this is the active cycle, return live leaderboard
+        if (active && active.id === cycleId) {
+            return res.json({ success: true, data: cycleManager.getLiveLeaderboard() });
+        }
+
+        // Otherwise return finalized leaderboard from DB
+        const leaderboard = db.getTokenLeaderboard(cycleId);
+        res.json({ success: true, data: leaderboard });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Cycle history
+app.get('/api/token-leagues/history', (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 10;
+        const cycles = db.getRecentTokenCycles(limit);
+        res.json({ success: true, data: cycles });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Player stats
+app.get('/api/token-leagues/player/:address', (req, res) => {
+    try {
+        const address = req.params.address;
+        const stats = db.getTokenPlayerStats(address);
+        const autoplay = db.getAutoPlay(address);
+        res.json({
+            success: true,
+            data: {
+                ...stats,
+                autoPlay: autoplay ? { enabled: !!autoplay.enabled, tokenIds: autoplay.token_ids } : null,
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Update autoplay (stores in DB — contract call done by frontend separately)
+app.post('/api/token-leagues/autoplay', writeLimiter, (req, res) => {
+    try {
+        const { address, enabled, tokenIds } = req.body;
+        if (!address || !Array.isArray(tokenIds) || tokenIds.length !== 5) {
+            return res.status(400).json({ success: false, error: 'Invalid params' });
+        }
+        db.saveAutoPlay(address, enabled, tokenIds);
+        db.saveDatabase();
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Record entry (called by frontend after contract tx succeeds)
+app.post('/api/token-leagues/entry', writeLimiter, (req, res) => {
+    try {
+        const { cycleId, address, tokenIds } = req.body;
+        if (!cycleId || !address || !Array.isArray(tokenIds) || tokenIds.length !== 5) {
+            return res.status(400).json({ success: false, error: 'Invalid params' });
+        }
+        db.saveTokenEntry(cycleId, address, tokenIds);
+        const cycle = db.getActiveTokenCycle();
+        if (cycle) {
+            db.updateTokenCycleEntry(cycleId, (cycle.entry_count || 0) + 1, cycle.prize_pool);
+        }
+        db.saveDatabase();
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Token list (static)
+app.get('/api/token-leagues/tokens', (req, res) => {
+    res.json({
+        success: true,
+        data: TOKEN_LIST.map(t => ({ id: t.id, symbol: t.symbol, marketId: t.marketId }))
+    });
+});
+
+// Chart data — price history for a single token
+app.get('/api/token-leagues/chart/:tokenId', (req, res) => {
+    const tokenId = parseInt(req.params.tokenId);
+    if (isNaN(tokenId) || tokenId < 1 || tokenId > 25) {
+        return res.json({ success: false, error: 'Invalid token ID' });
+    }
+    const history = priceEngine.getHistory(tokenId);
+    res.json({ success: true, data: history });
+});
+
+// Chart data — price history for all tokens (compact)
+app.get('/api/token-leagues/charts', (req, res) => {
+    const all = priceEngine.getAllHistory();
+    res.json({ success: true, data: all });
+});
+
 // Start server with database initialization
 async function startServer() {
     try {
@@ -1306,8 +1478,26 @@ async function startServer() {
 
         // AI summarizer runs automatically after daily scorer (no separate schedule)
 
-        // Start Express server
-        app.listen(PORT, () => {
+        // Start Express + WebSocket server
+        const { createServer } = await import('http');
+        const httpServer = createServer(app);
+
+        // Initialize Token Leagues services
+        console.log('🎮 Starting Token Leagues services...');
+        wsServer.attach(httpServer);
+        priceEngine.start();
+        // Give price engine a moment to fetch initial prices before starting cycles
+        setTimeout(async () => {
+            try {
+                await cycleManager.start(priceEngine, wsServer);
+                wsServer.start(priceEngine, cycleManager);
+                console.log('✅ Token Leagues ready');
+            } catch (err) {
+                console.error('⚠️  Token Leagues init error:', err.message);
+            }
+        }, 3000);
+
+        httpServer.listen(PORT, () => {
             console.log(`🚀 AttentionX API Server running on port ${PORT} [${NETWORK_NAME}]`);
             console.log(`📊 Endpoints:`);
             console.log(`   GET /api/tournaments/active`);
@@ -1330,6 +1520,8 @@ async function startServer() {
             console.log(`   GET /api/player/:address/nfts`);
             console.log(`   POST /api/player/:address/nfts/sync`);
             console.log(`   GET /api/contracts`);
+            console.log(`   WS /ws/token-leagues`);
+            console.log(`   GET /api/token-leagues/*`);
         });
     } catch (error) {
         console.error('❌ Failed to start server:', error);

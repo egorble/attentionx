@@ -147,6 +147,60 @@ CREATE TABLE IF NOT EXISTS waitlist (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ============ Token Leagues Tables ============
+
+-- Token Leagues cycles
+CREATE TABLE IF NOT EXISTS token_cycles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cycle_id INTEGER NOT NULL UNIQUE,
+    start_time INTEGER NOT NULL,
+    end_time INTEGER NOT NULL,
+    prize_pool TEXT DEFAULT '0',
+    entry_count INTEGER DEFAULT 0,
+    status TEXT CHECK(status IN ('active','finalizing','finalized')) DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- User entries per cycle
+CREATE TABLE IF NOT EXISTS token_entries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cycle_id INTEGER NOT NULL,
+    player_address TEXT NOT NULL,
+    token_ids TEXT NOT NULL,
+    entry_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(cycle_id, player_address)
+);
+
+-- Price snapshots per cycle
+CREATE TABLE IF NOT EXISTS token_prices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cycle_id INTEGER NOT NULL,
+    token_id INTEGER NOT NULL,
+    start_price REAL NOT NULL,
+    end_price REAL,
+    pct_change REAL,
+    UNIQUE(cycle_id, token_id)
+);
+
+-- Leaderboard per cycle
+CREATE TABLE IF NOT EXISTS token_leaderboard (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cycle_id INTEGER NOT NULL,
+    player_address TEXT NOT NULL,
+    score REAL DEFAULT 0,
+    rank INTEGER,
+    prize_amount TEXT DEFAULT '0',
+    UNIQUE(cycle_id, player_address)
+);
+
+-- AutoPlay settings
+CREATE TABLE IF NOT EXISTS token_autoplay (
+    player_address TEXT PRIMARY KEY,
+    enabled INTEGER DEFAULT 0,
+    token_ids TEXT NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_waitlist_email ON waitlist(email);
 CREATE INDEX IF NOT EXISTS idx_tournament_entries_tournament ON tournament_entries(tournament_id);
@@ -163,3 +217,6 @@ CREATE INDEX IF NOT EXISTS idx_user_profiles_address ON user_profiles(address);
 CREATE INDEX IF NOT EXISTS idx_tournaments_status ON tournaments(status);
 CREATE INDEX IF NOT EXISTS idx_nft_cards_owner ON nft_cards(owner_address);
 CREATE INDEX IF NOT EXISTS idx_nft_cards_startup ON nft_cards(startup_id);
+CREATE INDEX IF NOT EXISTS idx_token_entries_cycle ON token_entries(cycle_id);
+CREATE INDEX IF NOT EXISTS idx_token_leaderboard_cycle ON token_leaderboard(cycle_id, rank);
+CREATE INDEX IF NOT EXISTS idx_token_prices_cycle ON token_prices(cycle_id);

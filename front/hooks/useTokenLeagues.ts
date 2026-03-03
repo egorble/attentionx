@@ -1,0 +1,176 @@
+/**
+ * Hook for TokenLeagues smart contract interactions.
+ * Handles: enterCycle, claimPrize, setAutoPlay, read states.
+ */
+
+import { useState, useCallback } from 'react';
+import { ethers } from 'ethers';
+import { getTokenLeaguesContract, getReadProvider } from '../lib/contracts';
+import { useWalletContext } from '../context/WalletContext';
+
+// Token metadata — all 25 RISEx markets (crypto + stocks + commodities)
+export const TOKENS = [
+    // Crypto
+    { id: 1,  symbol: 'BTC',   name: 'Bitcoin',      color: '#F7931A' },
+    { id: 2,  symbol: 'ETH',   name: 'Ethereum',     color: '#627EEA' },
+    { id: 3,  symbol: 'BNB',   name: 'BNB',          color: '#F0B90B' },
+    { id: 4,  symbol: 'SOL',   name: 'Solana',       color: '#9945FF' },
+    { id: 5,  symbol: 'DOGE',  name: 'Dogecoin',     color: '#C2A633' },
+    { id: 6,  symbol: 'XRP',   name: 'XRP',          color: '#23292F' },
+    { id: 7,  symbol: 'LINK',  name: 'Chainlink',    color: '#2A5ADA' },
+    { id: 8,  symbol: 'ZEC',   name: 'Zcash',        color: '#ECB244' },
+    { id: 9,  symbol: 'LTC',   name: 'Litecoin',     color: '#BFBBBB' },
+    { id: 10, symbol: 'AAVE',  name: 'Aave',         color: '#B6509E' },
+    { id: 11, symbol: 'TAO',   name: 'Bittensor',    color: '#000000' },
+    { id: 12, symbol: 'PUMP',  name: 'PumpFun',      color: '#00D4AA' },
+    { id: 13, symbol: 'PENGU', name: 'Pudgy Penguins', color: '#5B9BD5' },
+    { id: 14, symbol: 'PEPE',  name: 'Pepe',         color: '#3D9B35' },
+    { id: 15, symbol: 'HYPE',  name: 'Hyperliquid',  color: '#7CFC00' },
+    { id: 16, symbol: 'XMR',   name: 'Monero',       color: '#FF6600' },
+    { id: 17, symbol: 'MNT',   name: 'Mantle',       color: '#000000' },
+    // Stocks
+    { id: 18, symbol: 'SPY',   name: 'S&P 500 ETF',  color: '#1B5E20' },
+    { id: 19, symbol: 'TSLA',  name: 'Tesla',        color: '#CC0000' },
+    { id: 20, symbol: 'COIN',  name: 'Coinbase',     color: '#0052FF' },
+    { id: 21, symbol: 'HOOD',  name: 'Robinhood',    color: '#00C805' },
+    { id: 22, symbol: 'NVDA',  name: 'NVIDIA',       color: '#76B900' },
+    { id: 23, symbol: 'LIT',   name: 'Litentry',     color: '#6C63FF' },
+    // Commodities
+    { id: 24, symbol: 'XAU',   name: 'Gold',         color: '#FFD700' },
+    { id: 25, symbol: 'XAG',   name: 'Silver',       color: '#C0C0C0' },
+] as const;
+
+export function useTokenLeagues() {
+    const { getSigner, address } = useWalletContext();
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    /** Enter current cycle with 5 token selections */
+    const enterCycle = useCallback(async (tokenIds: number[]) => {
+        const signer = await getSigner();
+        if (!signer) throw new Error('Wallet not connected');
+        if (tokenIds.length !== 5) throw new Error('Must select exactly 5 tokens');
+
+        setLoading(true);
+        setError(null);
+        try {
+            const contract = getTokenLeaguesContract(signer);
+            const entryFee = await contract.entryFee();
+            const tx = await contract.enterCycle(tokenIds, { value: entryFee });
+            const receipt = await tx.wait();
+
+            // Notify server about entry
+            const cycleId = Number(await contract.currentCycleId());
+            try {
+                await fetch('/api/token-leagues/entry', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cycleId, address, tokenIds }),
+                });
+            } catch {} // non-critical
+
+            return receipt;
+        } catch (err: any) {
+            const msg = err?.reason || err?.message || 'Transaction failed';
+            setError(msg);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    }, [getSigner, address]);
+
+    /** Claim accumulated prizes */
+    const claimPrize = useCallback(async () => {
+        const signer = await getSigner();
+        if (!signer) throw new Error('Wallet not connected');
+
+        setLoading(true);
+        setError(null);
+        try {
+            const contract = getTokenLeaguesContract(signer);
+            const tx = await contract.claimPrize();
+            return await tx.wait();
+        } catch (err: any) {
+            const msg = err?.reason || err?.message || 'Claim failed';
+            setError(msg);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    }, [getSigner]);
+
+    /** Set AutoPlay on-chain + server */
+    const setAutoPlay = useCallback(async (enabled: boolean, tokenIds: number[]) => {
+        const signer = await getSigner();
+        if (!signer || !address) throw new Error('Wallet not connected');
+        if (enabled && tokenIds.length !== 5) throw new Error('Must select exactly 5 tokens');
+
+        setLoading(true);
+        setError(null);
+        try {
+            // On-chain
+            const contract = getTokenLeaguesContract(signer);
+            const tx = await contract.setAutoPlay(enabled, tokenIds.length === 5 ? tokenIds : [1,2,3,4,5]);
+            await tx.wait();
+
+            // Server (for cycle manager to auto-enter)
+            try {
+                await fetch('/api/token-leagues/autoplay', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address, enabled, tokenIds }),
+                });
+            } catch {} // non-critical
+
+        } catch (err: any) {
+            const msg = err?.reason || err?.message || 'AutoPlay update failed';
+            setError(msg);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    }, [getSigner, address]);
+
+    /** Read claimable balance */
+    const getClaimableBalance = useCallback(async (): Promise<bigint> => {
+        if (!address) return 0n;
+        try {
+            const contract = getTokenLeaguesContract();
+            return await contract.getClaimableBalance(address);
+        } catch {
+            return 0n;
+        }
+    }, [address]);
+
+    /** Check if user entered current cycle */
+    const hasEnteredCycle = useCallback(async (cycleId: number): Promise<boolean> => {
+        if (!address) return false;
+        try {
+            const contract = getTokenLeaguesContract();
+            return await contract.hasEntered(cycleId, address);
+        } catch {
+            return false;
+        }
+    }, [address]);
+
+    /** Get entry fee */
+    const getEntryFee = useCallback(async (): Promise<bigint> => {
+        try {
+            const contract = getTokenLeaguesContract();
+            return await contract.entryFee();
+        } catch {
+            return ethers.parseEther('0.001');
+        }
+    }, []);
+
+    return {
+        enterCycle,
+        claimPrize,
+        setAutoPlay,
+        getClaimableBalance,
+        hasEnteredCycle,
+        getEntryFee,
+        loading,
+        error,
+    };
+}

@@ -34,6 +34,7 @@ export const CONTRACTS = {
     PackOpener: '0x85C031EbBBf859B2b376622a74D8fEe74753bDC0',
     TournamentManager: '0x59948cdE98f923A4653fBc5A0Fae594EE5a680cB',
     MarketplaceV2: '0xA7f02B767e5E86f70271D3D1D8B73342aC7034DE',
+    TokenLeagues: '0x088659F051b82BD10EA6F1B5FC464cf05d3A4e18',
 } as const;
 
 // ============ ABIs (minimal for frontend) ============
@@ -144,6 +145,30 @@ export const TOURNAMENT_ABI = [
     'event TournamentCreated(uint256 indexed tournamentId, uint256 registrationStart, uint256 startTime, uint256 endTime)',
     'event LineupRegistered(uint256 indexed tournamentId, address indexed user, uint256[5] cardIds)',
     'event LineupCancelled(uint256 indexed tournamentId, address indexed user)',
+];
+
+export const TOKEN_LEAGUES_ABI = [
+    // Read functions
+    'function currentCycleId() view returns (uint256)',
+    'function entryFee() view returns (uint256)',
+    'function rolloverPool() view returns (uint256)',
+    'function getCycle(uint256 cycleId) view returns (tuple(uint256 id, uint256 startTime, uint256 endTime, uint256 prizePool, uint256 entryCount, bool finalized))',
+    'function getUserTokens(uint256 cycleId, address user) view returns (uint8[5])',
+    'function getParticipants(uint256 cycleId) view returns (address[])',
+    'function getAutoPlayTokens(address user) view returns (bool enabled, uint8[5] tokenIds)',
+    'function getClaimableBalance(address user) view returns (uint256)',
+    'function hasEntered(uint256 cycleId, address user) view returns (bool)',
+    'function getCycleEntryCount(uint256 cycleId) view returns (uint256)',
+    // Write functions
+    'function enterCycle(uint8[5] tokenIds) payable',
+    'function claimPrize()',
+    'function setAutoPlay(bool enabled, uint8[5] tokenIds)',
+    // Events
+    'event CycleStarted(uint256 indexed cycleId, uint256 startTime, uint256 endTime)',
+    'event CycleEntered(uint256 indexed cycleId, address indexed user, uint8[5] tokenIds)',
+    'event CycleFinalized(uint256 indexed cycleId, uint256 prizePool, uint256 winnersCount)',
+    'event PrizeClaimed(address indexed user, uint256 amount)',
+    'event AutoPlaySet(address indexed user, bool enabled)',
 ];
 
 // Old MARKETPLACE_ABI removed - using MarketplaceV2 exclusively
@@ -277,6 +302,11 @@ export function getTournamentContract(signerOrProvider?: ethers.Signer | ethers.
 export function getMarketplaceV2Contract(signerOrProvider?: ethers.Signer | ethers.Provider) {
     const provider = signerOrProvider || getReadProvider();
     return new ethers.Contract(getActiveContracts().MarketplaceV2, MARKETPLACE_V2_ABI, provider);
+}
+
+export function getTokenLeaguesContract(signerOrProvider?: ethers.Signer | ethers.Provider) {
+    const provider = signerOrProvider || getReadProvider();
+    return new ethers.Contract(getActiveContracts().TokenLeagues, TOKEN_LEAGUES_ABI, provider);
 }
 
 // ============ Utils ============
