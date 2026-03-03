@@ -676,24 +676,7 @@ const TokenLeagues: React.FC = () => {
             {/* ─── Main Content (scrollable) ─── */}
             <div ref={scrollRef} className="flex-1 flex flex-col overflow-y-auto p-2 md:p-4 pt-4 md:pt-6 gap-3 md:gap-4 relative z-10 pb-24 md:pb-16 custom-scrollbar">
 
-                {/* Claimable Banner & Error */}
-                {claimable > 0n && (
-                    <div className="px-4 py-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-between shrink-0">
-                        <div className="flex items-center gap-2">
-                            <Gift className="w-4 h-4 text-emerald-400" />
-                            <span className="text-xs font-black text-emerald-400">
-                                {ethers.formatEther(claimable)} {currencySymbol()} claimable!
-                            </span>
-                        </div>
-                        <button
-                            onClick={handleClaim}
-                            disabled={claimLoading}
-                            className="bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider px-4 py-2 rounded-xl hover:bg-emerald-400 transition-all disabled:opacity-50 active:scale-95"
-                        >
-                            {claimLoading ? 'Claiming...' : 'Claim'}
-                        </button>
-                    </div>
-                )}
+                {/* Error */}
                 {error && (
                     <div className="px-4 py-2.5 bg-red-500/10 border border-red-500/30 rounded-xl shrink-0">
                         <p className="text-xs text-red-400 font-medium text-center">{error}</p>
@@ -899,6 +882,18 @@ const TokenLeagues: React.FC = () => {
                     </div>
                 )}
 
+                {/* ─── Claim Section (bottom of content) ─── */}
+                {isConnected && claimable > 0n && (
+                    <button
+                        onClick={handleClaim}
+                        disabled={claimLoading}
+                        className="w-full bg-emerald-500 text-white py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-[0_4px_20px_rgba(16,185,129,0.3)] disabled:opacity-50 flex items-center justify-center gap-2 shrink-0"
+                    >
+                        <Gift className="w-4 h-4" />
+                        {claimLoading ? 'Claiming...' : `Claim ${ethers.formatEther(claimable)} ${currencySymbol()}`}
+                    </button>
+                )}
+
             </div>
 
             {/* ─── Floating Bottom: Two Islands ─── */}
@@ -929,18 +924,6 @@ const TokenLeagues: React.FC = () => {
                         );
                     })}
                 </div>
-
-                {/* Claim pill (visible when claimable) */}
-                {isConnected && claimable > 0n && (
-                    <button
-                        onClick={handleClaim}
-                        disabled={claimLoading}
-                        className="pointer-events-auto bg-emerald-500 text-white px-4 py-2.5 md:px-5 md:py-3 rounded-full font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-emerald-400 active:scale-[0.97] transition-all shadow-[0_4px_20px_rgba(16,185,129,0.4)] disabled:opacity-50 flex items-center gap-1.5 shrink-0"
-                    >
-                        <Gift className="w-3.5 h-3.5" />
-                        {claimLoading ? '...' : 'Claim'}
-                    </button>
-                )}
 
                 {/* Island 2: Action button */}
                 <div className="pointer-events-auto shrink-0">

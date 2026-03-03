@@ -84,12 +84,19 @@ export function useTokenLeagues() {
             // Notify server about entry
             const cycleId = Number(await contract.currentCycleId());
             try {
-                await fetch('/api/token-leagues/entry', {
+                const resp = await fetch('/api/token-leagues/entry', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ cycleId, address, tokenIds }),
                 });
-            } catch {} // non-critical
+                if (!resp.ok) {
+                    console.error('[TokenLeagues] Backend entry POST failed:', resp.status, await resp.text());
+                } else {
+                    console.log('[TokenLeagues] Backend entry saved for cycle', cycleId);
+                }
+            } catch (e) {
+                console.error('[TokenLeagues] Backend entry POST error:', e);
+            }
 
             return receipt;
         } catch (err: any) {

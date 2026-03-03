@@ -52,6 +52,8 @@ const TOKEN_LEAGUES_ABI = [
     'function enterCycleFor(address user, uint8[5] tokenIds) payable',
     'function getCycle(uint256 cycleId) view returns (tuple(uint256 id, uint256 startTime, uint256 endTime, uint256 prizePool, uint256 entryCount, bool finalized))',
     'function hasEntered(uint256 cycleId, address user) view returns (bool)',
+    'function getParticipants(uint256 cycleId) view returns (address[])',
+    'function getUserTokens(uint256 cycleId, address user) view returns (uint8[5])',
 ];
 
 class CycleManager extends EventEmitter {
@@ -64,6 +66,7 @@ class CycleManager extends EventEmitter {
         this.cycleTimeout = null;
         this._started = false;
         this.liveLeaderboard = []; // cached live leaderboard for WS broadcast
+        this._lastParticipantSync = 0; // timestamp of last on-chain participant sync
     }
 
     /**
@@ -286,14 +289,45 @@ class CycleManager extends EventEmitter {
     _startTick() {
         if (this.tickInterval) clearInterval(this.tickInterval);
         this.tickInterval = setInterval(() => {
-            this._updateLiveScores();
+            this._updateLiveScores().catch(err => {
+                console.error(`[CycleManager] _updateLiveScores unhandled error: ${err.message}`);
+            });
         }, TICK_INTERVAL);
     }
 
     // ─── Live Score Calculation ───
 
-    _updateLiveScores() {
+    async _updateLiveScores() {
         if (!this.currentCycle) return;
+
+        // Sync on-chain participants into DB every 30 seconds
+        const now = Date.now();
+        if (now - this._lastParticipantSync > 30_000) {
+            this._lastParticipantSync = now;
+            try {
+                const provider = new ethers.JsonRpcProvider(CHAIN.RPC_URL);
+                const contract = new ethers.Contract(CONTRACTS.TokenLeagues, TOKEN_LEAGUES_ABI, provider);
+                const participants = await contract.getParticipants(this.currentCycle.id);
+                let synced = 0;
+                for (const addr of participants) {
+                    const existing = db.getTokenEntry(this.currentCycle.id, addr);
+                    if (!existing) {
+                        const tokens = await contract.getUserTokens(this.currentCycle.id, addr);
+                        const tokenIds = tokens.map(Number).filter(t => t > 0);
+                        if (tokenIds.length > 0) {
+                            db.saveTokenEntry(this.currentCycle.id, addr.toLowerCase(), tokenIds);
+                            synced++;
+                        }
+                    }
+                }
+                if (synced > 0) {
+                    db.saveDatabase();
+                    console.log(`[CycleManager] Live sync: pulled ${synced} on-chain entries into DB for cycle #${this.currentCycle.id}`);
+                }
+            } catch (err) {
+                console.warn(`[CycleManager] Live participant sync failed: ${err.message}`);
+            }
+        }
 
         try {
             const entries = db.getTokenEntries(this.currentCycle.id);
@@ -441,19 +475,13 @@ class CycleManager extends EventEmitter {
             console.log(`[CycleManager] Cycle #${cycleId} scores: ${results.length} players | top=${topScore} bottom=${bottomScore}`);
         }
 
-        // Prize distribution: solo player always wins; otherwise only positive scores
-        let winners;
-        let totalPositiveScore;
-        if (results.length === 1) {
-            // Solo player gets the entire prize pool regardless of score
-            winners = [results[0]];
-            totalPositiveScore = Math.abs(results[0].score) || 1; // avoid division by zero
-            console.log(`[CycleManager] Cycle #${cycleId} solo player — awarding full prize pool to ${results[0].playerAddress}`);
-        } else {
-            winners = results.filter(r => r.score > 0);
-            totalPositiveScore = winners.reduce((sum, w) => sum + w.score, 0);
-        }
-        console.log(`[CycleManager] Cycle #${cycleId} prize calc: ${winners.length} winners out of ${results.length} | totalScore=${totalPositiveScore.toFixed(2)}`);
+        // Prize distribution: ALL players receive rewards, rank-weighted
+        // Rank 1 (best score) gets N shares, Rank 2 gets N-1, ..., Rank N gets 1 share
+        // Already sorted by score desc: positive first, then least-negative, then most-negative
+        const winners = results; // everyone wins
+        const n = winners.length;
+        const totalShares = (n * (n + 1)) / 2; // sum of 1..N
+        console.log(`[CycleManager] Cycle #${cycleId} prize calc: ${n} players, rank-weighted distribution (totalShares=${totalShares})`);
 
         // Get prize pool from contract or DB (with retries)
         let prizePool = '0';
@@ -474,15 +502,9 @@ class CycleManager extends EventEmitter {
         const winnerAmounts = [];
 
         for (const w of winners) {
-            let share;
-            if (results.length === 1) {
-                // Solo player gets the entire prize pool
-                share = prizePoolBN;
-            } else {
-                share = totalPositiveScore > 0
-                    ? (BigInt(Math.round(w.score * 1000)) * prizePoolBN) / BigInt(Math.round(totalPositiveScore * 1000))
-                    : 0n;
-            }
+            // Rank 1 → N shares, Rank 2 → N-1 shares, ..., Rank N → 1 share
+            const playerShares = n - w.rank + 1;
+            const share = (BigInt(playerShares) * prizePoolBN) / BigInt(totalShares);
             w.prizeAmount = share.toString();
             winnerAddresses.push(w.playerAddress);
             winnerAmounts.push(share);

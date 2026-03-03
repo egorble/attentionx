@@ -1388,7 +1388,9 @@ app.post('/api/token-leagues/autoplay', writeLimiter, (req, res) => {
 app.post('/api/token-leagues/entry', writeLimiter, (req, res) => {
     try {
         const { cycleId, address, tokenIds } = req.body;
+        console.log(`[API] POST /entry — cycleId=${cycleId} address=${address} tokens=${JSON.stringify(tokenIds)}`);
         if (!cycleId || !address || !Array.isArray(tokenIds) || tokenIds.length !== 5) {
+            console.warn(`[API] POST /entry — invalid params rejected`);
             return res.status(400).json({ success: false, error: 'Invalid params' });
         }
         db.saveTokenEntry(cycleId, address, tokenIds);
@@ -1397,8 +1399,10 @@ app.post('/api/token-leagues/entry', writeLimiter, (req, res) => {
             db.updateTokenCycleEntry(cycleId, (cycle.entry_count || 0) + 1, cycle.prize_pool);
         }
         db.saveDatabase();
+        console.log(`[API] POST /entry — saved successfully for cycle #${cycleId}`);
         res.json({ success: true });
     } catch (err) {
+        console.error(`[API] POST /entry — error: ${err.message}`);
         res.status(500).json({ success: false, error: err.message });
     }
 });
