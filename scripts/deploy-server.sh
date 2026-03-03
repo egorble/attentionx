@@ -116,6 +116,7 @@ step "3/10 — Creating directory structure"
 
 mkdir -p "${APP_DIR}"/{server,backend,front,backups,logs,deploy}
 mkdir -p "${APP_DIR}/server/db"
+mkdir -p "${APP_DIR}/server/data"
 mkdir -p "${APP_DIR}/server/logs"
 mkdir -p "$CERTBOT_WEBROOT"
 
@@ -377,6 +378,7 @@ step "Deployment Complete!"
 echo ""
 log "Domain: https://${DOMAIN}"
 log "API:    https://${DOMAIN}/api/tournaments/active"
+log "WS:     wss://${DOMAIN}/ws/token-leagues"
 log "Meta:   https://${DOMAIN}/metadata/1"
 echo ""
 

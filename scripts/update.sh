@@ -110,6 +110,10 @@ if [ -f "${APP_DIR}/deployment-rise.json" ]; then
     log "  deployment-rise.json: ${ADDR}"
 fi
 
+# ─── Ensure data directories exist ───
+mkdir -p "${APP_DIR}/server/data"
+mkdir -p "${APP_DIR}/server/db"
+
 # ─── Fix ownership ───
 chown -R attentionx:attentionx "${APP_DIR}"
 
@@ -174,6 +178,14 @@ echo -e "  attentionx-api:              ${API_OK} $([ "$API_OK" = "active" ] && 
 echo -e "  attentionx-metadata:         ${META_OK} $([ "$META_OK" = "active" ] && echo "${GREEN}OK${NC}" || echo "${RED}FAIL${NC}")"
 echo -e "  ${CYAN}Infra:${NC}"
 echo -e "  nginx:                      ${NGINX_OK} $([ "$NGINX_OK" = "active" ] && echo "${GREEN}OK${NC}" || echo "${RED}FAIL${NC}")"
+
+# ─── Token Leagues quick check ───
+echo -e "  ${CYAN}Token Leagues:${NC}"
+TL_STATUS=$(curl -s --max-time 5 "http://127.0.0.1:3007/api/token-leagues/cycle/active" 2>/dev/null)
+TL_OK=$(echo "$TL_STATUS" | node -e "process.stdin.on('data',d=>{try{const j=JSON.parse(d);console.log(j.success?'OK':'FAIL')}catch{console.log('FAIL')}})" 2>/dev/null || echo "FAIL")
+TL_CYCLE=$(echo "$TL_STATUS" | node -e "process.stdin.on('data',d=>{try{const j=JSON.parse(d);console.log(j.data?.cycle?.id||'?')}catch{console.log('?')}})" 2>/dev/null || echo "?")
+echo -e "  cycle API:                   $([ "$TL_OK" = "OK" ] && echo "${GREEN}OK${NC} (cycle #${TL_CYCLE})" || echo "${RED}FAIL${NC}")"
+echo -e "  WebSocket:                   wss://app.attnx.fun/ws/token-leagues"
 
 # ─── Verify metadata server uses correct contract ───
 echo -e "  ${CYAN}Contract verification:${NC}"
