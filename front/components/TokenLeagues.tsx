@@ -485,6 +485,10 @@ const TokenLeagues: React.FC = () => {
     const [claimable, setClaimable] = useState<bigint>(0n);
     const [claimLoading, setClaimLoading] = useState(false);
 
+    // Splash screen state
+    const [splashVisible, setSplashVisible] = useState(true);
+    const [splashFading, setSplashFading] = useState(false);
+
     // Layout state
     const [showChart, setShowChart] = useState(true);
     const [showLeaderboard, setShowLeaderboard] = useState(false);
@@ -507,6 +511,36 @@ const TokenLeagues: React.FC = () => {
             window.removeEventListener('scroll', onScroll);
         };
     }, []);
+
+    // Splash: dismiss when data loaded or after max 3s
+    useEffect(() => {
+        if (!splashVisible) return;
+        const hasData = Object.keys(prices).length > 0 && cycle !== null;
+        const minTime = 2000; // min splash duration for animation
+        const maxTime = 3500; // max splash even if no data
+
+        const start = Date.now();
+        const check = () => {
+            const elapsed = Date.now() - start;
+            const dataReady = Object.keys(prices).length > 0 && cycle !== null;
+            if ((dataReady && elapsed >= minTime) || elapsed >= maxTime) {
+                setSplashFading(true);
+                setTimeout(() => setSplashVisible(false), 500); // fade-out duration
+            } else {
+                requestAnimationFrame(check);
+            }
+        };
+        if (hasData) {
+            // data already loaded, wait min animation time
+            const timer = setTimeout(() => {
+                setSplashFading(true);
+                setTimeout(() => setSplashVisible(false), 500);
+            }, minTime);
+            return () => clearTimeout(timer);
+        }
+        const raf = requestAnimationFrame(check);
+        return () => cancelAnimationFrame(raf);
+    }, [splashVisible, prices, cycle]);
 
     // Phase
     const phase: Phase = useMemo(() => {
@@ -691,7 +725,39 @@ const TokenLeagues: React.FC = () => {
     const displayTokens = phase === 'in-cycle' ? enteredTokens : selectedTokens;
 
     return (
-        <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-zinc-950 text-gray-900 dark:text-white relative font-sans animate-in fade-in slide-in-from-bottom-8 duration-500 ease-out">
+        <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-zinc-950 text-gray-900 dark:text-white relative font-sans">
+
+            {/* ─── Splash Screen ─── */}
+            {splashVisible && (
+                <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-white dark:bg-zinc-950 transition-opacity duration-500 ${splashFading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+                    <svg width="180" height="44" viewBox="0 0 114 28" fill="none">
+                        <style>{`
+                            .sl{fill:transparent;stroke-width:.5px;stroke-dasharray:400;stroke-dashoffset:400;animation:slD 1.2s cubic-bezier(.25,.1,.25,1) forwards,slF .8s ease forwards}
+                            .sl-w{stroke:rgba(107,114,128,.5)}.dark .sl-w{stroke:rgba(255,255,255,.5)}
+                            .sl-g{stroke:#03DE82}
+                            @keyframes slD{0%{stroke-dashoffset:400}100%{stroke-dashoffset:0}}
+                            @keyframes slF{0%{fill:transparent;stroke-width:.5px}100%{fill:var(--fc);stroke-width:0}}
+                            .sl1{animation-delay:0s,.8s;--fc:#1f2937}.dark .sl1{--fc:white}
+                            .sl2{animation-delay:.15s,.95s;--fc:#1f2937}.dark .sl2{--fc:white}
+                            .sl3{animation-delay:.3s,1.1s;--fc:#1f2937}.dark .sl3{--fc:white}
+                            .sl4{animation-delay:.45s,1.25s;--fc:#1f2937}.dark .sl4{--fc:white}
+                            .sl5{animation-delay:.45s,1.25s;--fc:#1f2937}.dark .sl5{--fc:white}
+                            .sl6{animation-delay:.6s,1.4s;--fc:#03DE82}
+                            .sl7{animation-delay:.75s,1.55s;--fc:#03DE82}
+                            .sl8{animation-delay:.75s,1.55s;--fc:#03DE82}
+                        `}</style>
+                        <path className="sl sl-w sl1" d="M16.3332 0.037323H0.116577V4.68719H16.3332C16.9485 4.68843 17.5382 4.93391 17.9726 5.36969C18.4069 5.80547 18.6505 6.39589 18.6498 7.01119V9.33332H7.20991C5.32855 9.33407 3.52448 10.0819 2.19433 11.4124C0.864175 12.7429 0.116824 14.5472 0.116577 16.4285V27.9365H4.74964V17.0016L16.4779 27.9365H23.2875L8.32431 13.9841H18.6526V9.35759H23.2866V7.01119C23.2866 3.15746 20.172 0.037323 16.3332 0.037323Z"/>
+                        <path className="sl sl-w sl2" d="M31.3226 0.037323H26.668V27.9365H31.3226V0.037323Z"/>
+                        <path className="sl sl-w sl3" d="M34.732 9.28292C34.732 13.1357 37.8456 16.2568 41.6854 16.2568H49.5319C50.1483 16.2598 50.7383 16.5071 51.1726 16.9445C51.6069 17.3819 51.8499 17.9737 51.8484 18.5901V20.9617C51.8491 21.2665 51.7896 21.5683 51.6735 21.8501C51.5574 22.1318 51.3869 22.3879 51.1718 22.6038C50.9566 22.8196 50.7011 22.9909 50.4197 23.1079C50.1383 23.2249 49.8366 23.2854 49.5319 23.2857H34.732V27.9356H49.5319C53.3716 27.9356 56.4852 24.8145 56.4852 20.9617V18.5911C56.4852 14.7373 53.3716 11.6163 49.5356 11.6163H41.6872C41.0709 11.6133 40.4808 11.366 40.0465 10.9285C39.6123 10.4911 39.3692 9.89931 39.3707 9.28292V7.01492C39.3701 6.71019 39.4295 6.40832 39.5457 6.12657C39.6618 5.84482 39.8323 5.58871 40.0474 5.37288C40.2625 5.15705 40.5181 4.98573 40.7995 4.86872C41.0808 4.75171 41.3825 4.69129 41.6872 4.69092H55.0684V0.037323H41.6872C37.8484 0.037323 34.7339 3.15746 34.7339 7.01119V9.27919L34.732 9.28292Z"/>
+                        <path className="sl sl-w sl4" d="M59.0771 7.01119V9.35852H63.7102V7.01119C63.7096 6.70645 63.769 6.40458 63.8851 6.12283C64.0012 5.84108 64.1717 5.58497 64.3868 5.36915C64.602 5.15332 64.8575 4.982 65.1389 4.86499C65.4203 4.74797 65.722 4.68756 66.0267 4.68719H80.988V0.037323H66.0267C62.187 0.037323 59.0734 3.15746 59.0734 7.01119H59.0771Z"/>
+                        <path className="sl sl-w sl5" d="M66.1891 11.6125H79.4107V16.2568L66.1882 16.2633C65.5729 16.2646 64.9833 16.51 64.5489 16.9458C64.1145 17.3816 63.8709 17.972 63.8716 18.5873V20.958C63.871 21.2627 63.9305 21.5646 64.0466 21.8463C64.1627 22.1281 64.3332 22.3842 64.5483 22.6C64.7635 22.8159 65.019 22.9872 65.3004 23.1042C65.5818 23.2212 65.8834 23.2816 66.1882 23.282H80.9899V27.9328H66.1872C62.3484 27.9328 59.2339 24.808 59.2339 20.9589V18.5873C59.2339 14.7345 62.3484 11.6135 66.1835 11.6135H66.1872L66.1891 11.6125Z"/>
+                        <path className="sl sl-g sl6" d="M113.039 0.037323V8.43732H107.261C106.941 8.43732 106.625 8.47466 106.322 8.55026C105.439 8.75694 104.651 9.25619 104.087 9.96694C103.523 10.6777 103.216 11.5582 103.215 12.4656V18.144H97.4958C96.4177 18.1445 95.3839 18.573 94.6216 19.3353C93.8592 20.0977 93.4307 21.1315 93.4302 22.2096V27.9365H85.0302V19.5431H90.7562C91.8345 19.5426 92.8685 19.1139 93.6308 18.3514C94.3932 17.5889 94.8216 16.5548 94.8218 15.4765V9.75052H101.15C101.232 9.74026 101.315 9.72999 101.391 9.71319C103.243 9.33052 104.641 7.69439 104.641 5.73906V0.037323H113.042H113.039Z"/>
+                        <path className="sl sl-g sl7" d="M85.0293 0.037323H93.4265V6.52959C93.4265 7.03456 93.2259 7.51885 92.8688 7.87592C92.5118 8.23299 92.0275 8.43359 91.5225 8.43359H85.0293V0.037323Z"/>
+                        <path className="sl sl-g sl8" d="M106.545 19.5393H113.039V27.9365H104.641V21.4433C104.641 20.9384 104.842 20.4541 105.199 20.097C105.556 19.7399 106.04 19.5393 106.545 19.5393Z"/>
+                    </svg>
+                    <span className="mt-4 text-[10px] font-medium text-gray-400 dark:text-zinc-500 uppercase tracking-[0.2em]">Powered by RiseX</span>
+                </div>
+            )}
 
             {/* ─── Floating Island (timer + chart toggle) ─── */}
             <div className={`fixed top-[22px] md:top-4 left-2 md:left-auto md:right-2 xl:right-[calc(16rem+1rem)] z-30 pointer-events-none floating-island ${!isScrolled ? 'floating-island-docked' : ''}`}>
@@ -934,10 +1000,10 @@ const TokenLeagues: React.FC = () => {
                     <button
                         onClick={handleClaim}
                         disabled={claimLoading}
-                        className="w-full bg-emerald-500 text-white py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-[0_4px_20px_rgba(16,185,129,0.3)] disabled:opacity-50 flex items-center justify-center gap-2 shrink-0"
+                        className="w-full bg-emerald-500 text-white py-2.5 md:py-3 rounded-xl font-black text-[11px] md:text-xs uppercase tracking-wider hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-[0_4px_20px_rgba(16,185,129,0.3)] disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0"
                     >
-                        <Gift className="w-4 h-4" />
-                        {claimLoading ? 'Claiming...' : `Claim ${ethers.formatEther(claimable)} ${currencySymbol()}`}
+                        <Gift className="w-3.5 h-3.5" />
+                        {claimLoading ? 'Claiming...' : `Claim ${parseFloat(ethers.formatEther(claimable)).toFixed(4)} ${currencySymbol()}`}
                     </button>
                 )}
 
