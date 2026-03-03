@@ -547,7 +547,7 @@ const TokenLeagues: React.FC = () => {
         <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-zinc-950 text-gray-900 dark:text-white relative font-sans animate-in fade-in slide-in-from-bottom-8 duration-500 ease-out">
 
             {/* ─── Floating Island (timer + chart toggle) ─── */}
-            <div className="fixed top-2 md:top-4 left-2 md:left-auto md:right-2 xl:right-[calc(16rem+1rem)] z-30 pointer-events-none">
+            <div className="fixed top-14 md:top-4 left-2 md:left-auto md:right-2 xl:right-[calc(16rem+1rem)] z-30 pointer-events-none">
                 <div className="pointer-events-auto bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-full px-2 py-1.5 md:px-2.5 md:py-2 shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center gap-1.5">
                     {cycle && cycle.status === 'active' && (
                         <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 px-2.5 py-1.5 rounded-full">
