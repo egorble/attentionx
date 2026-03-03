@@ -874,7 +874,7 @@ const TokenLeagues: React.FC = () => {
                 <div className="fixed inset-0 z-50 xl:hidden animate-in fade-in duration-200" onClick={() => setShowLeaderboard(false)}>
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
                     <div
-                        className="absolute bottom-[72px] left-0 right-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-2xl border-t border-white/40 dark:border-white/[0.08] rounded-t-[28px] max-h-[65vh] flex flex-col animate-in slide-in-from-bottom-8 duration-300 shadow-[0_-8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_-8px_32px_rgba(0,0,0,0.5)]"
+                        className="absolute bottom-0 left-0 right-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-2xl border-t border-white/40 dark:border-white/[0.08] rounded-t-[28px] max-h-[80vh] flex flex-col animate-in slide-in-from-bottom-8 duration-300 shadow-[0_-8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_-8px_32px_rgba(0,0,0,0.5)]"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Handle */}
@@ -892,7 +892,7 @@ const TokenLeagues: React.FC = () => {
                             </button>
                         </div>
                         {/* Content */}
-                        <div className="flex-1 overflow-y-auto px-3 pb-6 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto px-3 pb-24 custom-scrollbar">
                             <TokenLeaguesRightPanel isMobile />
                         </div>
                     </div>
