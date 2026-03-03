@@ -8,6 +8,33 @@ import { useTokenLeagues, TOKENS } from '../hooks/useTokenLeagues';
 import { useTokenLeaguesWS } from '../hooks/useTokenLeaguesWS';
 import { currencySymbol } from '../lib/networks';
 import TokenLeaguesRightPanel from './TokenLeaguesRightPanel';
+import { useOnboarding } from '../hooks/useOnboarding';
+import OnboardingGuide, { OnboardingStep } from './OnboardingGuide';
+
+// ─── Token Leagues Guide ───
+
+const TOKEN_LEAGUES_GUIDE: OnboardingStep[] = [
+    {
+        title: 'Pick 5 Tokens',
+        description: 'Choose 5 tokens from 25 markets — crypto, stocks, or commodities. Tap a token to view its chart, tap the checkbox to select it for your lineup.',
+        icon: '🎯',
+    },
+    {
+        title: '10-Minute Cycles',
+        description: 'Every cycle lasts 10 minutes. Once you enter, your tokens are locked in. Watch their prices move in real-time and climb the leaderboard.',
+        icon: '⏱️',
+    },
+    {
+        title: 'Score = Performance × 5',
+        description: 'Your score is the average % price change of your 5 tokens, multiplied by 5× leverage. Pick tokens you think will pump!',
+        icon: '📈',
+    },
+    {
+        title: 'Win the Prize Pool',
+        description: 'Entry fee is 0.001 ETH — 90% goes to the prize pool. Top performers split the pool proportionally. Claim your winnings anytime.',
+        icon: '💰',
+    },
+];
 
 // ─── Token Icon URLs ───
 
@@ -447,6 +474,7 @@ const TokenLeagues: React.FC = () => {
     const { isConnected, address, connect } = useWalletContext();
     const { enterCycle, claimPrize, loading, error, getClaimableBalance, hasEnteredCycle, getEntryFee } = useTokenLeagues();
     const { prices, cycle, leaderboard, tokenPerformance, cycleResult, connected: wsConnected } = useTokenLeaguesWS();
+    const { isVisible: showGuide, currentStep: guideStep, nextStep: guideNext, dismiss: guideDismiss } = useOnboarding('token-leagues');
 
     const [selectedTokens, setSelectedTokens] = useState<number[]>([]);
     const [hasEntered, setHasEntered] = useState(false);
@@ -466,10 +494,16 @@ const TokenLeagues: React.FC = () => {
 
     useEffect(() => {
         const el = scrollRef.current;
-        if (!el) return;
-        const onScroll = () => setIsScrolled(el.scrollTop > 10);
-        el.addEventListener('scroll', onScroll, { passive: true });
-        return () => el.removeEventListener('scroll', onScroll);
+        const onScroll = () => {
+            const y = (el ? el.scrollTop : 0) || window.scrollY || 0;
+            setIsScrolled(y > 10);
+        };
+        el?.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => {
+            el?.removeEventListener('scroll', onScroll);
+            window.removeEventListener('scroll', onScroll);
+        };
     }, []);
 
     // Phase
@@ -557,7 +591,7 @@ const TokenLeagues: React.FC = () => {
         <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-zinc-950 text-gray-900 dark:text-white relative font-sans animate-in fade-in slide-in-from-bottom-8 duration-500 ease-out">
 
             {/* ─── Floating Island (timer + chart toggle) ─── */}
-            <div className={`fixed top-2 md:top-4 left-2 md:left-auto md:right-2 xl:right-[calc(16rem+1rem)] z-30 pointer-events-none floating-island ${!isScrolled ? 'floating-island-docked' : ''}`}>
+            <div className={`fixed top-[22px] md:top-4 left-2 md:left-auto md:right-2 xl:right-[calc(16rem+1rem)] z-30 pointer-events-none floating-island ${!isScrolled ? 'floating-island-docked' : ''}`}>
                 <div className="pointer-events-auto bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-full px-2 py-1.5 md:px-2.5 md:py-2 shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center gap-1.5">
                     {cycle && cycle.status === 'active' && (
                         <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 px-2.5 py-1.5 rounded-full">
@@ -969,6 +1003,16 @@ const TokenLeagues: React.FC = () => {
                         </button>
                     </div>
                 </div>
+            )}
+
+            {/* Onboarding Guide */}
+            {showGuide && (
+                <OnboardingGuide
+                    steps={TOKEN_LEAGUES_GUIDE}
+                    currentStep={guideStep}
+                    onNext={() => guideNext(TOKEN_LEAGUES_GUIDE.length)}
+                    onDismiss={guideDismiss}
+                />
             )}
         </div>
     );

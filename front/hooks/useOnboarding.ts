@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 
 const STORAGE_PREFIX = 'attentionx:onboarding:';
 
-export type GuideId = 'marketplace' | 'portfolio' | 'leagues' | 'feed';
+export type GuideId = 'marketplace' | 'portfolio' | 'leagues' | 'feed' | 'token-leagues';
 
 export interface GuideStep {
     title: string;
@@ -60,7 +60,7 @@ export function useOnboarding(guideId: GuideId) {
 
 /** Reset all onboarding guides (useful for testing) */
 export function resetAllOnboarding() {
-    const guides: GuideId[] = ['marketplace', 'portfolio', 'leagues', 'feed'];
+    const guides: GuideId[] = ['marketplace', 'portfolio', 'leagues', 'feed', 'token-leagues'];
     guides.forEach(id => {
         try { localStorage.removeItem(STORAGE_PREFIX + id); } catch { /* ignore */ }
     });
