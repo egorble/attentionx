@@ -472,7 +472,7 @@ type Phase = 'selection' | 'in-cycle' | 'results';
 
 const TokenLeagues: React.FC = () => {
     const { isConnected, address, connect } = useWalletContext();
-    const { enterCycle, claimPrize, loading, error, getClaimableBalance, hasEnteredCycle, getEntryFee } = useTokenLeagues();
+    const { enterCycle, claimPrize, loading, error, getClaimableBalance, hasEnteredCycle, getEntryFee, getUserTokens } = useTokenLeagues();
     const { prices, cycle, leaderboard, tokenPerformance, cycleResult, connected: wsConnected } = useTokenLeaguesWS();
     const { isVisible: showGuide, currentStep: guideStep, nextStep: guideNext, dismiss: guideDismiss } = useOnboarding('token-leagues');
 
@@ -542,10 +542,17 @@ const TokenLeagues: React.FC = () => {
 
     useEffect(() => {
         if (!cycle || !isConnected) return;
-        hasEnteredCycle(cycle.id).then(entered => {
+        hasEnteredCycle(cycle.id).then(async (entered) => {
             setHasEntered(entered);
+            if (entered && enteredTokens.length === 0) {
+                const tokens = await getUserTokens(cycle.id);
+                if (tokens.length > 0) {
+                    setEnteredTokens(tokens);
+                    setSelectedTokens(tokens);
+                }
+            }
         });
-    }, [cycle?.id, isConnected, hasEnteredCycle]);
+    }, [cycle?.id, isConnected, hasEnteredCycle, getUserTokens]);
 
     const toggleToken = useCallback((id: number) => {
         if (phase !== 'selection') return;

@@ -184,6 +184,19 @@ export function useTokenLeagues() {
         }
     }, []);
 
+    /** Get user's selected tokens for a cycle */
+    const getUserTokens = useCallback(async (cycleId: number): Promise<number[]> => {
+        if (!address) return [];
+        try {
+            const contract = getTokenLeaguesContract();
+            const tokens: bigint[] = await contract.getUserTokens(cycleId, address);
+            const ids = tokens.map(t => Number(t)).filter(t => t > 0);
+            return ids;
+        } catch {
+            return [];
+        }
+    }, [address]);
+
     return {
         enterCycle,
         claimPrize,
@@ -191,6 +204,7 @@ export function useTokenLeagues() {
         getClaimableBalance,
         hasEnteredCycle,
         getEntryFee,
+        getUserTokens,
         loading,
         error,
     };
