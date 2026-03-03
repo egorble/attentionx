@@ -540,6 +540,18 @@ const TokenLeagues: React.FC = () => {
         getClaimableBalance().then(b => setClaimable(b));
     }, [isConnected, getEntryFee, getClaimableBalance]);
 
+    // Reset state when cycle changes (new round)
+    const prevCycleId = useRef<number | null>(null);
+    useEffect(() => {
+        if (!cycle) return;
+        if (prevCycleId.current !== null && prevCycleId.current !== cycle.id) {
+            setHasEntered(false);
+            setEnteredTokens([]);
+            setSelectedTokens([]);
+        }
+        prevCycleId.current = cycle.id;
+    }, [cycle?.id]);
+
     useEffect(() => {
         if (!cycle || !isConnected) return;
         hasEnteredCycle(cycle.id).then(async (entered) => {
@@ -552,6 +564,8 @@ const TokenLeagues: React.FC = () => {
                 }
             }
         });
+        // Also refresh claimable after cycle change
+        getClaimableBalance().then(b => setClaimable(b));
     }, [cycle?.id, isConnected, hasEnteredCycle, getUserTokens]);
 
     const toggleToken = useCallback((id: number) => {
@@ -880,6 +894,18 @@ const TokenLeagues: React.FC = () => {
                         );
                     })}
                 </div>
+
+                {/* Claim pill (visible when claimable) */}
+                {isConnected && claimable > 0n && (
+                    <button
+                        onClick={handleClaim}
+                        disabled={claimLoading}
+                        className="pointer-events-auto bg-emerald-500 text-white px-4 py-2.5 md:px-5 md:py-3 rounded-full font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-emerald-400 active:scale-[0.97] transition-all shadow-[0_4px_20px_rgba(16,185,129,0.4)] disabled:opacity-50 flex items-center gap-1.5 shrink-0"
+                    >
+                        <Gift className="w-3.5 h-3.5" />
+                        {claimLoading ? '...' : 'Claim'}
+                    </button>
+                )}
 
                 {/* Island 2: Action button */}
                 <div className="pointer-events-auto shrink-0">
