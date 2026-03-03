@@ -115,8 +115,8 @@ export function useTokenLeagues() {
                 console.error('[TL Entry] ❌ Backend POST network error:', e);
             }
 
-            console.log('[TL Entry] === DONE ===');
-            return receipt;
+            console.log('[TL Entry] === DONE === enteredCycleId:', cycleId);
+            return { receipt, cycleId };
         } catch (err: any) {
             console.error('[TL Entry] ❌ TX error:', err?.reason || err?.message || err);
             setError(friendlyError(err));

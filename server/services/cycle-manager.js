@@ -90,64 +90,102 @@ class CycleManager extends EventEmitter {
             console.error(`[CycleManager] DB migration error: ${err.message}`);
         }
 
-        // Check on-chain for any unfinalized cycles the DB might have missed
+        // ─── On-chain reconciliation: always sync with contract as source of truth ───
+        let onChainCycleId = 0;
         try {
             const provider = new ethers.JsonRpcProvider(CHAIN.RPC_URL);
             const contract = new ethers.Contract(CONTRACTS.TokenLeagues, TOKEN_LEAGUES_ABI, provider);
-            const onChainCycleId = Number(await contract.currentCycleId());
+            onChainCycleId = Number(await contract.currentCycleId());
             console.log(`[CycleManager] On-chain currentCycleId: ${onChainCycleId}`);
 
-            // Finalize any on-chain cycles that DB doesn't know about
-            for (let id = Math.max(1, onChainCycleId - 5); id <= onChainCycleId; id++) {
+            // Finalize ALL expired unfinalized cycles (not just last 5)
+            const scanFrom = Math.max(1, onChainCycleId - 20);
+            for (let id = scanFrom; id <= onChainCycleId; id++) {
                 const onChainCycle = await contract.getCycle(id);
-                if (!onChainCycle.finalized && Number(onChainCycle.endTime) > 0) {
-                    const now = Math.floor(Date.now() / 1000);
-                    if (now >= Number(onChainCycle.endTime)) {
-                        const dbCycle = db.getTokenCycle(id);
-                        if (!dbCycle || dbCycle.status !== 'finalized') {
-                            console.log(`[CycleManager] Found unfinalized on-chain cycle #${id}, finalizing...`);
-                            // Ensure DB has cycle record
-                            if (!dbCycle) {
-                                db.saveTokenCycle(id, Number(onChainCycle.startTime), Number(onChainCycle.endTime));
-                            }
+                if (Number(onChainCycle.id) === 0) continue;
+
+                const endTime = Number(onChainCycle.endTime);
+                const nowSec = Math.floor(Date.now() / 1000);
+                const dbCycle = db.getTokenCycle(id);
+
+                // Ensure DB knows about this cycle
+                if (!dbCycle) {
+                    db.saveTokenCycle(id, Number(onChainCycle.startTime), endTime);
+                    console.log(`[CycleManager] Registered on-chain cycle #${id} in DB`);
+                }
+
+                // Finalize expired unfinalized cycles
+                if (!onChainCycle.finalized && nowSec >= endTime) {
+                    if (!dbCycle || dbCycle.status !== 'finalized') {
+                        console.log(`[CycleManager] Finalizing expired cycle #${id}...`);
+                        try {
                             await this._finalizeCycle(id);
+                        } catch (e) {
+                            console.warn(`[CycleManager] Finalization of cycle #${id} failed: ${e.message}`);
                         }
                     }
                 }
             }
+
+            // Now check: is the on-chain current cycle still active?
+            const currentOnChain = await contract.getCycle(onChainCycleId);
+            const nowSec = Math.floor(Date.now() / 1000);
+            if (Number(currentOnChain.id) > 0 && !currentOnChain.finalized && nowSec < Number(currentOnChain.endTime)) {
+                // Adopt the on-chain current cycle directly
+                const startTime = Number(currentOnChain.startTime);
+                const endTime = Number(currentOnChain.endTime);
+
+                // Get start prices from DB or snapshot current
+                const existingPrices = db.getTokenPrices(onChainCycleId);
+                const startPrices = {};
+                if (existingPrices.length > 0) {
+                    for (const p of existingPrices) startPrices[p.token_id] = p.start_price;
+                } else {
+                    const snapshot = this.priceEngine.getPriceSnapshot();
+                    const priceRecords = [];
+                    for (const s of snapshot) {
+                        startPrices[s.tokenId] = s.price;
+                        priceRecords.push({ tokenId: s.tokenId, startPrice: s.price });
+                    }
+                    db.saveTokenPrices(onChainCycleId, priceRecords);
+                }
+
+                this.currentCycle = { id: onChainCycleId, startTime, endTime, startPrices };
+                db.saveDatabase();
+                console.log(`[CycleManager] ✅ Adopted on-chain cycle #${onChainCycleId} (ends in ${endTime - nowSec}s)`);
+                this._scheduleCycleEnd();
+                this._startTick();
+                return;
+            }
         } catch (err) {
-            console.warn(`[CycleManager] On-chain cycle reconciliation failed: ${err.message}`);
+            console.warn(`[CycleManager] On-chain reconciliation failed: ${err.message}`);
         }
 
-        // Check for existing active cycle in DB
+        // Fallback: check DB for active cycle
         const activeCycle = db.getActiveTokenCycle();
         if (activeCycle) {
             const now = Math.floor(Date.now() / 1000);
             if (now < activeCycle.end_time) {
-                // Resume active cycle
                 const prices = db.getTokenPrices(activeCycle.cycle_id);
                 const startPrices = {};
-                for (const p of prices) {
-                    startPrices[p.token_id] = p.start_price;
-                }
+                for (const p of prices) startPrices[p.token_id] = p.start_price;
                 this.currentCycle = {
                     id: activeCycle.cycle_id,
                     startTime: activeCycle.start_time,
                     endTime: activeCycle.end_time,
                     startPrices,
                 };
-                console.log(`[CycleManager] Resumed cycle #${this.currentCycle.id}, ends in ${activeCycle.end_time - now}s`);
+                console.log(`[CycleManager] Resumed DB cycle #${this.currentCycle.id}, ends in ${activeCycle.end_time - now}s`);
                 this._scheduleCycleEnd();
                 this._startTick();
                 return;
             } else {
-                // Cycle expired while server was down — finalize it
-                console.log(`[CycleManager] Cycle #${activeCycle.cycle_id} expired, finalizing...`);
+                console.log(`[CycleManager] DB cycle #${activeCycle.cycle_id} expired, finalizing...`);
                 await this._finalizeCycle(activeCycle.cycle_id);
             }
         }
 
-        // Start a new cycle
+        // No active cycle anywhere — start fresh
         await this._startNewCycle();
     }
 
@@ -300,13 +338,67 @@ class CycleManager extends EventEmitter {
     async _updateLiveScores() {
         if (!this.currentCycle) return;
 
-        // Sync on-chain participants into DB every 30 seconds
+        // Sync with on-chain every 15 seconds: check cycle ID + participants
         const now = Date.now();
-        if (now - this._lastParticipantSync > 30_000) {
+        if (now - this._lastParticipantSync > 15_000) {
             this._lastParticipantSync = now;
             try {
                 const provider = new ethers.JsonRpcProvider(CHAIN.RPC_URL);
                 const contract = new ethers.Contract(CONTRACTS.TokenLeagues, TOKEN_LEAGUES_ABI, provider);
+
+                // Check if on-chain has moved past our current cycle
+                const onChainId = Number(await contract.currentCycleId());
+                if (onChainId > this.currentCycle.id) {
+                    console.warn(`[CycleManager] ⚠️ DESYNC: backend cycle #${this.currentCycle.id} but on-chain is #${onChainId}. Catching up...`);
+
+                    // Finalize our old cycle if needed
+                    const nowSec = Math.floor(Date.now() / 1000);
+                    if (nowSec >= this.currentCycle.endTime) {
+                        try {
+                            await this._finalizeCycle(this.currentCycle.id);
+                        } catch (e) {
+                            console.warn(`[CycleManager] Finalize old cycle #${this.currentCycle.id} failed: ${e.message}`);
+                        }
+                    }
+
+                    // Adopt the on-chain current cycle
+                    const onChainCycle = await contract.getCycle(onChainId);
+                    if (onChainCycle.id > 0 && !onChainCycle.finalized) {
+                        const startTime = Number(onChainCycle.startTime);
+                        const endTime = Number(onChainCycle.endTime);
+
+                        // Ensure DB has this cycle
+                        if (!db.getTokenCycle(onChainId)) {
+                            db.saveTokenCycle(onChainId, startTime, endTime);
+                        }
+
+                        // Snapshot current prices as start prices (best effort for mid-cycle adoption)
+                        const snapshot = this.priceEngine.getPriceSnapshot();
+                        const startPrices = {};
+                        const existingPrices = db.getTokenPrices(onChainId);
+                        if (existingPrices.length > 0) {
+                            for (const p of existingPrices) startPrices[p.token_id] = p.start_price;
+                        } else {
+                            const priceRecords = [];
+                            for (const s of snapshot) {
+                                startPrices[s.tokenId] = s.price;
+                                priceRecords.push({ tokenId: s.tokenId, startPrice: s.price });
+                            }
+                            db.saveTokenPrices(onChainId, priceRecords);
+                        }
+
+                        this.currentCycle = { id: onChainId, startTime, endTime, startPrices };
+                        this.liveLeaderboard = [];
+                        db.saveDatabase();
+
+                        console.log(`[CycleManager] ✅ Adopted on-chain cycle #${onChainId} (ends in ${endTime - nowSec}s)`);
+
+                        // Re-schedule end
+                        this._scheduleCycleEnd();
+                    }
+                }
+
+                // Sync participants for current cycle
                 const participants = await contract.getParticipants(this.currentCycle.id);
                 let synced = 0;
                 for (const addr of participants) {
@@ -325,7 +417,7 @@ class CycleManager extends EventEmitter {
                     console.log(`[CycleManager] Live sync: pulled ${synced} on-chain entries into DB for cycle #${this.currentCycle.id}`);
                 }
             } catch (err) {
-                console.warn(`[CycleManager] Live participant sync failed: ${err.message}`);
+                console.warn(`[CycleManager] Live sync failed: ${err.message}`);
             }
         }
 
