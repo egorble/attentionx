@@ -179,11 +179,16 @@ echo -e "  attentionx-metadata:         ${META_OK} $([ "$META_OK" = "active" ] &
 echo -e "  ${CYAN}Infra:${NC}"
 echo -e "  nginx:                      ${NGINX_OK} $([ "$NGINX_OK" = "active" ] && echo "${GREEN}OK${NC}" || echo "${RED}FAIL${NC}")"
 
-# ─── Token Leagues quick check ───
+# ─── Token Leagues quick check (retry — CycleManager starts async) ───
 echo -e "  ${CYAN}Token Leagues:${NC}"
-TL_STATUS=$(curl -s --max-time 5 "http://127.0.0.1:3007/api/token-leagues/cycle/active" 2>/dev/null)
-TL_OK=$(echo "$TL_STATUS" | node -e "process.stdin.on('data',d=>{try{const j=JSON.parse(d);console.log(j.success?'OK':'FAIL')}catch{console.log('FAIL')}})" 2>/dev/null || echo "FAIL")
-TL_CYCLE=$(echo "$TL_STATUS" | node -e "process.stdin.on('data',d=>{try{const j=JSON.parse(d);console.log(j.data?.cycle?.id||'?')}catch{console.log('?')}})" 2>/dev/null || echo "?")
+TL_OK="FAIL"
+for _tl_try in 1 2 3; do
+    TL_STATUS=$(curl -s --max-time 5 "http://127.0.0.1:3007/api/token-leagues/cycle/active" 2>/dev/null)
+    TL_OK=$(echo "$TL_STATUS" | node -e "process.stdin.on('data',d=>{try{const j=JSON.parse(d);console.log(j.success?'OK':'FAIL')}catch{console.log('FAIL')}})" 2>/dev/null || echo "FAIL")
+    [ "$TL_OK" = "OK" ] && break
+    sleep 3
+done
+TL_CYCLE=$(echo "$TL_STATUS" | node -e "process.stdin.on('data',d=>{try{const j=JSON.parse(d);console.log(j.data?.id||j.data?.cycle?.id||'?')}catch{console.log('?')}})" 2>/dev/null || echo "?")
 echo -e "  cycle API:                   $([ "$TL_OK" = "OK" ] && echo "${GREEN}OK${NC} (cycle #${TL_CYCLE})" || echo "${RED}FAIL${NC}")"
 echo -e "  WebSocket:                   wss://app.attnx.fun/ws/token-leagues"
 

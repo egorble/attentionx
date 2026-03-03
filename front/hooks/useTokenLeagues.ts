@@ -8,6 +8,28 @@ import { ethers } from 'ethers';
 import { getTokenLeaguesContract, getReadProvider } from '../lib/contracts';
 import { useWalletContext } from '../context/WalletContext';
 
+/** Parse blockchain/wallet errors into short user-friendly messages */
+function friendlyError(err: any): string {
+    const raw = (err?.reason || err?.message || err?.toString() || 'Transaction failed').toLowerCase();
+    if (raw.includes('insufficient funds') || raw.includes('insufficient_funds'))
+        return 'Insufficient balance to cover entry fee + gas';
+    if (raw.includes('user rejected') || raw.includes('user denied') || raw.includes('action_rejected'))
+        return 'Transaction cancelled';
+    if (raw.includes('already entered') || raw.includes('already_entered'))
+        return 'You already entered this cycle';
+    if (raw.includes('cycle not active') || raw.includes('not_active'))
+        return 'Cycle is not active right now';
+    if (raw.includes('nonce'))
+        return 'Nonce error — try again';
+    if (raw.includes('timeout') || raw.includes('timed out'))
+        return 'Transaction timed out — try again';
+    if (raw.includes('unpredictable_gas') || raw.includes('cannot estimate'))
+        return 'Transaction would fail — check balance or cycle status';
+    // Fallback: truncate to something readable
+    const fallback = err?.reason || err?.shortMessage || 'Transaction failed';
+    return fallback.length > 80 ? fallback.slice(0, 77) + '...' : fallback;
+}
+
 // Token metadata — all 25 RISEx markets (crypto + stocks + commodities)
 export const TOKENS = [
     // Crypto
@@ -71,8 +93,7 @@ export function useTokenLeagues() {
 
             return receipt;
         } catch (err: any) {
-            const msg = err?.reason || err?.message || 'Transaction failed';
-            setError(msg);
+            setError(friendlyError(err));
             throw err;
         } finally {
             setLoading(false);
