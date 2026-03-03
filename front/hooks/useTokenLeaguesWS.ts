@@ -60,6 +60,18 @@ export function useTokenLeaguesWS() {
     const wsRef = useRef<WebSocket | null>(null);
     const reconnectRef = useRef<ReturnType<typeof setTimeout>>(undefined);
     const mountedRef = useRef(true);
+    const reconnectDelayRef = useRef(2000);
+    const reconnectAttemptRef = useRef(0);
+
+    const scheduleReconnect = useCallback(() => {
+        if (!mountedRef.current) return;
+        reconnectAttemptRef.current++;
+        const jitter = Math.random() * 1000;
+        const delay = Math.min(reconnectDelayRef.current + jitter, 30000);
+        console.log(`[TokenLeagues WS] Reconnecting in ${(delay / 1000).toFixed(1)}s (attempt #${reconnectAttemptRef.current})`);
+        reconnectRef.current = setTimeout(connect, delay);
+        reconnectDelayRef.current = Math.min(reconnectDelayRef.current * 2, 30000);
+    }, []);
 
     const connect = useCallback(() => {
         if (!mountedRef.current) return;
@@ -77,6 +89,9 @@ export function useTokenLeaguesWS() {
                 if (!mountedRef.current) return;
                 console.log('[TokenLeagues WS] Connected to', url);
                 setConnected(true);
+                // Reset backoff on success
+                reconnectDelayRef.current = 2000;
+                reconnectAttemptRef.current = 0;
             };
 
             ws.onmessage = (event) => {
@@ -84,22 +99,13 @@ export function useTokenLeaguesWS() {
                 try {
                     const msg = JSON.parse(event.data);
                     switch (msg.channel) {
-                        case 'prices': {
-                            const ids = Object.keys(msg.data);
-                            const sample = ids.slice(0, 3).map(id => {
-                                const p = msg.data[id];
-                                return `${p.symbol}=$${p.price?.toFixed?.(2) ?? p.price}`;
-                            }).join(', ');
-                            console.log(`[TokenLeagues WS] prices (${ids.length} tokens): ${sample}...`);
+                        case 'prices':
                             setPrices(msg.data);
                             break;
-                        }
                         case 'cycle':
-                            console.log('[TokenLeagues WS] cycle:', msg.data);
                             setCycle(msg.data);
                             break;
                         case 'leaderboard':
-                            console.log(`[TokenLeagues WS] leaderboard: ${msg.data.length} entries`);
                             setLeaderboard(msg.data);
                             break;
                         case 'tokens':
@@ -115,19 +121,17 @@ export function useTokenLeaguesWS() {
 
             ws.onclose = (ev) => {
                 if (!mountedRef.current) return;
-                console.log('[TokenLeagues WS] Disconnected, code:', ev.code, '— reconnecting in 3s');
                 setConnected(false);
-                reconnectRef.current = setTimeout(connect, 3000);
+                scheduleReconnect();
             };
 
-            ws.onerror = (err) => {
-                console.error('[TokenLeagues WS] Error:', err);
+            ws.onerror = () => {
                 ws.close();
             };
         } catch {
-            reconnectRef.current = setTimeout(connect, 3000);
+            scheduleReconnect();
         }
-    }, []);
+    }, [scheduleReconnect]);
 
     useEffect(() => {
         mountedRef.current = true;
