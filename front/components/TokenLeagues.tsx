@@ -595,8 +595,8 @@ const TokenLeagues: React.FC = () => {
                     </div>
                 )}
                 {error && (
-                    <div className="px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-2xl shrink-0">
-                        <span className="text-xs text-red-400 font-bold">{error}</span>
+                    <div className="px-4 py-2.5 bg-red-500/10 border border-red-500/30 rounded-xl shrink-0">
+                        <p className="text-xs text-red-400 font-medium text-center">{error}</p>
                     </div>
                 )}
 
