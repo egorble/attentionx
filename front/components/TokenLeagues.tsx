@@ -508,9 +508,11 @@ const TokenLeagues: React.FC = () => {
 
     // Phase
     const phase: Phase = useMemo(() => {
-        if (cycleResult && (!cycle || cycle.status === 'finalizing')) return 'results';
-        if (hasEntered && cycle && cycle.status === 'active') return 'in-cycle';
-        return 'selection';
+        let p: Phase = 'selection';
+        if (cycleResult && (!cycle || cycle.status === 'finalizing')) p = 'results';
+        else if (hasEntered && cycle && cycle.status === 'active') p = 'in-cycle';
+        console.log(`[TL Phase] phase=${p} | hasEntered=${hasEntered} | cycle.id=${cycle?.id} cycle.status=${cycle?.status} | cycleResult=${!!cycleResult}`);
+        return p;
     }, [hasEntered, cycle, cycleResult]);
 
     const activeToken = useMemo(() => TOKENS.find(t => t.id === activeTokenId) || TOKENS[0], [activeTokenId]);
@@ -545,6 +547,7 @@ const TokenLeagues: React.FC = () => {
     useEffect(() => {
         if (!cycle) return;
         if (prevCycleId.current !== null && prevCycleId.current !== cycle.id) {
+            console.log(`[TL CycleChange] 🔄 cycle changed ${prevCycleId.current} → ${cycle.id} — resetting entry state`);
             setHasEntered(false);
             setEnteredTokens([]);
             setSelectedTokens([]);
@@ -557,35 +560,42 @@ const TokenLeagues: React.FC = () => {
         let cancelled = false;
 
         async function recoverEntry() {
+            console.log(`[TL Recover] === checking entry for cycle #${cycle!.id} addr=${address} ===`);
+
             // 1) Try on-chain first
             let entered = false;
             let tokens: number[] = [];
             try {
                 entered = await hasEnteredCycle(cycle!.id);
+                console.log(`[TL Recover] on-chain hasEntered(${cycle!.id})=${entered}`);
                 if (entered) {
                     tokens = await getUserTokens(cycle!.id);
+                    console.log(`[TL Recover] on-chain getUserTokens:`, tokens);
                 }
-            } catch {
-                console.warn('[TokenLeagues] RPC check failed, trying REST fallback...');
+            } catch (err: any) {
+                console.warn('[TL Recover] RPC check failed:', err?.message);
             }
 
             // 2) REST fallback if RPC returned nothing
             if (!entered) {
                 try {
-                    const res = await fetch(`/api/token-leagues/entry/${cycle!.id}/${address}`);
+                    const url = `/api/token-leagues/entry/${cycle!.id}/${address}`;
+                    console.log(`[TL Recover] REST fallback: GET ${url}`);
+                    const res = await fetch(url);
                     const json = await res.json();
+                    console.log(`[TL Recover] REST response:`, json);
                     if (json.success && json.data?.entered) {
                         entered = true;
                         tokens = json.data.tokenIds || [];
-                        console.log('[TokenLeagues] Recovered entry from REST:', tokens);
                     }
-                } catch {
-                    console.warn('[TokenLeagues] REST fallback also failed');
+                } catch (err: any) {
+                    console.warn('[TL Recover] REST fallback also failed:', err?.message);
                 }
             }
 
             if (cancelled) return;
 
+            console.log(`[TL Recover] RESULT: entered=${entered} tokens=${JSON.stringify(tokens)}`);
             if (entered) {
                 setHasEntered(true);
                 if (tokens.length > 0) {
@@ -623,12 +633,16 @@ const TokenLeagues: React.FC = () => {
     }, [activeTokenId, showChart]);
 
     const handleEnter = async () => {
+        console.log(`[TL handleEnter] selectedTokens=${JSON.stringify(selectedTokens)} cycle.id=${cycle?.id} wsConnected=${wsConnected}`);
         if (selectedTokens.length !== 5) return;
         try {
             await enterCycle(selectedTokens);
+            console.log('[TL handleEnter] ✅ enterCycle succeeded, setting hasEntered=true');
             setHasEntered(true);
             setEnteredTokens(selectedTokens);
-        } catch { }
+        } catch (err: any) {
+            console.error('[TL handleEnter] ❌ enterCycle failed:', err?.message);
+        }
     };
 
     const handleClaim = async () => {

@@ -103,10 +103,20 @@ export function useTokenLeaguesWS() {
                             setPrices(msg.data);
                             break;
                         case 'cycle':
-                            setCycle(msg.data);
+                            setCycle((prev: CycleInfo | null) => {
+                                if (prev?.id !== msg.data?.id) {
+                                    console.log(`[TL WS] cycle changed: ${prev?.id} → ${msg.data?.id} status=${msg.data?.status} entryCount=${msg.data?.entryCount} timeLeft=${msg.data?.timeLeft}`);
+                                }
+                                return msg.data;
+                            });
                             break;
                         case 'leaderboard':
-                            setLeaderboard(msg.data);
+                            setLeaderboard((prev: LeaderboardEntry[]) => {
+                                if (prev.length !== msg.data.length) {
+                                    console.log(`[TL WS] leaderboard: ${prev.length} → ${msg.data.length} players`, msg.data);
+                                }
+                                return msg.data;
+                            });
                             break;
                         case 'tokens':
                             setTokenPerformance(msg.data);

@@ -69,6 +69,7 @@ export function useTokenLeagues() {
 
     /** Enter current cycle with 5 token selections */
     const enterCycle = useCallback(async (tokenIds: number[]) => {
+        console.log('[TL Entry] === START === address:', address, 'tokens:', tokenIds);
         const signer = await getSigner();
         if (!signer) throw new Error('Wallet not connected');
         if (tokenIds.length !== 5) throw new Error('Must select exactly 5 tokens');
@@ -78,28 +79,46 @@ export function useTokenLeagues() {
         try {
             const contract = getTokenLeaguesContract(signer);
             const entryFee = await contract.entryFee();
-            const tx = await contract.enterCycle(tokenIds, { value: entryFee });
-            const receipt = await tx.wait();
+            console.log('[TL Entry] entryFee:', entryFee.toString());
 
-            // Notify server about entry
+            // Read on-chain cycleId BEFORE tx
+            const preId = Number(await contract.currentCycleId());
+            console.log('[TL Entry] on-chain currentCycleId BEFORE tx:', preId);
+
+            const tx = await contract.enterCycle(tokenIds, { value: entryFee });
+            console.log('[TL Entry] TX sent:', tx.hash);
+            const receipt = await tx.wait();
+            console.log('[TL Entry] TX confirmed, block:', receipt?.blockNumber);
+
+            // Read on-chain cycleId AFTER tx
             const cycleId = Number(await contract.currentCycleId());
+            console.log('[TL Entry] on-chain currentCycleId AFTER tx:', cycleId);
+            if (preId !== cycleId) {
+                console.warn('[TL Entry] ⚠️ CYCLE ID CHANGED during tx! pre:', preId, 'post:', cycleId);
+            }
+
+            // POST to backend
+            const postBody = { cycleId, address, tokenIds };
+            console.log('[TL Entry] POST /api/token-leagues/entry body:', JSON.stringify(postBody));
             try {
                 const resp = await fetch('/api/token-leagues/entry', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cycleId, address, tokenIds }),
+                    body: JSON.stringify(postBody),
                 });
+                const respText = await resp.text();
+                console.log('[TL Entry] POST response:', resp.status, respText);
                 if (!resp.ok) {
-                    console.error('[TokenLeagues] Backend entry POST failed:', resp.status, await resp.text());
-                } else {
-                    console.log('[TokenLeagues] Backend entry saved for cycle', cycleId);
+                    console.error('[TL Entry] ❌ Backend POST failed:', resp.status, respText);
                 }
             } catch (e) {
-                console.error('[TokenLeagues] Backend entry POST error:', e);
+                console.error('[TL Entry] ❌ Backend POST network error:', e);
             }
 
+            console.log('[TL Entry] === DONE ===');
             return receipt;
         } catch (err: any) {
+            console.error('[TL Entry] ❌ TX error:', err?.reason || err?.message || err);
             setError(friendlyError(err));
             throw err;
         } finally {
