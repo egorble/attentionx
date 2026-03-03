@@ -58,8 +58,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeSection, onNavigate }) => {
                     }
                   }}
                   className={`flex flex-col items-center justify-center px-3 py-1.5 rounded-2xl transition-all duration-300 ${isActive
-                      ? 'bg-yc-purple/10 dark:bg-yc-purple/[0.15] text-yc-purple shadow-sm'
-                      : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 active:scale-95'
+                    ? 'bg-yc-purple/10 dark:bg-yc-purple/[0.15] text-yc-purple shadow-sm'
+                    : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 active:scale-95'
                     }`}
                 >
                   <tab.icon className="w-5 h-5" strokeWidth={isActive ? 2.2 : 1.8} />
@@ -70,25 +70,25 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeSection, onNavigate }) => {
 
                 {/* Sub-menu for Leagues */}
                 {isLeaguesBtn && showLeagueMenu && (
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 flex gap-3 animate-in fade-in slide-in-from-bottom-4 duration-200">
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 flex gap-3">
                     <button
                       onClick={() => { onNavigate(NavSection.LEAGUES); setShowLeagueMenu(false); }}
-                      className={`flex items-center justify-center flex-col gap-1 w-16 h-16 rounded-full text-[9px] font-black uppercase tracking-wider transition-all active:scale-90 backdrop-blur-xl border shadow-[0_4px_20px_rgba(0,0,0,0.5)] ${
-                        activeSection === NavSection.LEAGUES
-                          ? 'bg-[#9333ea] text-black border-[#9333ea] shadow-[0_4px_20px_rgba(147,51,234,0.4)]'
-                          : 'bg-zinc-900/95 text-zinc-300 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600'
-                      }`}
+                      style={{ animationDelay: '0ms' }}
+                      className={`bubble-pop-in flex items-center justify-center flex-col gap-1 w-16 h-16 rounded-full text-[9px] font-black uppercase tracking-wider transition-colors active:scale-90 backdrop-blur-xl border ${activeSection === NavSection.LEAGUES
+                        ? 'bg-[#9333ea] text-white border-[#9333ea] shadow-[0_4px_20px_rgba(147,51,234,0.4)]'
+                        : 'bg-white/70 dark:bg-zinc-900/70 text-gray-600 dark:text-zinc-300 border-white/40 dark:border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] hover:bg-gray-100 dark:hover:bg-zinc-800'
+                        }`}
                     >
                       <Swords className="w-5 h-5" />
                       <span className="leading-none">Cards</span>
                     </button>
                     <button
                       onClick={() => { onNavigate(NavSection.TOKEN_LEAGUES); setShowLeagueMenu(false); }}
-                      className={`flex items-center justify-center flex-col gap-1 w-16 h-16 rounded-full text-[9px] font-black uppercase tracking-wider transition-all active:scale-90 backdrop-blur-xl border shadow-[0_4px_20px_rgba(0,0,0,0.5)] ${
-                        activeSection === NavSection.TOKEN_LEAGUES
-                          ? 'bg-[#9333ea] text-black border-[#9333ea] shadow-[0_4px_20px_rgba(147,51,234,0.4)]'
-                          : 'bg-zinc-900/95 text-zinc-300 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600'
-                      }`}
+                      style={{ animationDelay: '80ms' }}
+                      className={`bubble-pop-in flex items-center justify-center flex-col gap-1 w-16 h-16 rounded-full text-[9px] font-black uppercase tracking-wider transition-colors active:scale-90 backdrop-blur-xl border ${activeSection === NavSection.TOKEN_LEAGUES
+                        ? 'bg-[#9333ea] text-white border-[#9333ea] shadow-[0_4px_20px_rgba(147,51,234,0.4)]'
+                        : 'bg-white/70 dark:bg-zinc-900/70 text-gray-600 dark:text-zinc-300 border-white/40 dark:border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] hover:bg-gray-100 dark:hover:bg-zinc-800'
+                        }`}
                     >
                       <Coins className="w-5 h-5" />
                       <span className="leading-none">Tokens</span>

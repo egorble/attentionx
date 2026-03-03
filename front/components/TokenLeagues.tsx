@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { ethers } from 'ethers';
 import { createChart, ColorType, CandlestickSeries, IChartApi, ISeriesApi, LineData, Time } from 'lightweight-charts';
-import { Timer, Trophy, Zap, Check, RefreshCw, Gift, TrendingUp, Search, BarChart2, CandlestickChart, List, X, ChevronDown } from 'lucide-react';
+import { Timer, Trophy, Check, RefreshCw, Gift, TrendingUp, Search, BarChart2, CandlestickChart, List, X, ChevronDown } from 'lucide-react';
 import { useWalletContext } from '../context/WalletContext';
+import { useTheme } from '../context/ThemeContext';
 import { useTokenLeagues, TOKENS } from '../hooks/useTokenLeagues';
 import { useTokenLeaguesWS } from '../hooks/useTokenLeaguesWS';
 import { currencySymbol } from '../lib/networks';
@@ -113,6 +114,7 @@ function TradingChart({ tokenId, symbol, color, currentPrice }: TradingChartProp
     const chartRef = useRef<IChartApi | null>(null);
     const seriesRef = useRef<ISeriesApi<'Candlestick', Time> | null>(null);
     const lastPointRef = useRef<number>(0);
+    const { theme } = useTheme();
 
     const [timeframe, setTimeframe] = useState<number>(1); // 1m default
     const rawDataRef = useRef<{ time: number, price: number }[]>([]);
@@ -120,27 +122,28 @@ function TradingChart({ tokenId, symbol, color, currentPrice }: TradingChartProp
     useEffect(() => {
         if (!containerRef.current) return;
 
+        const isDark = theme === 'dark';
         const chart = createChart(containerRef.current, {
             layout: {
                 background: { type: ColorType.Solid, color: 'transparent' },
-                textColor: '#6b7280',
+                textColor: isDark ? '#6b7280' : '#9ca3af',
                 fontSize: 11,
             },
             grid: {
-                vertLines: { color: 'rgba(255,255,255,0.02)' },
-                horzLines: { color: 'rgba(255,255,255,0.02)' },
+                vertLines: { color: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.04)' },
+                horzLines: { color: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.04)' },
             },
             crosshair: {
                 mode: 1,
-                vertLine: { color: 'rgba(255,255,255,0.2)', width: 1, style: 2 },
-                horzLine: { color: 'rgba(255,255,255,0.2)', width: 1, style: 2 },
+                vertLine: { color: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)', width: 1, style: 2 },
+                horzLine: { color: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)', width: 1, style: 2 },
             },
             rightPriceScale: {
-                borderColor: 'rgba(255,255,255,0.06)',
+                borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)',
                 scaleMargins: { top: 0.1, bottom: 0.1 },
             },
             timeScale: {
-                borderColor: 'rgba(255,255,255,0.06)',
+                borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)',
                 timeVisible: true,
                 secondsVisible: false,
             },
@@ -180,7 +183,7 @@ function TradingChart({ tokenId, symbol, color, currentPrice }: TradingChartProp
             chartRef.current = null;
             seriesRef.current = null;
         };
-    }, [tokenId]);
+    }, [tokenId, theme]);
 
     useEffect(() => {
         let cancelled = false;
@@ -270,7 +273,7 @@ function TradingChart({ tokenId, symbol, color, currentPrice }: TradingChartProp
 
     return (
         <div className="relative w-full h-full" style={{ minHeight: 300 }}>
-            <div className="absolute top-1 left-1 z-10 flex flex-col gap-0.5 bg-zinc-950/80 backdrop-blur-md border border-zinc-800 rounded-xl p-0.5 shadow-lg">
+            <div className="absolute top-1 left-1 z-10 flex flex-col gap-0.5 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-2xl border border-white/30 dark:border-white/[0.06] rounded-xl p-0.5 shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3)]">
                 {[
                     { val: 1, label: '1M' },
                     { val: 3, label: '3M' },
@@ -283,7 +286,7 @@ function TradingChart({ tokenId, symbol, color, currentPrice }: TradingChartProp
                         onClick={() => setTimeframe(tf.val)}
                         className={`px-1.5 py-1 rounded-lg text-[9px] font-black tracking-wider transition-colors ${timeframe === tf.val
                             ? 'bg-[#9333ea] text-black shadow-sm'
-                            : 'text-zinc-500 hover:text-white hover:bg-zinc-800'
+                            : 'text-gray-400 dark:text-zinc-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-800'
                             }`}
                     >
                         {tf.label}
@@ -315,7 +318,7 @@ function CycleTimer({ endTime }: { endTime: number }) {
     const urgent = timeLeft < 60;
 
     return (
-        <span className={`font-mono font-black tabular-nums tracking-tighter ${urgent ? 'text-red-400 animate-pulse drop-shadow-[0_0_8px_rgba(248,113,113,0.5)]' : 'text-white'}`}>
+        <span className={`font-mono font-black tabular-nums tracking-tighter ${urgent ? 'text-red-400 animate-pulse drop-shadow-[0_0_8px_rgba(248,113,113,0.5)]' : 'text-gray-900 dark:text-white'}`}>
             {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
         </span>
     );
@@ -338,10 +341,10 @@ function TokenCard({ token, price, change24h, selected, active, onSelect, onClic
         <div
             onClick={onClick}
             className={`group flex flex-col items-center gap-1 p-2 rounded-2xl border cursor-pointer transition-all ${active
-                ? 'bg-zinc-800 border-[#9333ea] shadow-[0_0_12px_rgba(147,51,234,0.15)]'
+                ? 'bg-gray-100 dark:bg-zinc-800 border-[#9333ea] shadow-[0_0_12px_rgba(147,51,234,0.15)]'
                 : selected
-                    ? 'bg-zinc-800/50 border-[#9333ea]/40'
-                    : 'bg-zinc-900 border-zinc-800 hover:bg-zinc-800/60 hover:border-zinc-700 active:scale-[0.97]'
+                    ? 'bg-gray-100/50 dark:bg-zinc-800/50 border-[#9333ea]/40'
+                    : 'bg-gray-50 dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800/60 hover:border-gray-300 dark:hover:border-zinc-700 active:scale-[0.97]'
                 }`}
         >
             {/* Checkbox top-left */}
@@ -350,7 +353,7 @@ function TokenCard({ token, price, change24h, selected, active, onSelect, onClic
                     onClick={(e) => { e.stopPropagation(); onSelect(); }}
                     className={`w-3.5 h-3.5 rounded flex items-center justify-center border-2 shrink-0 transition-colors ${selected
                         ? 'bg-[#9333ea] border-[#9333ea]'
-                        : 'bg-zinc-900 border-zinc-700 group-hover:border-[#9333ea]/50'
+                        : 'bg-white dark:bg-zinc-900 border-gray-300 dark:border-zinc-700 group-hover:border-[#9333ea]/50'
                         }`}
                 >
                     {selected && <Check className="w-2 h-2 text-black" strokeWidth={3} />}
@@ -358,8 +361,8 @@ function TokenCard({ token, price, change24h, selected, active, onSelect, onClic
                 <TokenIcon symbol={token.symbol} color={token.color} size={24} />
                 <div className="w-3.5" />
             </div>
-            <span className="text-[10px] font-black text-white leading-none">{token.symbol}</span>
-            <span className="text-[10px] font-mono font-bold text-zinc-400 leading-none">{formatPrice(price)}</span>
+            <span className="text-[10px] font-black text-gray-900 dark:text-white leading-none">{token.symbol}</span>
+            <span className="text-[10px] font-mono font-bold text-gray-500 dark:text-zinc-400 leading-none">{formatPrice(price)}</span>
         </div>
     );
 }
@@ -380,8 +383,8 @@ function WatchlistItem({ token, price, change24h, selected, active, onSelect, on
     return (
         <div
             className={`group flex items-center justify-between gap-2 p-2 cursor-pointer transition-colors rounded-xl border ${active
-                ? 'bg-zinc-800 border-[#9333ea]'
-                : 'bg-zinc-950 border-zinc-800 hover:bg-zinc-800 hover:border-zinc-700'
+                ? 'bg-gray-100 dark:bg-zinc-800 border-[#9333ea]'
+                : 'bg-white dark:bg-zinc-950 border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700'
                 }`}
             onClick={onClick}
         >
@@ -390,15 +393,15 @@ function WatchlistItem({ token, price, change24h, selected, active, onSelect, on
                     onClick={(e) => { e.stopPropagation(); onSelect(); }}
                     className={`rounded-md flex items-center justify-center transition-colors border-2 shrink-0 w-4 h-4 ${selected
                         ? 'bg-[#9333ea] border-[#9333ea]'
-                        : 'bg-zinc-900 border-zinc-700 group-hover:border-[#9333ea]/50'
+                        : 'bg-white dark:bg-zinc-900 border-gray-300 dark:border-zinc-700 group-hover:border-[#9333ea]/50'
                         }`}
                 >
                     {selected && <Check className="w-3 h-3 text-black" strokeWidth={3} />}
                 </button>
                 <TokenIcon symbol={token.symbol} color={token.color} size={24} />
-                <span className="text-xs font-black text-white leading-tight truncate">{token.symbol}</span>
+                <span className="text-xs font-black text-gray-900 dark:text-white leading-tight truncate">{token.symbol}</span>
             </div>
-            <span className="font-mono font-black text-white text-[11px] shrink-0">{formatPrice(price)}</span>
+            <span className="font-mono font-black text-gray-900 dark:text-white text-[11px] shrink-0">{formatPrice(price)}</span>
         </div>
     );
 }
@@ -410,25 +413,25 @@ function CompactTokenChip({ token, price, change24h, selected, active, onSelect,
         <div
             onClick={onClick}
             className={`flex items-center gap-2 px-3 py-2 rounded-2xl shrink-0 border cursor-pointer transition-colors ${active
-                ? 'bg-zinc-800 border-[#9333ea]'
+                ? 'bg-gray-100 dark:bg-zinc-800 border-[#9333ea]'
                 : selected
-                    ? 'bg-zinc-800/50 border-[#9333ea]/40'
-                    : 'bg-zinc-900 border-zinc-800 active:bg-zinc-800'
+                    ? 'bg-gray-100/50 dark:bg-zinc-800/50 border-[#9333ea]/40'
+                    : 'bg-gray-50 dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 active:bg-gray-100 dark:active:bg-zinc-800'
                 }`}
         >
             <button
                 onClick={(e) => { e.stopPropagation(); onSelect(); }}
                 className={`w-3.5 h-3.5 rounded flex items-center justify-center border-2 shrink-0 ${selected
                     ? 'bg-[#9333ea] border-[#9333ea]'
-                    : 'bg-zinc-900 border-zinc-700'
+                    : 'bg-white dark:bg-zinc-900 border-gray-300 dark:border-zinc-700'
                     }`}
             >
                 {selected && <Check className="w-2.5 h-2.5 text-black" strokeWidth={3} />}
             </button>
             <TokenIcon symbol={token.symbol} color={token.color} size={20} />
             <div className="flex flex-col min-w-0">
-                <span className="text-[11px] font-black text-white leading-none">{token.symbol}</span>
-                <span className="text-[9px] font-mono font-bold leading-none mt-0.5 text-zinc-400">
+                <span className="text-[11px] font-black text-gray-900 dark:text-white leading-none">{token.symbol}</span>
+                <span className="text-[9px] font-mono font-bold leading-none mt-0.5 text-gray-500 dark:text-zinc-400">
                     {formatPrice(price)}
                 </span>
             </div>
@@ -541,13 +544,13 @@ const TokenLeagues: React.FC = () => {
     const displayTokens = phase === 'in-cycle' ? enteredTokens : selectedTokens;
 
     return (
-        <div className="flex-1 flex flex-col overflow-hidden bg-zinc-950 text-white relative font-sans animate-in fade-in slide-in-from-bottom-8 duration-500 ease-out">
+        <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-zinc-950 text-gray-900 dark:text-white relative font-sans animate-in fade-in slide-in-from-bottom-8 duration-500 ease-out">
 
             {/* ─── Floating Island (timer + chart toggle) ─── */}
             <div className="fixed top-2 md:top-4 left-2 md:left-auto md:right-2 xl:right-[calc(16rem+1rem)] z-30 pointer-events-none">
-                <div className="pointer-events-auto bg-zinc-900/95 backdrop-blur-xl border border-zinc-800 rounded-full px-2 py-1.5 md:px-2.5 md:py-2 shadow-[0_4px_30px_rgba(0,0,0,0.4)] flex items-center gap-1.5">
+                <div className="pointer-events-auto bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-full px-2 py-1.5 md:px-2.5 md:py-2 shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center gap-1.5">
                     {cycle && cycle.status === 'active' && (
-                        <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 px-2.5 py-1.5 rounded-full">
+                        <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 px-2.5 py-1.5 rounded-full">
                             <Timer className="w-3.5 h-3.5 text-[#9333ea]" />
                             <CycleTimer endTime={cycle.endTime} />
                         </div>
@@ -556,14 +559,14 @@ const TokenLeagues: React.FC = () => {
                         onClick={() => setShowChart(!showChart)}
                         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] md:text-xs font-black transition-colors border ${showChart
                             ? 'bg-[#9333ea] text-black border-[#9333ea]'
-                            : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white hover:bg-zinc-800'
+                            : 'bg-gray-50 dark:bg-zinc-950 text-gray-400 dark:text-zinc-400 border-gray-200 dark:border-zinc-800 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-800'
                             }`}
                     >
                         <CandlestickChart className="w-3.5 h-3.5" />
                     </button>
                     <button
                         onClick={() => setShowLeaderboard(true)}
-                        className="xl:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-black transition-colors border bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white hover:bg-zinc-800"
+                        className="xl:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-black transition-colors border bg-gray-50 dark:bg-zinc-950 text-gray-400 dark:text-zinc-400 border-gray-200 dark:border-zinc-800 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-800"
                     >
                         <List className="w-3.5 h-3.5" />
                     </button>
@@ -599,7 +602,7 @@ const TokenLeagues: React.FC = () => {
 
                 {/* ── My Position (in-cycle) ── */}
                 {phase === 'in-cycle' && (
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-[20px] md:rounded-[28px] p-3 md:p-4 shrink-0">
+                    <div className="bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-[20px] md:rounded-[28px] p-3 md:p-4 shrink-0">
                         <div className="flex items-center justify-between mb-2.5">
                             <div className="flex items-center gap-2">
                                 {yourScore && (
@@ -607,7 +610,7 @@ const TokenLeagues: React.FC = () => {
                                         #{yourScore.rank}
                                     </span>
                                 )}
-                                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-wider">My Position</span>
+                                <span className="text-[10px] font-black text-gray-500 dark:text-zinc-400 uppercase tracking-wider">My Position</span>
                             </div>
                             {yourScore && (
                                 <span className={`font-mono font-black text-lg ${yourScore.score >= 0 ? 'text-[#9333ea]' : 'text-red-500'}`}>
@@ -627,12 +630,12 @@ const TokenLeagues: React.FC = () => {
                                         onClick={() => { setActiveTokenId(tokenId); setShowChart(true); }}
                                         className={`flex-1 min-w-0 flex flex-col items-center gap-1 p-2 rounded-2xl border cursor-pointer transition-colors ${
                                             activeTokenId === tokenId && showChart
-                                                ? 'bg-zinc-800 border-[#9333ea]/40'
-                                                : 'bg-zinc-950 border-zinc-800 hover:bg-zinc-800'
+                                                ? 'bg-gray-100 dark:bg-zinc-800 border-[#9333ea]/40'
+                                                : 'bg-white dark:bg-zinc-950 border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800'
                                         }`}
                                     >
                                         <TokenIcon symbol={token.symbol} color={token.color} size={24} />
-                                        <span className="text-[9px] font-black text-white leading-none">{token.symbol}</span>
+                                        <span className="text-[9px] font-black text-gray-900 dark:text-white leading-none">{token.symbol}</span>
                                         <span className={`text-[10px] font-mono font-black leading-none ${pct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                                             {pct >= 0 ? '+' : ''}{pct.toFixed(2)}%
                                         </span>
@@ -645,9 +648,9 @@ const TokenLeagues: React.FC = () => {
 
                 {/* ── Full Token Grid (when chart is closed) ── */}
                 {!showChart && (
-                    <div className="flex-1 flex flex-col min-w-0 bg-zinc-900 border border-zinc-800 rounded-[20px] md:rounded-[32px] overflow-hidden shadow-sm">
+                    <div className="flex-1 flex flex-col min-w-0 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-[20px] md:rounded-[32px] overflow-hidden shadow-sm">
                         {/* Header: Tabs & Search */}
-                        <div className="p-3 md:p-5 border-b border-zinc-800 shrink-0 space-y-3">
+                        <div className="p-3 md:p-5 border-b border-gray-200 dark:border-zinc-800 shrink-0 space-y-3">
                             <div className="flex items-center flex-wrap gap-1.5 md:gap-2">
                                 {(Object.keys(CATEGORIES) as CategoryKey[]).map(key => (
                                     <button
@@ -655,7 +658,7 @@ const TokenLeagues: React.FC = () => {
                                         onClick={() => setCategory(key)}
                                         className={`whitespace-nowrap px-4 md:px-5 py-1.5 md:py-2 rounded-full text-[10px] md:text-xs font-black uppercase tracking-widest transition-all active:scale-95 ${category === key
                                             ? 'bg-[#9333ea] text-black'
-                                            : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white'
+                                            : 'bg-gray-200 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:bg-gray-300 dark:hover:bg-zinc-700 hover:text-gray-900 dark:hover:text-white'
                                             }`}
                                     >
                                         {CATEGORIES[key].label}
@@ -663,14 +666,14 @@ const TokenLeagues: React.FC = () => {
                                 ))}
                             </div>
 
-                            <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-full px-3 py-2.5 text-sm focus-within:border-[#9333ea]/50 transition-colors">
-                                <Search className="w-4 h-4 text-zinc-500" />
+                            <div className="flex items-center gap-2 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-full px-3 py-2.5 text-sm focus-within:border-[#9333ea]/50 transition-colors">
+                                <Search className="w-4 h-4 text-gray-400 dark:text-zinc-500" />
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder="Search tokens..."
-                                    className="bg-transparent text-xs md:text-sm font-medium text-white placeholder-zinc-600 outline-none flex-1"
+                                    className="bg-transparent text-xs md:text-sm font-medium text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-600 outline-none flex-1"
                                 />
                             </div>
 
@@ -678,9 +681,9 @@ const TokenLeagues: React.FC = () => {
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-1.5">
                                     {[0, 1, 2, 3, 4].map(i => (
-                                        <div key={i} className={`w-2 h-2 md:w-2.5 md:h-2.5 rounded-full transition-colors ${i < displayTokens.length ? 'bg-[#9333ea]' : 'bg-zinc-800'}`} />
+                                        <div key={i} className={`w-2 h-2 md:w-2.5 md:h-2.5 rounded-full transition-colors ${i < displayTokens.length ? 'bg-[#9333ea]' : 'bg-gray-200 dark:bg-zinc-800'}`} />
                                     ))}
-                                    <span className="text-[10px] font-black text-zinc-400 ml-1.5 bg-zinc-800 px-2.5 py-0.5 rounded-full">
+                                    <span className="text-[10px] font-black text-gray-500 dark:text-zinc-400 ml-1.5 bg-gray-200 dark:bg-zinc-800 px-2.5 py-0.5 rounded-full">
                                         {displayTokens.length}/5 Selected
                                     </span>
                                 </div>
@@ -716,15 +719,15 @@ const TokenLeagues: React.FC = () => {
 
                 {/* ── Chart Panel ── */}
                 {showChart && (
-                    <div className="flex flex-col bg-zinc-900 border border-zinc-800 rounded-[20px] md:rounded-[32px] overflow-hidden shadow-sm relative min-w-0 animate-in fade-in zoom-in-95 duration-300">
+                    <div className="flex flex-col bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-[20px] md:rounded-[32px] overflow-hidden shadow-sm relative min-w-0 animate-in fade-in zoom-in-95 duration-300">
                         {/* Token header */}
-                        <div className="flex items-center justify-between p-3 md:p-4 border-b border-zinc-800 shrink-0 gap-3">
+                        <div className="flex items-center justify-between p-3 md:p-4 border-b border-gray-200 dark:border-zinc-800 shrink-0 gap-3">
                             <div className="flex items-center gap-3 min-w-0">
                                 <TokenIcon symbol={activeToken.symbol} color={activeToken.color} size={32} />
                                 <div className="min-w-0">
                                     <div className="flex items-center gap-2">
-                                        <h2 className="font-black text-sm md:text-lg text-white truncate">{activeToken.name}</h2>
-                                        <span className="text-[10px] font-bold text-zinc-400 bg-zinc-800 px-1.5 py-0.5 rounded hidden sm:inline">{activeToken.symbol}</span>
+                                        <h2 className="font-black text-sm md:text-lg text-gray-900 dark:text-white truncate">{activeToken.name}</h2>
+                                        <span className="text-[10px] font-bold text-gray-500 dark:text-zinc-400 bg-gray-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded hidden sm:inline">{activeToken.symbol}</span>
                                     </div>
                                 </div>
                             </div>
@@ -736,7 +739,7 @@ const TokenLeagues: React.FC = () => {
                                 </div>
                                 <button
                                     onClick={() => setShowChart(false)}
-                                    className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-full transition-colors text-zinc-400 hover:text-white shrink-0"
+                                    className="p-2 bg-gray-200 dark:bg-zinc-800 hover:bg-gray-300 dark:hover:bg-zinc-700 rounded-full transition-colors text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white shrink-0"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
@@ -757,7 +760,7 @@ const TokenLeagues: React.FC = () => {
 
                 {/* ── Token Grid (always visible below chart) ── */}
                 {showChart && (
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-[20px] md:rounded-[32px] overflow-hidden shadow-sm">
+                    <div className="bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-[20px] md:rounded-[32px] overflow-hidden shadow-sm">
                         <div className="p-2 md:p-3 space-y-2">
                             <div className="flex items-center flex-wrap gap-1.5">
                                 {(Object.keys(CATEGORIES) as CategoryKey[]).map(key => (
@@ -766,13 +769,13 @@ const TokenLeagues: React.FC = () => {
                                         onClick={() => setCategory(key)}
                                         className={`whitespace-nowrap px-3 py-1 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 ${category === key
                                             ? 'bg-[#9333ea] text-black'
-                                            : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white'
+                                            : 'bg-gray-200 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:bg-gray-300 dark:hover:bg-zinc-700 hover:text-gray-900 dark:hover:text-white'
                                             }`}
                                     >
                                         {CATEGORIES[key].label}
                                     </button>
                                 ))}
-                                <span className="text-[9px] font-black text-zinc-500 bg-zinc-800 px-2 py-1 rounded-full ml-auto">{displayTokens.length}/5</span>
+                                <span className="text-[9px] font-black text-gray-400 dark:text-zinc-500 bg-gray-200 dark:bg-zinc-800 px-2 py-1 rounded-full ml-auto">{displayTokens.length}/5</span>
                             </div>
                             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-1.5 md:gap-2">
                                 {filteredTokens.map(token => {
@@ -801,7 +804,7 @@ const TokenLeagues: React.FC = () => {
             {/* ─── Floating Bottom: Two Islands ─── */}
             <div className="fixed bottom-[84px] md:bottom-4 left-0 md:left-72 right-0 xl:right-64 z-30 px-3 pointer-events-none flex items-end justify-between gap-2">
                 {/* Island 1: Selected tokens */}
-                <div className="pointer-events-auto bg-zinc-900/95 backdrop-blur-xl border border-zinc-800 rounded-full p-1 md:p-2.5 shadow-[0_4px_30px_rgba(0,0,0,0.5)] flex items-center gap-0.5 md:gap-1.5">
+                <div className="pointer-events-auto bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-full p-1 md:p-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center gap-0.5 md:gap-1.5">
                     {[0, 1, 2, 3, 4].map(i => {
                         const tokenId = displayTokens[i];
                         const token = tokenId ? TOKENS.find(t => t.id === tokenId) : null;
@@ -811,7 +814,7 @@ const TokenLeagues: React.FC = () => {
                                 onClick={() => token && phase === 'selection' && toggleToken(tokenId!)}
                                 className={`w-9 h-9 md:w-11 md:h-11 rounded-full flex items-center justify-center transition-all duration-300 ${token
                                     ? 'scale-100 cursor-pointer hover:opacity-70 active:scale-90'
-                                    : 'bg-zinc-800/60 border border-dashed border-zinc-700'
+                                    : 'bg-gray-100 dark:bg-zinc-800/60 border border-dashed border-gray-300 dark:border-zinc-700'
                                 }`}
                             >
                                 {token ? (
@@ -820,7 +823,7 @@ const TokenLeagues: React.FC = () => {
                                         <span className="hidden md:flex"><TokenIcon symbol={token.symbol} color={token.color} size={36} /></span>
                                     </>
                                 ) : (
-                                    <span className="text-zinc-600 text-[9px] md:text-[10px] font-black">{i + 1}</span>
+                                    <span className="text-gray-400 dark:text-zinc-600 text-[9px] md:text-[10px] font-black">{i + 1}</span>
                                 )}
                             </div>
                         );
@@ -832,7 +835,7 @@ const TokenLeagues: React.FC = () => {
                     {!isConnected ? (
                         <button
                             onClick={connect}
-                            className="bg-[#9333ea] text-black px-5 py-3 md:px-7 md:py-4 rounded-full font-black text-xs md:text-sm uppercase tracking-widest hover:bg-[#a855f7] active:scale-[0.97] transition-all shadow-[0_4px_30px_rgba(0,0,0,0.5)]"
+                            className="bg-[#9333ea] text-white px-5 py-3 md:px-7 md:py-4 rounded-full font-black text-xs md:text-sm uppercase tracking-widest hover:bg-[#a855f7] active:scale-[0.97] transition-all shadow-[0_4px_30px_rgba(147,51,234,0.4)]"
                         >
                             Connect
                         </button>
@@ -840,18 +843,14 @@ const TokenLeagues: React.FC = () => {
                         <button
                             onClick={handleEnter}
                             disabled={selectedTokens.length !== 5 || loading}
-                            className="bg-[#9333ea] text-black px-5 py-3 md:px-7 md:py-4 rounded-full font-black text-[11px] md:text-sm uppercase tracking-widest disabled:opacity-40 flex items-center gap-1.5 md:gap-2 hover:bg-[#a855f7] active:scale-[0.97] transition-all shadow-[0_4px_30px_rgba(0,0,0,0.5)]"
+                            className="bg-[#9333ea] text-white px-5 py-3 md:px-7 md:py-4 rounded-full font-black text-[11px] md:text-sm uppercase tracking-widest disabled:opacity-40 flex items-center gap-1.5 md:gap-2 hover:bg-[#a855f7] active:scale-[0.97] transition-all shadow-[0_4px_30px_rgba(147,51,234,0.4)]"
                         >
-                            {loading ? (
-                                <RefreshCw className="w-3.5 h-3.5 md:w-4 md:h-4 animate-spin" />
-                            ) : (
-                                <Zap className="w-3.5 h-3.5 md:w-4 md:h-4 fill-black" />
-                            )}
+                            {loading && <RefreshCw className="w-3.5 h-3.5 md:w-4 md:h-4 animate-spin" />}
                             {loading ? '...' : `Enter · ${entryFee}`}
                         </button>
                     ) : phase === 'in-cycle' && yourScore ? (
-                        <div className="bg-zinc-900/95 backdrop-blur-xl border border-zinc-800 rounded-full px-4 py-2.5 md:px-6 md:py-3.5 shadow-[0_4px_30px_rgba(0,0,0,0.5)] flex items-center gap-3">
-                            <span className="text-[10px] md:text-xs text-zinc-400 font-black">
+                        <div className="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-full px-4 py-2.5 md:px-6 md:py-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center gap-3">
+                            <span className="text-[10px] md:text-xs text-gray-500 dark:text-zinc-400 font-black">
                                 #<span className="text-[#9333ea] text-sm md:text-lg">{yourScore.rank}</span>
                             </span>
                             <span className={`font-mono font-black text-base md:text-xl ${yourScore.score >= 0 ? 'text-[#9333ea]' : 'text-red-500'}`}>
@@ -859,12 +858,12 @@ const TokenLeagues: React.FC = () => {
                             </span>
                         </div>
                     ) : phase === 'in-cycle' ? (
-                        <div className="bg-zinc-900/95 backdrop-blur-xl border border-[#9333ea]/30 rounded-full px-4 py-2.5 md:px-6 md:py-3.5 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+                        <div className="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-[#9333ea]/20 rounded-full px-4 py-2.5 md:px-6 md:py-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)]">
                             <span className="text-xs md:text-sm text-[#9333ea] font-black uppercase tracking-widest animate-pulse">In Play</span>
                         </div>
                     ) : (
-                        <div className="bg-zinc-900/95 backdrop-blur-xl border border-zinc-800 rounded-full px-4 py-2.5 md:px-6 md:py-3.5 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
-                            <span className="text-xs md:text-sm text-zinc-500 font-bold">Waiting...</span>
+                        <div className="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-full px-4 py-2.5 md:px-6 md:py-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)]">
+                            <span className="text-xs md:text-sm text-gray-400 dark:text-zinc-500 font-bold">Waiting...</span>
                         </div>
                     )}
                 </div>
@@ -875,21 +874,21 @@ const TokenLeagues: React.FC = () => {
                 <div className="fixed inset-0 z-50 xl:hidden animate-in fade-in duration-200" onClick={() => setShowLeaderboard(false)}>
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
                     <div
-                        className="absolute bottom-[72px] left-0 right-0 bg-zinc-950 border-t border-zinc-800 rounded-t-[28px] max-h-[65vh] flex flex-col animate-in slide-in-from-bottom-8 duration-300"
+                        className="absolute bottom-[72px] left-0 right-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-2xl border-t border-white/40 dark:border-white/[0.08] rounded-t-[28px] max-h-[65vh] flex flex-col animate-in slide-in-from-bottom-8 duration-300 shadow-[0_-8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_-8px_32px_rgba(0,0,0,0.5)]"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Handle */}
                         <div className="flex justify-center pt-3 pb-1 shrink-0">
-                            <div className="w-10 h-1 rounded-full bg-zinc-700" />
+                            <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-zinc-700" />
                         </div>
                         {/* Header */}
                         <div className="flex items-center justify-between px-4 pb-3 shrink-0">
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-[#9333ea] animate-pulse" />
-                                <span className="text-sm font-black text-white">Live Ranks</span>
+                                <span className="text-sm font-black text-gray-900 dark:text-white">Live Ranks</span>
                             </div>
-                            <button onClick={() => setShowLeaderboard(false)} className="p-1.5 bg-zinc-800 rounded-full hover:bg-zinc-700 transition-colors">
-                                <X className="w-4 h-4 text-zinc-400" />
+                            <button onClick={() => setShowLeaderboard(false)} className="p-1.5 bg-gray-200 dark:bg-zinc-800 rounded-full hover:bg-gray-300 dark:hover:bg-zinc-700 transition-colors">
+                                <X className="w-4 h-4 text-gray-500 dark:text-zinc-400" />
                             </button>
                         </div>
                         {/* Content */}
@@ -902,8 +901,8 @@ const TokenLeagues: React.FC = () => {
 
             {/* ─── Results Overlay ─── */}
             {phase === 'results' && cycleResult && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-[32px] p-6 md:p-8 max-w-lg w-full shadow-2xl overflow-hidden relative">
+                <div className="fixed inset-0 bg-black/50 dark:bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+                    <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-[32px] p-6 md:p-8 max-w-lg w-full shadow-[0_8px_40px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.05)] overflow-hidden relative">
                         {/* Shimmer top border */}
                         <div className="absolute top-0 left-0 w-full h-1.5 bg-[#9333ea]" />
 
@@ -911,8 +910,8 @@ const TokenLeagues: React.FC = () => {
                             <div className="flex items-center justify-center p-3 w-14 h-14 rounded-[24px] bg-[#9333ea]/10 border border-[#9333ea]/20 mx-auto mb-3">
                                 <Trophy className="w-7 h-7 text-[#9333ea]" />
                             </div>
-                            <h2 className="font-black text-2xl text-white mb-3">Cycle #{cycleResult.cycleId} Over</h2>
-                            <p className="inline-block bg-zinc-950 border border-zinc-800 px-4 py-1.5 rounded-full text-sm font-bold text-zinc-300">
+                            <h2 className="font-black text-2xl text-gray-900 dark:text-white mb-3">Cycle #{cycleResult.cycleId} Over</h2>
+                            <p className="inline-block bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 px-4 py-1.5 rounded-full text-sm font-bold text-gray-600 dark:text-zinc-300">
                                 Prize Pool: <span className="text-[#9333ea] font-mono tracking-tight">{cycleResult.prizePool} {currencySymbol()}</span>
                             </p>
                         </div>
@@ -921,12 +920,12 @@ const TokenLeagues: React.FC = () => {
                             {cycleResult.leaderboard.slice(0, 10).map((entry: any, i: number) => {
                                 const isYou = entry.playerAddress.toLowerCase() === address?.toLowerCase();
                                 return (
-                                    <div key={entry.playerAddress} className={`flex items-center justify-between px-3 py-2.5 rounded-2xl border transition-colors ${isYou ? 'bg-zinc-800 border-[#9333ea]' : 'bg-zinc-950 border-zinc-800'}`}>
+                                    <div key={entry.playerAddress} className={`flex items-center justify-between px-3 py-2.5 rounded-2xl border transition-colors ${isYou ? 'bg-gray-100 dark:bg-zinc-800 border-[#9333ea]' : 'bg-gray-50 dark:bg-zinc-950 border-gray-200 dark:border-zinc-800'}`}>
                                         <div className="flex items-center gap-2">
                                             <span className="text-sm font-black w-7 text-center shrink-0">
-                                                {i < 3 ? ['🥇', '🥈', '🥉'][i] : <span className="text-zinc-500 text-xs">{entry.rank}</span>}
+                                                {i < 3 ? ['🥇', '🥈', '🥉'][i] : <span className="text-gray-400 dark:text-zinc-500 text-xs">{entry.rank}</span>}
                                             </span>
-                                            <span className={`text-xs font-bold ${isYou ? 'text-[#9333ea]' : 'text-white'}`}>
+                                            <span className={`text-xs font-bold ${isYou ? 'text-[#9333ea]' : 'text-gray-900 dark:text-white'}`}>
                                                 {isYou ? 'You' : `${entry.playerAddress.substring(0, 6)}...`}
                                             </span>
                                         </div>
@@ -954,7 +953,7 @@ const TokenLeagues: React.FC = () => {
                                 setSelectedTokens([]);
                                 setEnteredTokens([]);
                             }}
-                            className="w-full bg-[#9333ea] text-black py-4 rounded-full font-black text-sm uppercase tracking-widest hover:bg-[#b0d800] transition-colors active:scale-[0.97]"
+                            className="w-full bg-[#9333ea] text-black py-4 rounded-full font-black text-sm uppercase tracking-widest hover:bg-[#a855f7] transition-colors active:scale-[0.97]"
                         >
                             Draft Next Cycle
                         </button>

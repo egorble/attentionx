@@ -28,6 +28,9 @@ Thumbs.db
 # Database (production data — never overwrite via git)
 server/db/*.db
 
+# Price history cache
+server/data/
+
 # Server logs
 server/logs/
 

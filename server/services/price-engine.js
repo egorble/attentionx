@@ -14,6 +14,11 @@
 
 import WebSocket from 'ws';
 import { EventEmitter } from 'events';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // All 25 RISEx markets → token IDs for Token Leagues
 const TOKENS = [
@@ -50,8 +55,10 @@ const WS_URL = 'wss://ws.testnet.rise.trade/ws';
 const REST_URL = 'https://api.testnet.rise.trade/v1/markets';
 const RECONNECT_DELAY = 3000;
 const REST_POLL_INTERVAL = 10000;
-const HISTORY_MAX_POINTS = 7200;      // ~2 hours at 1s intervals
+const HISTORY_MAX_POINTS = 54000;     // ~15 hours at 1s intervals
 const HISTORY_RECORD_INTERVAL = 1000; // record every 1s
+const HISTORY_SAVE_INTERVAL = 30000;  // save to disk every 30s
+const HISTORY_FILE = path.join(__dirname, '..', 'data', 'price-history.json');
 
 class PriceEngine extends EventEmitter {
     constructor() {
@@ -63,6 +70,7 @@ class PriceEngine extends EventEmitter {
         this.restInterval = null;
         this.reconnectTimeout = null;
         this._historyInterval = null;
+        this._saveInterval = null;
         this._started = false;
 
         // Initialize price map + history
@@ -76,6 +84,9 @@ class PriceEngine extends EventEmitter {
             });
             this.history.set(t.id, []);
         }
+
+        // Load saved history from disk
+        this._loadHistory();
     }
 
     start() {
@@ -94,6 +105,9 @@ class PriceEngine extends EventEmitter {
 
         // Record price history every second
         this._historyInterval = setInterval(() => this._recordHistory(), HISTORY_RECORD_INTERVAL);
+
+        // Save history to disk periodically
+        this._saveInterval = setInterval(() => this._saveHistory(), HISTORY_SAVE_INTERVAL);
     }
 
     stop() {
@@ -101,7 +115,9 @@ class PriceEngine extends EventEmitter {
         if (this.ws) { this.ws.close(); this.ws = null; }
         if (this.restInterval) { clearInterval(this.restInterval); this.restInterval = null; }
         if (this._historyInterval) { clearInterval(this._historyInterval); this._historyInterval = null; }
+        if (this._saveInterval) { clearInterval(this._saveInterval); this._saveInterval = null; }
         if (this.reconnectTimeout) { clearTimeout(this.reconnectTimeout); this.reconnectTimeout = null; }
+        this._saveHistory(); // save on shutdown
     }
 
     /** Get current prices for all tokens */
@@ -157,6 +173,43 @@ class PriceEngine extends EventEmitter {
             if (hist.length > 0 && hist[hist.length - 1].time === now) continue;
             hist.push({ time: now, price: data.price });
             if (hist.length > HISTORY_MAX_POINTS) hist.shift();
+        }
+    }
+
+    // ─── History Persistence ───
+
+    _loadHistory() {
+        try {
+            if (!fs.existsSync(HISTORY_FILE)) return;
+            const raw = fs.readFileSync(HISTORY_FILE, 'utf-8');
+            const saved = JSON.parse(raw);
+            let totalLoaded = 0;
+            for (const [idStr, points] of Object.entries(saved)) {
+                const id = parseInt(idStr, 10);
+                if (!this.history.has(id) || !Array.isArray(points)) continue;
+                // Only keep points within max age
+                const cutoff = Math.floor(Date.now() / 1000) - HISTORY_MAX_POINTS;
+                const filtered = points.filter(p => p.time > cutoff);
+                this.history.set(id, filtered);
+                totalLoaded += filtered.length;
+            }
+            console.log(`[PriceEngine] Loaded ${totalLoaded} history points from disk`);
+        } catch (err) {
+            console.warn('[PriceEngine] Could not load history:', err.message);
+        }
+    }
+
+    _saveHistory() {
+        try {
+            const dir = path.dirname(HISTORY_FILE);
+            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+            const obj = {};
+            for (const [id, hist] of this.history) {
+                if (hist.length > 0) obj[id] = hist;
+            }
+            fs.writeFileSync(HISTORY_FILE, JSON.stringify(obj));
+        } catch (err) {
+            console.warn('[PriceEngine] Could not save history:', err.message);
         }
     }
 
