@@ -87,6 +87,35 @@ class CycleManager extends EventEmitter {
             console.error(`[CycleManager] DB migration error: ${err.message}`);
         }
 
+        // Check on-chain for any unfinalized cycles the DB might have missed
+        try {
+            const provider = new ethers.JsonRpcProvider(CHAIN.RPC_URL);
+            const contract = new ethers.Contract(CONTRACTS.TokenLeagues, TOKEN_LEAGUES_ABI, provider);
+            const onChainCycleId = Number(await contract.currentCycleId());
+            console.log(`[CycleManager] On-chain currentCycleId: ${onChainCycleId}`);
+
+            // Finalize any on-chain cycles that DB doesn't know about
+            for (let id = Math.max(1, onChainCycleId - 5); id <= onChainCycleId; id++) {
+                const onChainCycle = await contract.getCycle(id);
+                if (!onChainCycle.finalized && Number(onChainCycle.endTime) > 0) {
+                    const now = Math.floor(Date.now() / 1000);
+                    if (now >= Number(onChainCycle.endTime)) {
+                        const dbCycle = db.getTokenCycle(id);
+                        if (!dbCycle || dbCycle.status !== 'finalized') {
+                            console.log(`[CycleManager] Found unfinalized on-chain cycle #${id}, finalizing...`);
+                            // Ensure DB has cycle record
+                            if (!dbCycle) {
+                                db.saveTokenCycle(id, Number(onChainCycle.startTime), Number(onChainCycle.endTime));
+                            }
+                            await this._finalizeCycle(id);
+                        }
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn(`[CycleManager] On-chain cycle reconciliation failed: ${err.message}`);
+        }
+
         // Check for existing active cycle in DB
         const activeCycle = db.getActiveTokenCycle();
         if (activeCycle) {
@@ -352,6 +381,35 @@ class CycleManager extends EventEmitter {
             console.error(`[CycleManager] DB error saving end prices for cycle #${cycleId}: ${err.message}`);
         }
 
+        // Sync on-chain participants into DB (in case server missed some entries)
+        try {
+            const provider = new ethers.JsonRpcProvider(CHAIN.RPC_URL);
+            const contract = new ethers.Contract(CONTRACTS.TokenLeagues, [
+                ...TOKEN_LEAGUES_ABI,
+                'function getParticipants(uint256) view returns (address[])',
+                'function getUserTokens(uint256, address) view returns (uint8[5])',
+            ], provider);
+
+            const participants = await contract.getParticipants(cycleId);
+            let synced = 0;
+            for (const addr of participants) {
+                const existing = db.getTokenEntry(cycleId, addr);
+                if (!existing) {
+                    const tokens = await contract.getUserTokens(cycleId, addr);
+                    const tokenIds = tokens.map(Number).filter(t => t > 0);
+                    if (tokenIds.length > 0) {
+                        db.saveTokenEntry(cycleId, addr.toLowerCase(), tokenIds);
+                        synced++;
+                    }
+                }
+            }
+            if (synced > 0) {
+                console.log(`[CycleManager] Synced ${synced} on-chain entries into DB for cycle #${cycleId}`);
+            }
+        } catch (err) {
+            console.warn(`[CycleManager] On-chain participant sync failed for cycle #${cycleId}: ${err.message}`);
+        }
+
         // Calculate final scores
         const entries = db.getTokenEntries(cycleId);
         console.log(`[CycleManager] Cycle #${cycleId}: ${entries.length} entries to score`);
@@ -383,9 +441,18 @@ class CycleManager extends EventEmitter {
             console.log(`[CycleManager] Cycle #${cycleId} scores: ${results.length} players | top=${topScore} bottom=${bottomScore}`);
         }
 
-        // Prize distribution: only positive scores win
-        const winners = results.filter(r => r.score > 0);
-        const totalPositiveScore = winners.reduce((sum, w) => sum + w.score, 0);
+        // Prize distribution: solo player always wins; otherwise only positive scores
+        let winners;
+        let totalPositiveScore;
+        if (results.length === 1) {
+            // Solo player gets the entire prize pool regardless of score
+            winners = [results[0]];
+            totalPositiveScore = Math.abs(results[0].score) || 1; // avoid division by zero
+            console.log(`[CycleManager] Cycle #${cycleId} solo player — awarding full prize pool to ${results[0].playerAddress}`);
+        } else {
+            winners = results.filter(r => r.score > 0);
+            totalPositiveScore = winners.reduce((sum, w) => sum + w.score, 0);
+        }
         console.log(`[CycleManager] Cycle #${cycleId} prize calc: ${winners.length} winners out of ${results.length} | totalScore=${totalPositiveScore.toFixed(2)}`);
 
         // Get prize pool from contract or DB (with retries)
@@ -407,9 +474,15 @@ class CycleManager extends EventEmitter {
         const winnerAmounts = [];
 
         for (const w of winners) {
-            const share = totalPositiveScore > 0
-                ? (BigInt(Math.round(w.score * 1000)) * prizePoolBN) / BigInt(Math.round(totalPositiveScore * 1000))
-                : 0n;
+            let share;
+            if (results.length === 1) {
+                // Solo player gets the entire prize pool
+                share = prizePoolBN;
+            } else {
+                share = totalPositiveScore > 0
+                    ? (BigInt(Math.round(w.score * 1000)) * prizePoolBN) / BigInt(Math.round(totalPositiveScore * 1000))
+                    : 0n;
+            }
             w.prizeAmount = share.toString();
             winnerAddresses.push(w.playerAddress);
             winnerAmounts.push(share);
