@@ -553,20 +553,55 @@ const TokenLeagues: React.FC = () => {
     }, [cycle?.id]);
 
     useEffect(() => {
-        if (!cycle || !isConnected) return;
-        hasEnteredCycle(cycle.id).then(async (entered) => {
-            setHasEntered(entered);
-            if (entered && enteredTokens.length === 0) {
-                const tokens = await getUserTokens(cycle.id);
+        if (!cycle || !isConnected || !address) return;
+        let cancelled = false;
+
+        async function recoverEntry() {
+            // 1) Try on-chain first
+            let entered = false;
+            let tokens: number[] = [];
+            try {
+                entered = await hasEnteredCycle(cycle!.id);
+                if (entered) {
+                    tokens = await getUserTokens(cycle!.id);
+                }
+            } catch {
+                console.warn('[TokenLeagues] RPC check failed, trying REST fallback...');
+            }
+
+            // 2) REST fallback if RPC returned nothing
+            if (!entered) {
+                try {
+                    const res = await fetch(`/api/token-leagues/entry/${cycle!.id}/${address}`);
+                    const json = await res.json();
+                    if (json.success && json.data?.entered) {
+                        entered = true;
+                        tokens = json.data.tokenIds || [];
+                        console.log('[TokenLeagues] Recovered entry from REST:', tokens);
+                    }
+                } catch {
+                    console.warn('[TokenLeagues] REST fallback also failed');
+                }
+            }
+
+            if (cancelled) return;
+
+            if (entered) {
+                setHasEntered(true);
                 if (tokens.length > 0) {
                     setEnteredTokens(tokens);
                     setSelectedTokens(tokens);
                 }
+            } else {
+                setHasEntered(false);
             }
-        });
-        // Also refresh claimable after cycle change
-        getClaimableBalance().then(b => setClaimable(b));
-    }, [cycle?.id, isConnected, hasEnteredCycle, getUserTokens]);
+        }
+
+        recoverEntry();
+        getClaimableBalance().then(b => { if (!cancelled) setClaimable(b); });
+
+        return () => { cancelled = true; };
+    }, [cycle?.id, isConnected, address, hasEnteredCycle, getUserTokens]);
 
     const toggleToken = useCallback((id: number) => {
         if (phase !== 'selection') return;

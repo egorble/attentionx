@@ -169,7 +169,8 @@ export function useTokenLeagues() {
         try {
             const contract = getTokenLeaguesContract();
             return await contract.hasEntered(cycleId, address);
-        } catch {
+        } catch (err: any) {
+            console.error('[useTokenLeagues] hasEnteredCycle RPC error:', err?.message || err);
             return false;
         }
     }, [address]);
@@ -192,7 +193,8 @@ export function useTokenLeagues() {
             const tokens: bigint[] = await contract.getUserTokens(cycleId, address);
             const ids = tokens.map(t => Number(t)).filter(t => t > 0);
             return ids;
-        } catch {
+        } catch (err: any) {
+            console.error('[useTokenLeagues] getUserTokens RPC error:', err?.message || err);
             return [];
         }
     }, [address]);

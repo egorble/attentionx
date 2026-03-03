@@ -1403,6 +1403,21 @@ app.post('/api/token-leagues/entry', writeLimiter, (req, res) => {
     }
 });
 
+// Check if player entered a specific cycle (REST fallback for RPC failures)
+app.get('/api/token-leagues/entry/:cycleId/:address', (req, res) => {
+    try {
+        const cycleId = parseInt(req.params.cycleId, 10);
+        const address = req.params.address.toLowerCase();
+        const entry = db.getTokenEntry(cycleId, address);
+        res.json({
+            success: true,
+            data: entry ? { entered: true, tokenIds: entry.token_ids } : { entered: false, tokenIds: [] },
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // Token list (static)
 app.get('/api/token-leagues/tokens', (req, res) => {
     res.json({
