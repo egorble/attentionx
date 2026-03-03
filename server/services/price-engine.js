@@ -60,6 +60,7 @@ const HISTORY_MAX_POINTS = 54000;     // ~15 hours at 1s intervals
 const HISTORY_RECORD_INTERVAL = 1000; // record every 1s
 const HISTORY_SAVE_INTERVAL = 30000;  // save to disk every 30s
 const HISTORY_FILE = path.join(__dirname, '..', 'data', 'price-history.json');
+const STATUS_LOG_INTERVAL = 60000; // log status every 60s
 
 class PriceEngine extends EventEmitter {
     constructor() {
@@ -74,7 +75,12 @@ class PriceEngine extends EventEmitter {
         this._reconnectAttempt = 0;
         this._historyInterval = null;
         this._saveInterval = null;
+        this._statusInterval = null;
         this._started = false;
+        this._wsMessageCount = 0;
+        this._wsErrorCount = 0;
+        this._restFetchCount = 0;
+        this._restErrorCount = 0;
 
         // Initialize price map + history
         for (const t of TOKENS) {
@@ -111,6 +117,9 @@ class PriceEngine extends EventEmitter {
 
         // Save history to disk periodically
         this._saveInterval = setInterval(() => this._saveHistory(), HISTORY_SAVE_INTERVAL);
+
+        // Periodic status log
+        this._statusInterval = setInterval(() => this._logStatus(), STATUS_LOG_INTERVAL);
     }
 
     stop() {
@@ -119,8 +128,10 @@ class PriceEngine extends EventEmitter {
         if (this.restInterval) { clearInterval(this.restInterval); this.restInterval = null; }
         if (this._historyInterval) { clearInterval(this._historyInterval); this._historyInterval = null; }
         if (this._saveInterval) { clearInterval(this._saveInterval); this._saveInterval = null; }
+        if (this._statusInterval) { clearInterval(this._statusInterval); this._statusInterval = null; }
         if (this.reconnectTimeout) { clearTimeout(this.reconnectTimeout); this.reconnectTimeout = null; }
         this._saveHistory(); // save on shutdown
+        console.log('[PriceEngine] Stopped');
     }
 
     /** Get current prices for all tokens */
@@ -177,6 +188,26 @@ class PriceEngine extends EventEmitter {
             hist.push({ time: now, price: data.price });
             if (hist.length > HISTORY_MAX_POINTS) hist.shift();
         }
+    }
+
+    // ─── Status Logging ───
+
+    _logStatus() {
+        const now = Date.now();
+        let activeCount = 0;
+        let staleCount = 0;
+        let zeroCount = 0;
+        for (const [, data] of this.prices) {
+            if (data.price === 0) { zeroCount++; continue; }
+            if (now - data.updatedAt > 30000) { staleCount++; } else { activeCount++; }
+        }
+        const totalHistory = Array.from(this.history.values()).reduce((sum, h) => sum + h.length, 0);
+        console.log(`[PriceEngine] Status: ws=${this.wsConnected ? 'ON' : 'OFF'} | prices: ${activeCount} active, ${staleCount} stale, ${zeroCount} zero | history: ${totalHistory} pts | ws_msgs=${this._wsMessageCount} ws_errs=${this._wsErrorCount} rest_ok=${this._restFetchCount} rest_err=${this._restErrorCount}`);
+        // Reset counters
+        this._wsMessageCount = 0;
+        this._wsErrorCount = 0;
+        this._restFetchCount = 0;
+        this._restErrorCount = 0;
     }
 
     // ─── History Persistence ───
@@ -240,10 +271,14 @@ class PriceEngine extends EventEmitter {
             });
 
             this.ws.on('message', (data) => {
+                this._wsMessageCount++;
                 try {
                     const msg = JSON.parse(data.toString());
                     this._handleWSMessage(msg);
-                } catch {}
+                } catch (err) {
+                    this._wsErrorCount++;
+                    console.warn(`[PriceEngine] WS message parse error: ${err.message} | data: ${data.toString().substring(0, 200)}`);
+                }
             });
 
             this.ws.on('close', () => {
@@ -307,12 +342,17 @@ class PriceEngine extends EventEmitter {
     async _fetchREST() {
         try {
             const res = await fetch(REST_URL);
-            if (!res.ok) return;
+            if (!res.ok) {
+                this._restErrorCount++;
+                console.warn(`[PriceEngine] REST fetch failed: HTTP ${res.status} ${res.statusText}`);
+                return;
+            }
             const data = await res.json();
 
             // Response format: { data: { markets: [...] } }
             const markets = data?.data?.markets || data?.markets || (Array.isArray(data) ? data : []);
 
+            let updated = 0;
             for (const market of markets) {
                 const mId = typeof market.market_id === 'string'
                     ? parseInt(market.market_id, 10) : (market.market_id || market.id);
@@ -331,6 +371,7 @@ class PriceEngine extends EventEmitter {
                         existing.price = price;
                         existing.change24h = change;
                         existing.updatedAt = Date.now();
+                        updated++;
                     } else {
                         // Always update 24h change from REST (WS doesn't provide it)
                         existing.change24h = change;
@@ -338,9 +379,11 @@ class PriceEngine extends EventEmitter {
                 }
             }
 
+            this._restFetchCount++;
             this.emit('price-update', null); // bulk update
         } catch (err) {
-            // Silence REST errors — WS is primary
+            this._restErrorCount++;
+            console.error(`[PriceEngine] REST fetch error: ${err.message}`);
         }
     }
 }

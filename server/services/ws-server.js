@@ -57,7 +57,9 @@ class WSServer extends EventEmitter {
                 try {
                     const msg = JSON.parse(data.toString());
                     this._handleMessage(ws, msg);
-                } catch {}
+                } catch (err) {
+                    console.warn(`[WS] Client ${clientId}: message parse error: ${err.message}`);
+                }
             });
 
             ws.on('pong', () => { ws.isAlive = true; });
@@ -67,21 +69,27 @@ class WSServer extends EventEmitter {
                 console.log(`[WS] Client disconnected (${this.clients.size} total)`);
             });
 
-            ws.on('error', () => {
+            ws.on('error', (err) => {
+                console.error(`[WS] Client ${clientId} error: ${err.message}`);
                 this.clients.delete(ws);
             });
         });
 
         // Heartbeat to detect dead connections
         this.heartbeatInterval = setInterval(() => {
+            let terminated = 0;
             for (const ws of this.clients) {
                 if (!ws.isAlive) {
                     ws.terminate();
                     this.clients.delete(ws);
+                    terminated++;
                     continue;
                 }
                 ws.isAlive = false;
                 ws.ping();
+            }
+            if (terminated > 0) {
+                console.log(`[WS] Heartbeat: terminated ${terminated} dead connection(s) (${this.clients.size} remaining)`);
             }
         }, HEARTBEAT_INTERVAL);
 
@@ -111,38 +119,51 @@ class WSServer extends EventEmitter {
 
         const message = JSON.stringify({ channel, data, timestamp: Date.now() });
 
+        let sent = 0;
+        let errors = 0;
         for (const ws of this.clients) {
             if (ws.readyState === 1 && ws._subscriptions.has(channel)) {
                 try {
                     ws.send(message);
-                } catch {}
+                    sent++;
+                } catch (err) {
+                    errors++;
+                    console.warn(`[WS] Broadcast send error to client ${ws._clientId}: ${err.message}`);
+                }
             }
+        }
+        if (errors > 0) {
+            console.warn(`[WS] Broadcast '${channel}': ${sent} sent, ${errors} errors`);
         }
     }
 
     // ─── Private ───
 
     _sendInitialState(ws) {
-        // Send current prices
-        if (this.priceEngine) {
-            this._send(ws, 'prices', this.priceEngine.getPrices());
-        }
-
-        // Send current cycle info
-        if (this.cycleManager) {
-            const cycle = this.cycleManager.getCurrentCycle();
-            if (cycle) {
-                this._send(ws, 'cycle', cycle);
+        try {
+            // Send current prices
+            if (this.priceEngine) {
+                this._send(ws, 'prices', this.priceEngine.getPrices());
             }
 
-            // Send live leaderboard
-            const lb = this.cycleManager.getLiveLeaderboard();
-            if (lb.length > 0) {
-                this._send(ws, 'leaderboard', lb);
-            }
+            // Send current cycle info
+            if (this.cycleManager) {
+                const cycle = this.cycleManager.getCurrentCycle();
+                if (cycle) {
+                    this._send(ws, 'cycle', cycle);
+                }
 
-            // Send token performance
-            this._send(ws, 'tokens', this.cycleManager.getLiveTokenPerformance());
+                // Send live leaderboard
+                const lb = this.cycleManager.getLiveLeaderboard();
+                if (lb.length > 0) {
+                    this._send(ws, 'leaderboard', lb);
+                }
+
+                // Send token performance
+                this._send(ws, 'tokens', this.cycleManager.getLiveTokenPerformance());
+            }
+        } catch (err) {
+            console.error(`[WS] Error sending initial state to client ${ws._clientId}: ${err.message}`);
         }
     }
 
@@ -159,7 +180,9 @@ class WSServer extends EventEmitter {
         if (ws.readyState !== 1) return;
         try {
             ws.send(JSON.stringify({ channel, data, timestamp: Date.now() }));
-        } catch {}
+        } catch (err) {
+            console.warn(`[WS] Send error to client ${ws._clientId} on '${channel}': ${err.message}`);
+        }
     }
 
     stop() {

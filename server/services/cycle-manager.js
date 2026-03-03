@@ -80,7 +80,12 @@ class CycleManager extends EventEmitter {
         console.log('[CycleManager] Starting...');
 
         // Run DB migrations
-        db.runTokenLeaguesMigrations();
+        try {
+            db.runTokenLeaguesMigrations();
+            console.log('[CycleManager] DB migrations applied');
+        } catch (err) {
+            console.error(`[CycleManager] DB migration error: ${err.message}`);
+        }
 
         // Check for existing active cycle in DB
         const activeCycle = db.getActiveTokenCycle();
@@ -187,15 +192,26 @@ class CycleManager extends EventEmitter {
         const snapshot = this.priceEngine.getPriceSnapshot();
         const startPrices = {};
         const priceRecords = [];
+        let zeroPrices = 0;
         for (const s of snapshot) {
             startPrices[s.tokenId] = s.price;
             priceRecords.push({ tokenId: s.tokenId, startPrice: s.price });
+            if (s.price === 0) zeroPrices++;
         }
+        if (zeroPrices > 0) {
+            console.warn(`[CycleManager] Price snapshot: ${zeroPrices}/${snapshot.length} tokens have zero price at cycle start`);
+        }
+        console.log(`[CycleManager] Price snapshot for cycle #${cycleId}: ${snapshot.length - zeroPrices} tokens priced`);
 
         // Save to DB
-        db.saveTokenCycle(cycleId, startTime, endTime);
-        db.saveTokenPrices(cycleId, priceRecords);
-        db.saveDatabase();
+        try {
+            db.saveTokenCycle(cycleId, startTime, endTime);
+            db.saveTokenPrices(cycleId, priceRecords);
+            db.saveDatabase();
+            console.log(`[CycleManager] DB: cycle #${cycleId} saved with ${priceRecords.length} price records`);
+        } catch (err) {
+            console.error(`[CycleManager] DB save error for cycle #${cycleId}: ${err.message}`);
+        }
 
         this.currentCycle = { id: cycleId, startTime, endTime, startPrices };
         this.liveLeaderboard = [];
@@ -219,12 +235,21 @@ class CycleManager extends EventEmitter {
     _scheduleCycleEnd() {
         if (this.cycleTimeout) clearTimeout(this.cycleTimeout);
         const msLeft = (this.currentCycle.endTime * 1000) - Date.now();
+        console.log(`[CycleManager] Cycle #${this.currentCycle.id} end scheduled in ${(msLeft / 1000).toFixed(0)}s`);
 
         this.cycleTimeout = setTimeout(async () => {
-            await this._finalizeCycle(this.currentCycle.id);
+            console.log(`[CycleManager] Cycle #${this.currentCycle.id} timer fired, beginning finalization...`);
+            try {
+                await this._finalizeCycle(this.currentCycle.id);
+            } catch (err) {
+                console.error(`[CycleManager] Finalization error for cycle #${this.currentCycle.id}: ${err.message}`, err.stack);
+            }
             // Start next cycle after a brief pause
             setTimeout(() => {
-                if (this._started) this._startNewCycle();
+                if (this._started) {
+                    console.log('[CycleManager] Starting next cycle...');
+                    this._startNewCycle();
+                }
             }, 2000);
         }, Math.max(0, msLeft));
     }
@@ -241,43 +266,53 @@ class CycleManager extends EventEmitter {
     _updateLiveScores() {
         if (!this.currentCycle) return;
 
-        const entries = db.getTokenEntries(this.currentCycle.id);
-        if (entries.length === 0) return;
+        try {
+            const entries = db.getTokenEntries(this.currentCycle.id);
+            if (entries.length === 0) return;
 
-        const currentPrices = this.priceEngine.getPrices();
-        const scores = [];
+            const currentPrices = this.priceEngine.getPrices();
+            const scores = [];
+            let missingPrices = 0;
 
-        for (const entry of entries) {
-            const tokenIds = entry.token_ids;
-            let totalPct = 0;
+            for (const entry of entries) {
+                const tokenIds = entry.token_ids;
+                let totalPct = 0;
 
-            for (const tid of tokenIds) {
-                const startPrice = this.currentCycle.startPrices[tid] || 0;
-                const curPrice = currentPrices[tid]?.price || 0;
-                const pct = startPrice > 0 ? ((curPrice - startPrice) / startPrice) * 100 : 0;
-                totalPct += pct;
+                for (const tid of tokenIds) {
+                    const startPrice = this.currentCycle.startPrices[tid] || 0;
+                    const curPrice = currentPrices[tid]?.price || 0;
+                    if (startPrice === 0 || curPrice === 0) missingPrices++;
+                    const pct = startPrice > 0 ? ((curPrice - startPrice) / startPrice) * 100 : 0;
+                    totalPct += pct;
+                }
+
+                // Score = average % change × leverage
+                const score = (totalPct / tokenIds.length) * LEVERAGE;
+
+                scores.push({
+                    address: entry.player_address,
+                    score: Math.round(score * 100) / 100,
+                    tokens: tokenIds,
+                });
             }
 
-            // Score = average % change × leverage
-            const score = (totalPct / tokenIds.length) * LEVERAGE;
+            // Sort by score descending
+            scores.sort((a, b) => b.score - a.score);
+            scores.forEach((s, i) => { s.rank = i + 1; });
 
-            scores.push({
-                address: entry.player_address,
-                score: Math.round(score * 100) / 100,
-                tokens: tokenIds,
-            });
-        }
+            this.liveLeaderboard = scores;
 
-        // Sort by score descending
-        scores.sort((a, b) => b.score - a.score);
-        scores.forEach((s, i) => { s.rank = i + 1; });
+            if (missingPrices > 0) {
+                console.warn(`[CycleManager] Live scores: ${missingPrices} missing prices detected for cycle #${this.currentCycle.id}`);
+            }
 
-        this.liveLeaderboard = scores;
-
-        // Broadcast to WS clients
-        if (this.wsServer) {
-            this.wsServer.broadcast('leaderboard', scores);
-            this.wsServer.broadcast('cycle', this.getCurrentCycle());
+            // Broadcast to WS clients
+            if (this.wsServer) {
+                this.wsServer.broadcast('leaderboard', scores);
+                this.wsServer.broadcast('cycle', this.getCurrentCycle());
+            }
+        } catch (err) {
+            console.error(`[CycleManager] _updateLiveScores error: ${err.message}`, err.stack);
         }
     }
 
@@ -288,7 +323,11 @@ class CycleManager extends EventEmitter {
 
         if (this.tickInterval) { clearInterval(this.tickInterval); this.tickInterval = null; }
 
-        db.updateTokenCycleStatus(cycleId, 'finalizing');
+        try {
+            db.updateTokenCycleStatus(cycleId, 'finalizing');
+        } catch (err) {
+            console.error(`[CycleManager] DB error setting finalizing status for cycle #${cycleId}: ${err.message}`);
+        }
 
         // Snapshot end prices
         const currentPrices = this.priceEngine.getPrices();
@@ -306,10 +345,16 @@ class CycleManager extends EventEmitter {
             const pctChange = startPrice > 0 ? ((endPrice - startPrice) / startPrice) * 100 : 0;
             endPriceUpdates.push({ tokenId: t.id, endPrice, pctChange });
         }
-        db.updateTokenEndPrices(cycleId, endPriceUpdates);
+        try {
+            db.updateTokenEndPrices(cycleId, endPriceUpdates);
+            console.log(`[CycleManager] End prices saved for cycle #${cycleId}: ${endPriceUpdates.filter(p => p.endPrice > 0).length} tokens priced`);
+        } catch (err) {
+            console.error(`[CycleManager] DB error saving end prices for cycle #${cycleId}: ${err.message}`);
+        }
 
         // Calculate final scores
         const entries = db.getTokenEntries(cycleId);
+        console.log(`[CycleManager] Cycle #${cycleId}: ${entries.length} entries to score`);
         const results = [];
 
         for (const entry of entries) {
@@ -331,9 +376,17 @@ class CycleManager extends EventEmitter {
         results.sort((a, b) => b.score - a.score);
         results.forEach((r, i) => { r.rank = i + 1; });
 
+        // Log score summary
+        if (results.length > 0) {
+            const topScore = results[0]?.score ?? 0;
+            const bottomScore = results[results.length - 1]?.score ?? 0;
+            console.log(`[CycleManager] Cycle #${cycleId} scores: ${results.length} players | top=${topScore} bottom=${bottomScore}`);
+        }
+
         // Prize distribution: only positive scores win
         const winners = results.filter(r => r.score > 0);
         const totalPositiveScore = winners.reduce((sum, w) => sum + w.score, 0);
+        console.log(`[CycleManager] Cycle #${cycleId} prize calc: ${winners.length} winners out of ${results.length} | totalScore=${totalPositiveScore.toFixed(2)}`);
 
         // Get prize pool from contract or DB (with retries)
         let prizePool = '0';
@@ -344,7 +397,8 @@ class CycleManager extends EventEmitter {
                 const onChainCycle = await contract.getCycle(cycleId);
                 return onChainCycle.prizePool.toString();
             }, 'Read prize pool', 3, 1000);
-        } catch {
+        } catch (err) {
+            console.warn(`[CycleManager] Could not read on-chain prize pool for cycle #${cycleId}: ${err.message}. Using DB fallback.`);
             prizePool = cycle?.prize_pool || '0';
         }
 
@@ -362,12 +416,17 @@ class CycleManager extends EventEmitter {
         }
 
         // Save leaderboard to DB
-        db.saveTokenLeaderboard(cycleId, results.map(r => ({
-            playerAddress: r.playerAddress,
-            score: r.score,
-            rank: r.rank,
-            prizeAmount: r.prizeAmount || '0',
-        })));
+        try {
+            db.saveTokenLeaderboard(cycleId, results.map(r => ({
+                playerAddress: r.playerAddress,
+                score: r.score,
+                rank: r.rank,
+                prizeAmount: r.prizeAmount || '0',
+            })));
+            console.log(`[CycleManager] DB: leaderboard saved for cycle #${cycleId} (${results.length} entries)`);
+        } catch (err) {
+            console.error(`[CycleManager] DB error saving leaderboard for cycle #${cycleId}: ${err.message}`);
+        }
 
         // Finalize on-chain with retries
         try {
@@ -387,8 +446,12 @@ class CycleManager extends EventEmitter {
             console.error(`[CycleManager] On-chain finalization failed after retries:`, err.message);
         }
 
-        db.updateTokenCycleStatus(cycleId, 'finalized', prizePool);
-        db.saveDatabase();
+        try {
+            db.updateTokenCycleStatus(cycleId, 'finalized', prizePool);
+            db.saveDatabase();
+        } catch (err) {
+            console.error(`[CycleManager] DB error finalizing cycle #${cycleId}: ${err.message}`);
+        }
 
         console.log(`[CycleManager] Cycle #${cycleId} finalized — ${winners.length} winners, pool: ${ethers.formatEther(prizePoolBN)} ETH`);
 
