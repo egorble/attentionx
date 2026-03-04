@@ -44,7 +44,7 @@ const ICON_BASE = 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons
 const COINGECKO = 'https://coin-images.coingecko.com/coins/images';
 const STOCKS = 'https://raw.githubusercontent.com/davidepalazzo/ticker-logos/main/ticker_icons';
 
-const TOKEN_ICONS: Record<string, string> = {
+export const TOKEN_ICONS: Record<string, string> = {
     // Crypto — spothq SVGs
     BTC: `${ICON_BASE}/btc.svg`,
     ETH: `${ICON_BASE}/eth.svg`,

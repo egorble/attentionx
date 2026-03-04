@@ -5,7 +5,7 @@ import gsap from 'gsap';
 import { useWalletContext } from '../context/WalletContext';
 import { useTokenLeagues, TOKENS } from '../hooks/useTokenLeagues';
 import { currencySymbol } from '../lib/networks';
-import { TokenIcon } from './TokenLeagues';
+import { TokenIcon, TOKEN_ICONS } from './TokenLeagues';
 import ModelViewer3D from './ModelViewer3D';
 
 const BOOST_GLB = '/boost-pack.glb';
@@ -56,6 +56,20 @@ const BoostPackModal: React.FC<BoostPackModalProps> = ({ isOpen, onClose, onBoos
             getEntryFee().then(p => setPrice(p));
         }
     }, [isOpen, getEntryFee]);
+
+    // Preload token icons as soon as random tokens are generated (during buying stage)
+    useEffect(() => {
+        if (randomTokens.length === 0) return;
+        randomTokens.forEach(id => {
+            const token = TOKENS.find(t => t.id === id);
+            if (!token) return;
+            const src = TOKEN_ICONS[token.symbol];
+            if (src) {
+                const img = new Image();
+                img.src = src;
+            }
+        });
+    }, [randomTokens]);
 
     const handleBuy = async () => {
         if (!isConnected) return;
