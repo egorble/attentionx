@@ -76,10 +76,24 @@ export const TOKEN_ICONS: Record<string, string> = {
     XAG: `${COINGECKO}/29789/large/kag-currency-ticker.png?1696528719`,
 };
 
+// Global cache: once an icon URL has loaded once, skip the loading state entirely
+const _loadedIcons = new Set<string>();
+
 export function TokenIcon({ symbol, color, size = 24 }: { symbol: string; color: string; size?: number }) {
-    const [failed, setFailed] = useState(false);
-    const [loaded, setLoaded] = useState(false);
     const src = TOKEN_ICONS[symbol];
+    const alreadyCached = src ? _loadedIcons.has(src) : false;
+    const [failed, setFailed] = useState(false);
+    const [loaded, setLoaded] = useState(alreadyCached);
+    const imgRef = useRef<HTMLImageElement>(null);
+
+    // Check if browser already has this image cached on mount
+    useEffect(() => {
+        if (loaded || !src) return;
+        if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
+            _loadedIcons.add(src);
+            setLoaded(true);
+        }
+    }, [src, loaded]);
 
     if (!src || failed) {
         return (
@@ -103,12 +117,13 @@ export function TokenIcon({ symbol, color, size = 24 }: { symbol: string; color:
                 </div>
             )}
             <img
+                ref={imgRef}
                 src={src}
                 alt={symbol}
                 width={size}
                 height={size}
                 className={`rounded-full shadow-lg transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
-                onLoad={() => setLoaded(true)}
+                onLoad={() => { _loadedIcons.add(src); setLoaded(true); }}
                 onError={() => setFailed(true)}
             />
         </div>
