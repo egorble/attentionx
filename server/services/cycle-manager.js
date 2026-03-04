@@ -54,6 +54,8 @@ const TOKEN_LEAGUES_ABI = [
     'function hasEntered(uint256 cycleId, address user) view returns (bool)',
     'function getParticipants(uint256 cycleId) view returns (address[])',
     'function getUserTokens(uint256 cycleId, address user) view returns (uint8[5])',
+    'function isBoosted(uint256 cycleId, address user) view returns (bool)',
+    'function boostBasisPoints() view returns (uint256)',
 ];
 
 class CycleManager extends EventEmitter {
@@ -67,6 +69,7 @@ class CycleManager extends EventEmitter {
         this._started = false;
         this.liveLeaderboard = []; // cached live leaderboard for WS broadcast
         this._lastParticipantSync = 0; // timestamp of last on-chain participant sync
+        this._boostedPlayers = new Set(); // cached set of boosted player addresses (lowercase)
     }
 
     /**
@@ -398,9 +401,10 @@ class CycleManager extends EventEmitter {
                     }
                 }
 
-                // Sync participants for current cycle
+                // Sync participants + boost status for current cycle
                 const participants = await contract.getParticipants(this.currentCycle.id);
                 let synced = 0;
+                const boostedSet = new Set();
                 for (const addr of participants) {
                     const existing = db.getTokenEntry(this.currentCycle.id, addr);
                     if (!existing) {
@@ -411,6 +415,15 @@ class CycleManager extends EventEmitter {
                             synced++;
                         }
                     }
+                    // Check boost status
+                    try {
+                        const boosted = await contract.isBoosted(this.currentCycle.id, addr);
+                        if (boosted) boostedSet.add(addr.toLowerCase());
+                    } catch {}
+                }
+                this._boostedPlayers = boostedSet;
+                if (boostedSet.size > 0) {
+                    console.log(`[CycleManager] Cycle #${this.currentCycle.id}: ${boostedSet.size} boosted player(s)`);
                 }
                 if (synced > 0) {
                     db.saveDatabase();
@@ -442,12 +455,17 @@ class CycleManager extends EventEmitter {
                 }
 
                 // Score = average % change × leverage
-                const score = (totalPct / tokenIds.length) * LEVERAGE;
+                let score = (totalPct / tokenIds.length) * LEVERAGE;
+
+                // Apply boost (+5 flat points for boosted players)
+                const isBoosted = this._boostedPlayers && this._boostedPlayers.has(entry.player_address.toLowerCase());
+                if (isBoosted) score += 5;
 
                 scores.push({
                     address: entry.player_address,
                     score: Math.round(score * 100) / 100,
                     tokens: tokenIds,
+                    boosted: !!isBoosted,
                 });
             }
 
@@ -541,6 +559,24 @@ class CycleManager extends EventEmitter {
         console.log(`[CycleManager] Cycle #${cycleId}: ${entries.length} entries to score`);
         const results = [];
 
+        // Read boost status from contract for all participants
+        const boostedFinal = new Set();
+        try {
+            const readProvider = new ethers.JsonRpcProvider(CHAIN.RPC_URL);
+            const readContract = new ethers.Contract(CONTRACTS.TokenLeagues, TOKEN_LEAGUES_ABI, readProvider);
+            for (const entry of entries) {
+                try {
+                    const boosted = await readContract.isBoosted(cycleId, entry.player_address);
+                    if (boosted) boostedFinal.add(entry.player_address.toLowerCase());
+                } catch {}
+            }
+            if (boostedFinal.size > 0) {
+                console.log(`[CycleManager] Cycle #${cycleId}: ${boostedFinal.size} boosted player(s)`);
+            }
+        } catch (err) {
+            console.warn(`[CycleManager] Boost status check failed for cycle #${cycleId}: ${err.message}`);
+        }
+
         for (const entry of entries) {
             let totalPct = 0;
             for (const tid of entry.token_ids) {
@@ -549,7 +585,13 @@ class CycleManager extends EventEmitter {
                 const pct = sp > 0 ? ((ep - sp) / sp) * 100 : 0;
                 totalPct += pct;
             }
-            const score = (totalPct / entry.token_ids.length) * LEVERAGE;
+            let score = (totalPct / entry.token_ids.length) * LEVERAGE;
+
+            // Apply boost (+5 flat points for boosted players)
+            if (boostedFinal.has(entry.player_address.toLowerCase())) {
+                score += 5;
+            }
+
             results.push({
                 playerAddress: entry.player_address,
                 score: Math.round(score * 100) / 100,

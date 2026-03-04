@@ -530,9 +530,18 @@ const AdminPanel: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-gray-50 dark:bg-black/50 rounded-lg p-4">
                             <p className="text-gray-500 text-xs mb-1">PackOpener</p>
-                            <p className="text-xl font-mono font-bold text-gray-900 dark:text-white">
+                            <p className="text-xl font-mono font-bold text-gray-900 dark:text-white mb-2">
                                 {balances ? formatXTZ(balances.packOpener) : '0'} {currencySymbol()}
                             </p>
+                            {balances && balances.packOpener > 0n && (
+                                <button
+                                    onClick={handleWithdraw}
+                                    disabled={admin.isLoading}
+                                    className="w-full bg-yc-green/10 dark:bg-yc-green/20 hover:bg-yc-green text-yc-green hover:text-white py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                                >
+                                    {admin.isLoading ? 'Withdrawing...' : 'Withdraw'}
+                                </button>
+                            )}
                         </div>
                         <div className="bg-gray-50 dark:bg-black/50 rounded-lg p-4">
                             <p className="text-gray-500 text-xs mb-1">TournamentManager</p>

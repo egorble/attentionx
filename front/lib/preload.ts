@@ -16,8 +16,10 @@ import { seedSharedCache } from '../hooks/useSharedData';
 // GLB: drei's GLTFLoader parses + caches (useGLTF() is instant later)
 // HDR: browser-cached so useEnvironment() gets a cache hit later
 const GLB_PATH = '/card-pack.glb';
+const BOOST_GLB_PATH = '/boost-pack.glb';
 const ENV_HDR = '/env-city.hdr';
 useGLTF.preload(GLB_PATH, false, true);
+useGLTF.preload(BOOST_GLB_PATH, false, true);
 fetch(ENV_HDR).catch(() => {}); // warm browser cache, don't await
 
 // ── Cache keys for preloaded data ──

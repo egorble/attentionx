@@ -49,6 +49,11 @@ contract TokenLeagues is Initializable, Ownable2StepUpgradeable, PausableUpgrade
     mapping(address => bool) public autoPlayEnabled;
     mapping(address => uint8[5]) public autoPlayTokens;
 
+    // Boost Pack (added in upgrade v2)
+    uint256 public boostPackPrice;
+    uint256 public boostBasisPoints; // 500 = 5%
+    mapping(uint256 => mapping(address => bool)) public isBoosted;
+
     // ============ Events ============
 
     event CycleStarted(uint256 indexed cycleId, uint256 startTime, uint256 endTime);
@@ -59,6 +64,9 @@ contract TokenLeagues is Initializable, Ownable2StepUpgradeable, PausableUpgrade
     event EntryFeeUpdated(uint256 oldFee, uint256 newFee);
     event TreasuryUpdated(address indexed oldTreasury, address indexed newTreasury);
     event RolloverApplied(uint256 indexed cycleId, uint256 amount);
+    event BoostCycleEntered(uint256 indexed cycleId, address indexed user, uint8[5] tokenIds);
+    event BoostPackPriceUpdated(uint256 oldPrice, uint256 newPrice);
+    event BoostBasisPointsUpdated(uint256 oldBps, uint256 newBps);
 
     // ============ Errors ============
 
@@ -77,6 +85,7 @@ contract TokenLeagues is Initializable, Ownable2StepUpgradeable, PausableUpgrade
     error InvalidFee();
     error InvalidTimeRange();
     error NotAdmin();
+    error BoostNotConfigured();
 
     // ============ Modifiers ============
 
@@ -182,6 +191,45 @@ contract TokenLeagues is Initializable, Ownable2StepUpgradeable, PausableUpgrade
         }
         autoPlayEnabled[msg.sender] = enabled;
         emit AutoPlaySet(msg.sender, enabled);
+    }
+
+    /**
+     * @notice Enter cycle with a Boost Pack — random tokens, score bonus
+     * @param tokenIds Array of 5 token IDs (generated client-side)
+     */
+    function enterCycleWithBoost(uint8[5] calldata tokenIds) external payable whenNotPaused nonReentrant {
+        if (boostPackPrice == 0) revert BoostNotConfigured();
+        if (msg.value < boostPackPrice) revert InsufficientPayment();
+
+        uint256 cycleId = currentCycleId;
+        Cycle storage cycle = cycles[cycleId];
+        if (cycle.id == 0) revert CycleDoesNotExist();
+        if (cycle.finalized) revert CycleAlreadyFinalized();
+        if (block.timestamp >= cycle.endTime) revert CycleNotActive();
+        if (hasEntered[cycleId][msg.sender]) revert AlreadyEntered();
+
+        _validateTokenIds(tokenIds);
+
+        userTokens[cycleId][msg.sender] = tokenIds;
+        hasEntered[cycleId][msg.sender] = true;
+        isBoosted[cycleId][msg.sender] = true;
+        cycleParticipants[cycleId].push(msg.sender);
+        cycle.entryCount++;
+
+        uint256 platformShare = (boostPackPrice * PLATFORM_PERCENT) / 100;
+        uint256 prizeShare = boostPackPrice - platformShare;
+        cycle.prizePool += prizeShare;
+
+        (bool success, ) = treasury.call{value: platformShare}("");
+        if (!success) revert WithdrawFailed();
+
+        if (msg.value > boostPackPrice) {
+            (bool refundSuccess, ) = msg.sender.call{value: msg.value - boostPackPrice}("");
+            if (!refundSuccess) revert WithdrawFailed();
+        }
+
+        emit BoostCycleEntered(cycleId, msg.sender, tokenIds);
+        emit CycleEntered(cycleId, msg.sender, tokenIds);
     }
 
     // ============ Admin Functions ============
@@ -309,6 +357,19 @@ contract TokenLeagues is Initializable, Ownable2StepUpgradeable, PausableUpgrade
         emit TreasuryUpdated(oldTreasury, newTreasury);
     }
 
+    function setBoostPackPrice(uint256 newPrice) external onlyAdmin {
+        uint256 oldPrice = boostPackPrice;
+        boostPackPrice = newPrice;
+        emit BoostPackPriceUpdated(oldPrice, newPrice);
+    }
+
+    function setBoostBasisPoints(uint256 newBps) external onlyAdmin {
+        if (newBps > 10000) revert InvalidFee();
+        uint256 oldBps = boostBasisPoints;
+        boostBasisPoints = newBps;
+        emit BoostBasisPointsUpdated(oldBps, newBps);
+    }
+
     function emergencyWithdraw(uint256 amount, address to) external onlyAdmin nonReentrant {
         if (to == address(0)) revert ZeroAddress();
         (bool success, ) = to.call{value: amount}("");
@@ -354,6 +415,10 @@ contract TokenLeagues is Initializable, Ownable2StepUpgradeable, PausableUpgrade
 
     function getCycleEntryCount(uint256 cycleId) external view returns (uint256) {
         return cycles[cycleId].entryCount;
+    }
+
+    function getIsBoosted(uint256 cycleId, address user) external view returns (bool) {
+        return isBoosted[cycleId][user];
     }
 
     // ============ Receive ============

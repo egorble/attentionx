@@ -163,12 +163,19 @@ export const TOKEN_LEAGUES_ABI = [
     'function enterCycle(uint8[5] tokenIds) payable',
     'function claimPrize()',
     'function setAutoPlay(bool enabled, uint8[5] tokenIds)',
+    // Boost Pack
+    'function boostPackPrice() view returns (uint256)',
+    'function boostBasisPoints() view returns (uint256)',
+    'function isBoosted(uint256 cycleId, address user) view returns (bool)',
+    'function getIsBoosted(uint256 cycleId, address user) view returns (bool)',
+    'function enterCycleWithBoost(uint8[5] tokenIds) payable',
     // Events
     'event CycleStarted(uint256 indexed cycleId, uint256 startTime, uint256 endTime)',
     'event CycleEntered(uint256 indexed cycleId, address indexed user, uint8[5] tokenIds)',
     'event CycleFinalized(uint256 indexed cycleId, uint256 prizePool, uint256 winnersCount)',
     'event PrizeClaimed(address indexed user, uint256 amount)',
     'event AutoPlaySet(address indexed user, bool enabled)',
+    'event BoostCycleEntered(uint256 indexed cycleId, address indexed user, uint8[5] tokenIds)',
 ];
 
 // Old MARKETPLACE_ABI removed - using MarketplaceV2 exclusively

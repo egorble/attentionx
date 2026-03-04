@@ -20,7 +20,7 @@
     "PackOpener": "0x02483f5CD96CfcA9834EeF591EfF6d1860a2dC10",
     "TournamentManager": "0x70d008572bCA649Ebcdaf3174Da8aD776EE520a2",
     "MarketplaceV2": "0x1A85a3D1aF1516E9C864d48D549c7d5c859CC747",
-    "TokenLeagues": "0x8d4D7aC4f88946924700C275A86702193B8B027A"
+    "TokenLeagues": "0x92CB4cB93DF8aD6db46223847b5403D3Eed9420E"
   },
   "configuration": {
     "owner": "0x233c8C54F25734B744E522bdC1Eed9cbc8C97D0c",
@@ -61,6 +61,13 @@
       "newImplementation": "0x91bA50F0a5ed37fA4F13c31fb4Ea3139De7A6c9e",
       "timestamp": "2026-03-04T07:01:32.409Z",
       "txHash": "0x3d74baee91de6b0af370856b55ee876a4022b8034d5cf5bd25550af32b65b06a"
+    },
+    {
+      "contract": "TokenLeagues",
+      "oldImplementation": "0x8d4D7aC4f88946924700C275A86702193B8B027A",
+      "newImplementation": "0x92CB4cB93DF8aD6db46223847b5403D3Eed9420E",
+      "timestamp": "2026-03-04T15:45:53.074Z",
+      "txHash": "0xf07f43823939eab86ae25f6ecf20f82c6d4f251f9af4756be01cf1f42c933679"
     }
   ],
   "tokenLeaguesDeployedAt": "2026-03-02T20:29:59.792Z"

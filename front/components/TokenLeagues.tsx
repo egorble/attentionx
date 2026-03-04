@@ -11,6 +11,7 @@ import { getTokenLeaguesContract } from '../lib/contracts';
 import TokenLeaguesRightPanel from './TokenLeaguesRightPanel';
 import { useOnboarding } from '../hooks/useOnboarding';
 import OnboardingGuide, { OnboardingStep } from './OnboardingGuide';
+import BoostPackModal from './BoostPackModal';
 
 // ─── Token Leagues Guide ───
 
@@ -492,6 +493,7 @@ const TokenLeagues: React.FC = () => {
     // Layout state
     const [showChart, setShowChart] = useState(true);
     const [showLeaderboard, setShowLeaderboard] = useState(false);
+    const [showBoostModal, setShowBoostModal] = useState(false);
     const [activeTokenId, setActiveTokenId] = useState<number>(1);
     const [category, setCategory] = useState<CategoryKey>('all');
     const [searchQuery, setSearchQuery] = useState('');
@@ -721,6 +723,14 @@ const TokenLeagues: React.FC = () => {
             setClaimLoading(false);
         }
     };
+
+    const handleBoosted = useCallback((tokenIds: number[], cycleId: number) => {
+        setSelectedTokens(tokenIds);
+        setEnteredTokens(tokenIds);
+        setHasEntered(true);
+        setEnteredCycleId(cycleId);
+        setShowBoostModal(false);
+    }, []);
 
     const displayTokens = phase === 'in-cycle' ? enteredTokens : selectedTokens;
 
@@ -1011,7 +1021,16 @@ const TokenLeagues: React.FC = () => {
 
             {/* ─── Floating Bottom: Two Islands ─── */}
             <div className="fixed bottom-[84px] md:bottom-4 left-0 md:left-72 right-0 xl:right-64 z-30 px-3 pointer-events-none flex items-end justify-between gap-2">
-                {/* Island 1: Selected tokens */}
+                {/* Island 1: Selected tokens OR Boost Pack promo */}
+                {phase === 'selection' && displayTokens.length === 0 && isConnected ? (
+                    <div
+                        onClick={() => setShowBoostModal(true)}
+                        className="pointer-events-auto bg-[#9333ea]/10 backdrop-blur-2xl border border-[#9333ea]/30 rounded-full px-3 py-2 md:px-4 md:py-2.5 shadow-[0_8px_32px_rgba(147,51,234,0.15)] cursor-pointer hover:bg-[#9333ea]/20 active:scale-[0.97] transition-all flex items-center gap-2"
+                    >
+                        <span className="text-[10px] md:text-xs font-black text-white uppercase tracking-wider">Boost Pack</span>
+                        <span className="text-[8px] md:text-[10px] text-[#9333ea] font-bold">+5%</span>
+                    </div>
+                ) : (
                 <div className="pointer-events-auto bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-full p-1 md:p-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center gap-0.5 md:gap-1.5">
                     {[0, 1, 2, 3, 4].map(i => {
                         const tokenId = displayTokens[i];
@@ -1037,6 +1056,7 @@ const TokenLeagues: React.FC = () => {
                         );
                     })}
                 </div>
+                )}
 
                 {/* Island 2: Action button */}
                 <div className="pointer-events-auto shrink-0">
@@ -1178,6 +1198,13 @@ const TokenLeagues: React.FC = () => {
                     onDismiss={guideDismiss}
                 />
             )}
+
+            {/* Boost Pack Modal */}
+            <BoostPackModal
+                isOpen={showBoostModal}
+                onClose={() => setShowBoostModal(false)}
+                onBoosted={handleBoosted}
+            />
         </div>
     );
 };

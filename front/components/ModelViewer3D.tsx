@@ -3,15 +3,16 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, useGLTF, Environment, useEnvironment } from '@react-three/drei';
 import * as THREE from 'three';
 
-const GLB_PATH = '/card-pack.glb';
+const DEFAULT_GLB_PATH = '/card-pack.glb';
 
 interface PackModelProps {
     mode: 'gentle' | 'auto' | 'static';
     scale?: number;
+    glbPath?: string;
 }
 
-function PackModel({ mode, scale = 1 }: PackModelProps) {
-    const { scene } = useGLTF(GLB_PATH, false, true);
+function PackModel({ mode, scale = 1, glbPath = DEFAULT_GLB_PATH }: PackModelProps) {
+    const { scene } = useGLTF(glbPath, false, true);
     // Deep-clone so each instance owns its own scene (prevents steal on mount/unmount)
     const cloned = useMemo(() => scene.clone(true), [scene]);
     const ref = useRef<THREE.Group>(null!);
@@ -78,6 +79,8 @@ interface ModelViewer3DProps {
     style?: React.CSSProperties;
     /** Pause rendering (frameloop='never') to save GPU when hidden */
     paused?: boolean;
+    /** Custom GLB model path (default: '/card-pack.glb') */
+    glbPath?: string;
 }
 
 const ModelViewer3D: React.FC<ModelViewer3DProps> = ({
@@ -89,6 +92,7 @@ const ModelViewer3D: React.FC<ModelViewer3DProps> = ({
     className = '',
     style,
     paused = false,
+    glbPath,
 }) => {
     const isInteractive = mode === 'interactive';
     const isStatic = mode === 'static';
@@ -134,7 +138,7 @@ const ModelViewer3D: React.FC<ModelViewer3DProps> = ({
                     <directionalLight position={[5, 5, 5]} intensity={1} />
                     <directionalLight position={[-3, 2, -3]} intensity={0.3} />
                     <Suspense fallback={null}>
-                        <PackModel mode={packMode} scale={modelScale} />
+                        <PackModel mode={packMode} scale={modelScale} glbPath={glbPath} />
                         {isInteractive && <Environment files={ENV_HDR} />}
                         {!isInteractive && !_envPreloaded && <EnvPreloader />}
                     </Suspense>

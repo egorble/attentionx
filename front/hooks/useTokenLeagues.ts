@@ -178,6 +178,60 @@ export function useTokenLeagues() {
         }
     }, [getSigner, address]);
 
+    /** Enter current cycle with Boost Pack (random tokens, +5% score bonus) */
+    const enterCycleWithBoost = useCallback(async (tokenIds: number[]) => {
+        console.log('[TL BoostEntry] === START === address:', address, 'tokens:', tokenIds);
+        const signer = await getSigner();
+        if (!signer) throw new Error('Wallet not connected');
+        if (tokenIds.length !== 5) throw new Error('Must select exactly 5 tokens');
+
+        setLoading(true);
+        setError(null);
+        try {
+            const contract = getTokenLeaguesContract(signer);
+            const boostPrice = await contract.boostPackPrice();
+            console.log('[TL BoostEntry] boostPackPrice:', boostPrice.toString());
+
+            const preId = Number(await contract.currentCycleId());
+            const tx = await contract.enterCycleWithBoost(tokenIds, { value: boostPrice });
+            console.log('[TL BoostEntry] TX sent:', tx.hash);
+            const receipt = await tx.wait();
+            console.log('[TL BoostEntry] TX confirmed, block:', receipt?.blockNumber);
+
+            const cycleId = Number(await contract.currentCycleId());
+
+            // POST to backend with boost flag
+            try {
+                await fetch('/api/token-leagues/entry', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cycleId, address, tokenIds, boosted: true }),
+                });
+            } catch (e) {
+                console.error('[TL BoostEntry] Backend POST error:', e);
+            }
+
+            console.log('[TL BoostEntry] === DONE === cycleId:', cycleId);
+            return { receipt, cycleId };
+        } catch (err: any) {
+            console.error('[TL BoostEntry] TX error:', err?.reason || err?.message || err);
+            setError(friendlyError(err));
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    }, [getSigner, address]);
+
+    /** Get boost pack price */
+    const getBoostPackPrice = useCallback(async (): Promise<bigint> => {
+        try {
+            const contract = getTokenLeaguesContract();
+            return await contract.boostPackPrice();
+        } catch {
+            return ethers.parseEther('0.005');
+        }
+    }, []);
+
     /** Read claimable balance */
     const getClaimableBalance = useCallback(async (): Promise<bigint> => {
         if (!address) return 0n;
@@ -227,11 +281,13 @@ export function useTokenLeagues() {
 
     return {
         enterCycle,
+        enterCycleWithBoost,
         claimPrize,
         setAutoPlay,
         getClaimableBalance,
         hasEnteredCycle,
         getEntryFee,
+        getBoostPackPrice,
         getUserTokens,
         loading,
         error,
