@@ -162,17 +162,15 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   animation: bubble-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-/* Floating island: compact → full on scroll (mobile only) */
+/* Floating island: compact → full on scroll */
 .floating-island {
   transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
   transform-origin: top left;
 }
 
-@media (max-width: 767px) {
-  .floating-island-docked {
-    transform: scale(0.82);
-    opacity: 0.7;
-  }
+.floating-island-docked {
+  transform: scale(0.82);
+  opacity: 0.7;
 }
 
 /* 3D card flip utilities */

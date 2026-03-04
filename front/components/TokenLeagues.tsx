@@ -78,6 +78,7 @@ const TOKEN_ICONS: Record<string, string> = {
 
 export function TokenIcon({ symbol, color, size = 24 }: { symbol: string; color: string; size?: number }) {
     const [failed, setFailed] = useState(false);
+    const [loaded, setLoaded] = useState(false);
     const src = TOKEN_ICONS[symbol];
 
     if (!src || failed) {
@@ -92,14 +93,25 @@ export function TokenIcon({ symbol, color, size = 24 }: { symbol: string; color:
     }
 
     return (
-        <img
-            src={src}
-            alt={symbol}
-            width={size}
-            height={size}
-            className="rounded-full shrink-0 shadow-lg"
-            onError={() => setFailed(true)}
-        />
+        <div className="relative shrink-0" style={{ width: size, height: size }}>
+            {!loaded && (
+                <div
+                    className="absolute inset-0 rounded-full animate-pulse"
+                    style={{ backgroundColor: color + '33' }}
+                >
+                    <div className="w-full h-full rounded-full bg-gradient-to-br from-white/20 to-transparent" />
+                </div>
+            )}
+            <img
+                src={src}
+                alt={symbol}
+                width={size}
+                height={size}
+                className={`rounded-full shadow-lg transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+                onLoad={() => setLoaded(true)}
+                onError={() => setFailed(true)}
+            />
+        </div>
     );
 }
 
@@ -766,12 +778,12 @@ const TokenLeagues: React.FC = () => {
                         <path className="sl sl-g sl7" d="M85.0293 0.037323H93.4265V6.52959C93.4265 7.03456 93.2259 7.51885 92.8688 7.87592C92.5118 8.23299 92.0275 8.43359 91.5225 8.43359H85.0293V0.037323Z"/>
                         <path className="sl sl-g sl8" d="M106.545 19.5393H113.039V27.9365H104.641V21.4433C104.641 20.9384 104.842 20.4541 105.199 20.097C105.556 19.7399 106.04 19.5393 106.545 19.5393Z"/>
                     </svg>
-                    <span className="mt-4 text-[10px] font-medium text-gray-400 dark:text-zinc-500 uppercase tracking-[0.2em]">Powered by RiseX</span>
+                    <span className="mb-4 text-[10px] font-medium text-gray-400 dark:text-zinc-500 uppercase tracking-[0.2em] order-first">Powered by</span>
                 </div>
             )}
 
             {/* ─── Floating Island (timer + chart toggle) ─── */}
-            <div className={`fixed top-[22px] md:top-4 left-2 md:left-[calc(18rem+0.5rem)] z-30 pointer-events-none floating-island ${!isScrolled ? 'floating-island-docked' : ''}`}>
+            <div className={`fixed top-[22px] md:top-3 left-2 md:left-[calc(18rem+0.5rem)] z-30 pointer-events-none floating-island ${!isScrolled ? 'floating-island-docked' : ''}`}>
                 <div className="pointer-events-auto bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-full px-2 py-1.5 md:px-2.5 md:py-2 shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center gap-1.5">
                     {cycle && cycle.status === 'active' && (
                         <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full">
@@ -797,8 +809,39 @@ const TokenLeagues: React.FC = () => {
                 </div>
             </div>
 
+            {/* ─── Right Floating Island (desktop: claim / boost) ─── */}
+            <div className="hidden md:flex md:items-center fixed top-3 right-2 xl:right-[calc(16rem+1rem)] z-30 pointer-events-none min-h-[44px]">
+                {isConnected && claimable > 0n ? (
+                    <button
+                        onClick={handleClaim}
+                        disabled={claimLoading}
+                        className="pointer-events-auto bg-emerald-500 backdrop-blur-2xl border border-emerald-400/30 text-white rounded-full px-5 py-2.5 shadow-[0_8px_32px_rgba(16,185,129,0.3)] flex items-center gap-2 font-black text-xs uppercase tracking-wider hover:bg-emerald-400 active:scale-[0.97] transition-all disabled:opacity-50"
+                    >
+                        <Gift className="w-3.5 h-3.5" />
+                        {claimLoading ? 'Claiming...' : `Claim ${parseFloat(ethers.formatEther(claimable)).toFixed(4)} ${currencySymbol()}`}
+                    </button>
+                ) : phase === 'selection' && displayTokens.length === 0 && isConnected ? (
+                    <div
+                        onClick={() => setShowBoostModal(true)}
+                        className="pointer-events-auto boost-border-anim rounded-full px-5 py-2.5 cursor-pointer hover:scale-[1.03] active:scale-[0.97] transition-transform flex items-center gap-2"
+                    >
+                        <span className="text-xs font-black text-zinc-800 dark:text-white uppercase tracking-wider">Boost Pack</span>
+                        <span className="text-[10px] text-[#9333ea] font-bold">+5%</span>
+                    </div>
+                ) : phase === 'in-cycle' && yourScore ? (
+                    <div className="pointer-events-auto bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-full px-5 py-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center gap-2">
+                        <span className="text-[10px] text-gray-500 dark:text-zinc-400 font-black">
+                            #<span className="text-[#9333ea] text-sm">{yourScore.rank}</span>
+                        </span>
+                        <span className={`font-mono font-black text-sm ${yourScore.score >= 0 ? 'text-[#9333ea]' : 'text-red-500'}`}>
+                            {formatChange(yourScore.score)}
+                        </span>
+                    </div>
+                ) : null}
+            </div>
+
             {/* ─── Main Content (scrollable) ─── */}
-            <div ref={scrollRef} className="flex-1 flex flex-col overflow-y-auto p-2 md:p-4 pt-4 md:pt-6 gap-3 md:gap-4 relative z-10 pb-24 md:pb-16 custom-scrollbar">
+            <div ref={scrollRef} className="flex-1 flex flex-col overflow-y-auto p-2 md:p-4 pt-4 md:pt-14 gap-3 md:gap-4 relative z-10 pb-24 md:pb-16 custom-scrollbar">
 
                 {/* Error */}
                 {error && (
