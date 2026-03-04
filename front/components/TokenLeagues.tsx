@@ -76,7 +76,7 @@ export const TOKEN_ICONS: Record<string, string> = {
     XAG: `${COINGECKO}/29789/large/kag-currency-ticker.png?1696528719`,
 };
 
-// Global cache: once an icon URL has loaded once, skip the loading state entirely
+// Global cache: track loaded icon URLs across all instances
 const _loadedIcons = new Set<string>();
 
 export function TokenIcon({ symbol, color, size = 24 }: { symbol: string; color: string; size?: number }) {
@@ -86,7 +86,6 @@ export function TokenIcon({ symbol, color, size = 24 }: { symbol: string; color:
     const [loaded, setLoaded] = useState(alreadyCached);
     const imgRef = useRef<HTMLImageElement>(null);
 
-    // Check if browser already has this image cached on mount
     useEffect(() => {
         if (loaded || !src) return;
         if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
@@ -95,34 +94,29 @@ export function TokenIcon({ symbol, color, size = 24 }: { symbol: string; color:
         }
     }, [src, loaded]);
 
-    if (!src || failed) {
-        return (
-            <div
-                className="rounded-full flex items-center justify-center font-black text-white shrink-0 shadow-lg"
-                style={{ width: size, height: size, backgroundColor: color, fontSize: size * 0.36 }}
-            >
-                {symbol.slice(0, 2)}
-            </div>
-        );
-    }
+    // Colored circle with abbreviation — shown as fallback OR while loading
+    const colorBadge = (
+        <div
+            className="rounded-full flex items-center justify-center font-black text-white shrink-0 shadow-lg"
+            style={{ width: size, height: size, backgroundColor: color, fontSize: size * 0.36 }}
+        >
+            {symbol.slice(0, 2)}
+        </div>
+    );
+
+    if (!src || failed) return colorBadge;
 
     return (
         <div className="relative shrink-0" style={{ width: size, height: size }}>
-            {!loaded && (
-                <div
-                    className="absolute inset-0 rounded-full animate-pulse"
-                    style={{ backgroundColor: color + '33' }}
-                >
-                    <div className="w-full h-full rounded-full bg-gradient-to-br from-white/20 to-transparent" />
-                </div>
-            )}
+            {/* Always show colored badge underneath while image loads */}
+            {!loaded && <div className="absolute inset-0 z-0">{colorBadge}</div>}
             <img
                 ref={imgRef}
                 src={src}
                 alt={symbol}
                 width={size}
                 height={size}
-                className={`rounded-full shadow-lg transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+                className={`relative z-10 rounded-full shadow-lg transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
                 onLoad={() => { _loadedIcons.add(src); setLoaded(true); }}
                 onError={() => setFailed(true)}
             />
