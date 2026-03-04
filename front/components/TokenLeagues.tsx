@@ -81,21 +81,10 @@ const _loadedIcons = new Set<string>();
 
 export function TokenIcon({ symbol, color, size = 24 }: { symbol: string; color: string; size?: number }) {
     const src = TOKEN_ICONS[symbol];
-    const alreadyCached = src ? _loadedIcons.has(src) : false;
     const [failed, setFailed] = useState(false);
-    const [loaded, setLoaded] = useState(alreadyCached);
-    const imgRef = useRef<HTMLImageElement>(null);
+    const [loaded, setLoaded] = useState(() => src ? _loadedIcons.has(src) : false);
 
-    useEffect(() => {
-        if (loaded || !src) return;
-        if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
-            _loadedIcons.add(src);
-            setLoaded(true);
-        }
-    }, [src, loaded]);
-
-    // Colored circle with abbreviation — shown as fallback OR while loading
-    const colorBadge = (
+    const badge = (
         <div
             className="rounded-full flex items-center justify-center font-black text-white shrink-0 shadow-lg"
             style={{ width: size, height: size, backgroundColor: color, fontSize: size * 0.36 }}
@@ -104,23 +93,34 @@ export function TokenIcon({ symbol, color, size = 24 }: { symbol: string; color:
         </div>
     );
 
-    if (!src || failed) return colorBadge;
-
-    return (
-        <div className="relative shrink-0" style={{ width: size, height: size }}>
-            {/* Always show colored badge underneath while image loads */}
-            {!loaded && <div className="absolute inset-0 z-0">{colorBadge}</div>}
+    if (!src || failed) return badge;
+    if (loaded) {
+        return (
             <img
-                ref={imgRef}
                 src={src}
                 alt={symbol}
                 width={size}
                 height={size}
-                className={`relative z-10 rounded-full shadow-lg transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
-                onLoad={() => { _loadedIcons.add(src); setLoaded(true); }}
+                className="rounded-full shrink-0 shadow-lg"
                 onError={() => setFailed(true)}
             />
-        </div>
+        );
+    }
+
+    // Not loaded yet: render hidden img to trigger load, show badge
+    return (
+        <>
+            {badge}
+            <img
+                src={src}
+                alt=""
+                width={0}
+                height={0}
+                style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
+                onLoad={() => { _loadedIcons.add(src!); setLoaded(true); }}
+                onError={() => setFailed(true)}
+            />
+        </>
     );
 }
 
