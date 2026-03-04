@@ -771,7 +771,7 @@ const TokenLeagues: React.FC = () => {
             )}
 
             {/* ─── Floating Island (timer + chart toggle) ─── */}
-            <div className={`fixed top-[22px] md:top-4 left-2 z-30 pointer-events-none floating-island ${!isScrolled ? 'floating-island-docked' : ''}`}>
+            <div className={`fixed top-[22px] md:top-4 left-2 md:left-[calc(18rem+0.5rem)] z-30 pointer-events-none floating-island ${!isScrolled ? 'floating-island-docked' : ''}`}>
                 <div className="pointer-events-auto bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-full px-2 py-1.5 md:px-2.5 md:py-2 shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center gap-1.5">
                     {cycle && cycle.status === 'active' && (
                         <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full">

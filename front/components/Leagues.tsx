@@ -566,7 +566,7 @@ const Leagues: React.FC = () => {
                                                     ${isSelected
                                                         ? 'opacity-40 grayscale cursor-not-allowed'
                                                         : isAiPick && canAdd
-                                                            ? 'cursor-pointer hover:-translate-y-1 outline outline-2 outline-yc-purple/50 hover:outline-yc-purple'
+                                                            ? 'cursor-pointer hover:-translate-y-1 ring-2 ring-yc-purple/50 hover:ring-yc-purple'
                                                             : canAdd
                                                                 ? 'cursor-pointer hover:-translate-y-1'
                                                                 : 'opacity-60 cursor-not-allowed'}
