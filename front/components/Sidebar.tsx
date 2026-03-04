@@ -51,7 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user
 
   return (
     <aside
-      className="w-72 h-screen fixed top-0 left-0 glass-nav border-r border-gray-200 dark:border-white/[0.06] hidden md:flex flex-col z-50"
+      className="w-72 h-screen fixed top-0 left-0 bg-white/60 dark:bg-zinc-900/40 backdrop-blur-2xl border-r border-white/40 dark:border-white/[0.06] hidden md:flex flex-col z-50"
     >
       {/* Logo Area */}
       <div className="px-8 py-10 flex items-center justify-between">
@@ -89,13 +89,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user
       </nav>
 
       {/* Footer */}
-      <div className="p-6 border-t border-gray-200 dark:border-white/[0.06] space-y-4 bg-transparent">
+      <div className="p-6 border-t border-white/30 dark:border-white/[0.06] space-y-4 bg-transparent">
 
         {isConnected ? (
           /* Connected: show profile card + theme toggle */
           <>
             <div
-              className="flex items-center p-3 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06] cursor-pointer hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-all group"
+              className="flex items-center p-3 rounded-2xl bg-white/40 dark:bg-white/[0.04] backdrop-blur-xl border border-white/40 dark:border-white/[0.06] cursor-pointer hover:bg-white/60 dark:hover:bg-white/[0.08] transition-all group"
               onClick={onSettingsClick}
             >
               <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-white/10 overflow-hidden shrink-0">
@@ -126,7 +126,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user
 
             {/* Theme Toggle */}
             <div className="flex justify-center">
-              <div className="flex bg-gray-200 dark:bg-white/[0.04] rounded-full p-1 border border-transparent dark:border-white/[0.06]">
+              <div className="flex bg-white/40 dark:bg-white/[0.04] backdrop-blur-xl rounded-full p-1 border border-white/40 dark:border-white/[0.06]">
                 <button
                   onClick={() => theme === 'dark' && toggleTheme()}
                   className={`p-2 rounded-full transition-all ${theme === 'light' ? 'bg-white shadow text-gray-700' : 'text-gray-500'}`}
@@ -179,7 +179,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection, user
 
             {/* Theme Toggle */}
             <div className="flex justify-center">
-              <div className="flex bg-gray-200 dark:bg-white/[0.04] rounded-full p-1 border border-transparent dark:border-white/[0.06]">
+              <div className="flex bg-white/40 dark:bg-white/[0.04] backdrop-blur-xl rounded-full p-1 border border-white/40 dark:border-white/[0.06]">
                 <button
                   onClick={() => theme === 'dark' && toggleTheme()}
                   className={`p-2 rounded-full transition-all ${theme === 'light' ? 'bg-white shadow text-gray-700' : 'text-gray-500'}`}

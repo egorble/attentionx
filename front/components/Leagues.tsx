@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Trophy, Users, Clock, Info, GripVertical, X, CheckCircle, ArrowRight, Shield, Zap, Wallet, RefreshCw, Gift, ChevronDown, Loader2 } from 'lucide-react';
+import { Trophy, Users, Clock, Info, GripVertical, X, CheckCircle, ArrowRight, Shield, Wallet, RefreshCw, Gift, ChevronDown, Loader2 } from 'lucide-react';
 import { CardData, sortByRarity } from '../types';
 import { useWalletContext } from '../context/WalletContext';
 import { useNFT } from '../hooks/useNFT';
@@ -440,14 +440,14 @@ const Leagues: React.FC = () => {
                     <button
                         onClick={() => setIsJoining(false)}
                         disabled={submissionState !== 'idle'}
-                        className="w-10 h-10 rounded-full bg-gray-200 dark:bg-[#1A1A1A] flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors"
+                        className="w-10 h-10 rounded-full bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] flex items-center justify-center hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors"
                     >
                         <X size={20} />
                     </button>
                 </div>
 
                 {/* Deck Builder Area */}
-                <div className="relative glass-panel rounded-2xl p-4 sm:p-8 mb-4 overflow-hidden shadow-2xl">
+                <div className="relative bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-2xl p-4 sm:p-8 mb-4 overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]">
 
                     {/* Submission Success Overlay */}
                     {submissionState === 'success' && (
@@ -473,10 +473,10 @@ const Leagues: React.FC = () => {
                                         onDragOver={handleDragOver}
                                         onDrop={(e) => handleDrop(e, idx)}
                                         className={`
-                                            flex-1 sm:flex-none aspect-square sm:aspect-auto sm:h-16 rounded-lg border-2 transition-all relative flex items-center justify-center sm:justify-start gap-2 sm:gap-3 sm:px-3 group
+                                            flex-1 sm:flex-none aspect-[3/4] sm:aspect-auto sm:h-16 rounded-xl transition-all relative flex items-center justify-center sm:justify-start gap-2 sm:gap-3 sm:px-3 group
                                             ${slot
-                                                ? 'border-yc-purple bg-black/80 deck-slot-card'
-                                                : 'border-dashed border-gray-600 bg-black/20 hover:border-gray-400'}
+                                                ? 'border border-white/10 dark:border-white/[0.06]'
+                                                : 'border border-dashed border-gray-400/40 dark:border-gray-600 hover:border-gray-400'}
                                         `}
                                     >
                                         {slot ? (
@@ -494,7 +494,7 @@ const Leagues: React.FC = () => {
                                             </>
                                         ) : (
                                             <div className="flex items-center gap-2 text-gray-500">
-                                                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-800 flex items-center justify-center text-[10px] sm:text-xs font-bold border border-gray-700">
+                                                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-[10px] sm:text-xs font-bold border border-gray-300 dark:border-gray-700">
                                                     {idx + 1}
                                                 </div>
                                                 <span className="text-[10px] uppercase font-bold tracking-wider hidden sm:inline">Empty</span>
@@ -520,10 +520,7 @@ const Leagues: React.FC = () => {
                                 {submissionState === 'submitting' ? (
                                     <span className="animate-pulse">Locking...</span>
                                 ) : (
-                                    <>
-                                        <Zap className="w-4 h-4 mr-2 fill-current" />
-                                        Submit Squad
-                                    </>
+                                    <>Submit Squad</>
                                 )}
                             </button>
                         </div>
@@ -539,7 +536,7 @@ const Leagues: React.FC = () => {
                             </div>
 
                             {availableCards.length === 0 && !nftLoading ? (
-                                <div className="text-center py-8 bg-black/30 rounded-xl border border-dashed border-gray-700">
+                                <div className="text-center py-8 bg-white/30 dark:bg-black/30 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
                                     <p className="text-gray-500">No available cards. Buy packs to get started!</p>
                                 </div>
                             ) : (
@@ -565,14 +562,14 @@ const Leagues: React.FC = () => {
                                                 draggable={!isSelected && submissionState === 'idle'}
                                                 onDragStart={(e) => handleDragStart(e, card)}
                                                 className={`
-                                                    bg-[#0D0D0D] border rounded-lg p-2 transition-all duration-200 relative group
+                                                    rounded-xl overflow-hidden transition-all duration-200 relative group
                                                     ${isSelected
-                                                        ? 'border-yc-purple/50 opacity-40 grayscale cursor-not-allowed'
+                                                        ? 'opacity-40 grayscale cursor-not-allowed'
                                                         : isAiPick && canAdd
-                                                            ? 'border-yc-purple/40 cursor-pointer hover:border-yc-purple hover:bg-[#1A1A1A] hover:-translate-y-1'
+                                                            ? 'cursor-pointer hover:-translate-y-1 outline outline-2 outline-yc-purple/50 hover:outline-yc-purple'
                                                             : canAdd
-                                                                ? 'border-[#2A2A2A] cursor-pointer hover:border-yc-purple hover:bg-[#1A1A1A] hover:-translate-y-1'
-                                                                : 'border-[#2A2A2A] opacity-60 cursor-not-allowed'}
+                                                                ? 'cursor-pointer hover:-translate-y-1'
+                                                                : 'opacity-60 cursor-not-allowed'}
                                                 `}
                                             >
                                                 {isAiPick && !isSelected && (
@@ -580,7 +577,7 @@ const Leagues: React.FC = () => {
                                                         AI
                                                     </div>
                                                 )}
-                                                <div className="aspect-square bg-black rounded overflow-hidden relative">
+                                                <div className="aspect-square rounded-lg overflow-hidden relative">
                                                     <img src={card.image} className="w-full h-full object-contain" alt={card.name} />
                                                     {!isSelected && canAdd && (
                                                         <div className="absolute inset-0 bg-yc-purple/0 group-hover:bg-yc-purple/20 flex items-center justify-center transition-colors">
@@ -616,10 +613,7 @@ const Leagues: React.FC = () => {
                             {submissionState === 'submitting' ? (
                                 <span className="animate-pulse">Locking...</span>
                             ) : (
-                                <>
-                                    <Zap className="w-4 h-4 mr-2 fill-current" />
-                                    Submit Squad
-                                </>
+                                <>Submit Squad</>
                             )}
                         </button>
 
@@ -674,7 +668,6 @@ const Leagues: React.FC = () => {
                                         }}
                                         className="w-full py-2.5 sm:py-3 rounded-lg font-black text-xs uppercase tracking-wider bg-yc-purple hover:bg-purple-600 text-white transition-all flex items-center justify-center active:scale-95"
                                     >
-                                        <Zap className="w-3.5 h-3.5 mr-1.5 fill-current" />
                                         Apply All
                                     </button>
                                 </div>
@@ -923,7 +916,7 @@ const Leagues: React.FC = () => {
                                                                 const scoreData = squadScores[card.name];
                                                                 return (
                                                                     <div key={card.tokenId} className="flex flex-col items-center">
-                                                                        <div className="relative w-full aspect-[3/4] rounded-lg overflow-hidden border border-gray-200 dark:border-[#2A2A2A] bg-white dark:bg-[#121212]">
+                                                                        <div className="relative w-full aspect-[3/4] rounded-lg overflow-hidden border border-gray-100 dark:border-white/[0.08]">
                                                                             <img
                                                                                 src={`/images/${startupId}.png`}
                                                                                 alt={card.name}

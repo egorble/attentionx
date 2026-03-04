@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { CardData, Rarity, sortByRarity } from '../types';
 import CardDetailModal, { CardDetailData } from './CardDetailModal';
 import Analytics from './Analytics';
-import { Wallet, ArrowUpRight, TrendingUp, Plus, ShoppingCart, Layers, Zap, X, Check, RefreshCw, Tag, Loader2, Gavel, Clock, Activity, DollarSign, History, Package } from 'lucide-react';
+import { Wallet, ArrowUpRight, TrendingUp, Plus, ShoppingCart, Layers, X, Check, RefreshCw, Tag, Loader2, Gavel, Clock, Activity, DollarSign, History, Package } from 'lucide-react';
 import { useWalletContext } from '../context/WalletContext';
 import { useNFT } from '../hooks/useNFT';
 import { usePacks } from '../hooks/usePacks';
@@ -629,7 +629,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, packRefreshSignal }) =
 
             {/* Tab Switcher */}
             <div className="mb-6">
-                <div className="inline-flex bg-gray-100 dark:bg-white/[0.03] rounded-2xl p-1 border border-transparent dark:border-white/[0.06]">
+                <div className="inline-flex bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl rounded-2xl p-1 border border-white/40 dark:border-white/[0.08] shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]">
                     <button
                         onClick={() => { setActiveTab('cards'); setIsMergeMode(false); setSelectedCardIds([]); }}
                         className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all ${activeTab === 'cards'
@@ -668,7 +668,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, packRefreshSignal }) =
                             {myPacks.map((packId) => (
                                 <div
                                     key={`pack-${packId}`}
-                                    className="group bg-gradient-to-b from-white to-yc-purple/[0.03] dark:from-white/[0.02] dark:to-yc-purple/[0.04] border border-yc-purple/20 dark:border-yc-purple/[0.12] rounded-2xl overflow-hidden hover:border-yc-purple/40 dark:hover:border-yc-purple/30 hover:-translate-y-1 hover:shadow-lg hover:shadow-yc-purple/10 transition-all duration-300"
+                                    className="group bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-2xl overflow-hidden hover:border-yc-purple/40 dark:hover:border-yc-purple/30 hover:-translate-y-1 hover:shadow-lg hover:shadow-yc-purple/10 transition-all duration-300 shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]"
                                 >
                                     <div
                                         className="relative bg-gradient-to-b from-yc-purple/5 to-gray-50 dark:from-yc-purple/[0.04] dark:to-transparent cursor-pointer"
@@ -716,8 +716,8 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, packRefreshSignal }) =
                         className={`
                         flex items-center px-4 py-2 rounded-xl text-sm font-bold transition-all border
                         ${isMergeMode
-                                ? 'bg-white dark:bg-white/[0.1] text-black dark:text-white border-gray-300 dark:border-white/[0.2]'
-                                : 'bg-white dark:bg-white/[0.02] text-gray-500 hover:text-yc-text-primary dark:hover:text-white border-gray-200 dark:border-white/[0.06]'}
+                                ? 'bg-white/70 dark:bg-zinc-900/70 backdrop-blur-2xl text-black dark:text-white border-white/40 dark:border-white/[0.15] shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]'
+                                : 'bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl text-gray-500 hover:text-yc-text-primary dark:hover:text-white border-white/40 dark:border-white/[0.08] shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]'}
                     `}
                     >
                         {isMergeMode ? <X className="w-4 h-4 mr-2" /> : <Layers className="w-4 h-4 mr-2" />}
@@ -727,13 +727,9 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, packRefreshSignal }) =
 
                 {/* Merge Instructions */}
                 {isMergeMode && (
-                    <div className="mb-6 p-4 bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.08] rounded-2xl flex items-center animate-[fadeIn_0.3s]">
-                        <div className="bg-gray-100 dark:bg-white/[0.08] text-gray-600 dark:text-white p-2 rounded-xl mr-3">
-                            <Zap className="w-5 h-5 fill-current" />
-                        </div>
+                    <div className="mb-6 p-4 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-2xl flex items-center animate-[fadeIn_0.3s] shadow-[0_8px_32px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]">
                         <div>
-                            <h4 className="text-yc-text-primary dark:text-white font-semibold text-sm">Fusion Reactor Online</h4>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Select <span className="text-gray-900 dark:text-white font-semibold">3 cards of same rarity</span> to burn and forge 1 higher rarity card.</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Select <span className="text-gray-900 dark:text-white font-semibold">3 cards of same rarity</span> to forge 1 higher rarity.</p>
                         </div>
                     </div>
                 )}
@@ -773,10 +769,10 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, packRefreshSignal }) =
                                     key={card.tokenId}
                                     onClick={() => handleCardClick(card)}
                                     className={`
-                                  bg-white dark:bg-white/[0.02] border rounded-xl overflow-hidden transition-all duration-300 relative cursor-pointer
+                                  bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border rounded-xl overflow-hidden transition-all duration-300 relative cursor-pointer shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]
                                   ${isSelected
                                             ? 'border-yc-purple ring-2 ring-yc-purple/50 shadow-[0_0_20px_rgba(147,51,234,0.2)] scale-[1.02] z-10'
-                                            : 'border-gray-200 dark:border-white/[0.06] hover:border-yc-purple/30 dark:hover:border-white/[0.15] hover:-translate-y-1 hover:shadow-xl'}
+                                            : 'border-white/40 dark:border-white/[0.08] hover:border-yc-purple/30 dark:hover:border-white/[0.15] hover:-translate-y-1 hover:shadow-xl'}
                                   ${isDimmed ? 'opacity-40 grayscale' : 'opacity-100'}
                                   ${card.isLocked ? 'ring-1 ring-red-500/50' : ''}
                               `}
@@ -806,7 +802,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, packRefreshSignal }) =
                         {!isMergeMode && (
                             <button
                                 onClick={() => onBuyPack()}
-                                className="border-2 border-dashed border-gray-300 dark:border-white/[0.06] rounded-xl flex flex-col items-center justify-center p-4 md:p-6 text-gray-400 hover:text-yc-purple hover:border-yc-purple/40 dark:hover:border-white/[0.15] transition-colors min-h-[120px] md:min-h-[280px]"
+                                className="border-2 border-dashed border-white/40 dark:border-white/[0.08] rounded-xl flex flex-col items-center justify-center p-4 md:p-6 text-gray-400 hover:text-yc-purple hover:border-yc-purple/40 dark:hover:border-white/[0.15] transition-colors min-h-[120px] md:min-h-[280px] bg-white/30 dark:bg-zinc-900/30 backdrop-blur-xl"
                             >
                                 <Plus className="w-8 h-8 mb-2" />
                                 <span className="font-bold text-sm">Add Asset</span>
@@ -818,22 +814,18 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, packRefreshSignal }) =
                 {/* Floating Action Bar for Merge */}
                 {isMergeMode && (
                     <div className="fixed bottom-28 md:bottom-8 left-1/2 transform -translate-x-1/2 z-40 animate-[slideUp_0.3s_cubic-bezier(0.2,0.8,0.2,1)]">
-                        <div className="bg-white dark:bg-[#1A1A1A] border border-gray-300 dark:border-[#333] p-2 pl-6 pr-2 rounded-2xl shadow-2xl flex items-center gap-6">
-                            <div className="flex flex-col">
-                                <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Fusion Chamber</span>
-                                <span className="text-gray-900 dark:text-white font-mono font-bold">{selectedCardIds.length} / 3 Selected</span>
-                            </div>
+                        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-2xl border border-white/40 dark:border-white/[0.1] p-2 pl-5 pr-2 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center gap-4">
+                            <span className="text-gray-900 dark:text-white font-mono font-bold text-base">{selectedCardIds.length}/3</span>
                             <button
                                 disabled={selectedCardIds.length !== 3}
                                 onClick={handleForge}
                                 className={`
-                                px-8 py-3 rounded-xl font-bold uppercase tracking-wider flex items-center transition-all
+                                px-6 py-2.5 rounded-xl font-bold uppercase tracking-wider text-sm transition-all
                                 ${selectedCardIds.length === 3
                                         ? 'bg-yc-purple hover:bg-purple-600 text-white shadow-[0_0_20px_rgba(147,51,234,0.5)] animate-pulse'
                                         : 'bg-gray-800 text-gray-500 cursor-not-allowed'}
                             `}
                             >
-                                <Zap className="w-4 h-4 mr-2 fill-current" />
                                 Forge
                             </button>
                         </div>

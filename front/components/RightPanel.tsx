@@ -30,16 +30,16 @@ const RightPanel: React.FC<RightPanelProps> = ({ onOpenPack }) => {
   };
 
   return (
-    <aside className="w-64 h-screen fixed right-0 top-0 bg-white dark:bg-[#050507] border-l border-gray-200 dark:border-white/[0.06] p-3 hidden xl:flex flex-col space-y-3 z-40 overflow-y-auto transition-colors duration-300">
+    <aside className="w-64 h-screen fixed right-0 top-0 bg-white/60 dark:bg-zinc-900/40 backdrop-blur-2xl border-l border-white/40 dark:border-white/[0.06] p-3 hidden xl:flex flex-col space-y-3 z-40 overflow-y-auto transition-colors duration-300">
 
       {/* Buy Pack CTA */}
-      <div className="rounded-2xl relative overflow-hidden shrink-0 bg-white dark:bg-white/[0.02] border border-yc-purple/20 dark:border-yc-purple/[0.15]">
+      <div className="rounded-2xl relative overflow-hidden shrink-0 bg-white/50 dark:bg-white/[0.04] backdrop-blur-xl border border-white/40 dark:border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]">
         {/* 3D model area */}
-        <div className="relative h-40 bg-gray-50 dark:bg-transparent">
+        <div className="relative h-40 bg-transparent">
           <ModelViewer3D mode="gentle" cameraZ={2.8} modelScale={0.8} />
         </div>
         {/* Bottom bar */}
-        <div className="p-3 border-t border-gray-200 dark:border-white/[0.06]">
+        <div className="p-3 border-t border-white/30 dark:border-white/[0.06]">
           <div className="flex items-center justify-between mb-2.5">
             <span className="text-gray-500 text-[10px] font-medium">5 cards per pack</span>
             <span className="text-yc-text-primary dark:text-white font-mono font-black text-lg">{packPrice} <span className="text-gray-500 text-sm font-bold">{currencySymbol()}</span></span>
@@ -54,7 +54,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ onOpenPack }) => {
       </div>
 
       {/* Top Startups by Points */}
-      <div className="bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/[0.06] rounded-2xl p-3">
+      <div className="bg-white/50 dark:bg-white/[0.04] backdrop-blur-xl border border-white/40 dark:border-white/[0.08] rounded-2xl p-3 shadow-[0_8px_32px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]">
         <div className="flex items-center justify-between mb-2">
              <h3 className="text-gray-900 dark:text-white font-bold text-[11px] uppercase tracking-wide">Top Startups</h3>
              <span className="text-[8px] text-gray-400 dark:text-gray-500 font-medium">base pts</span>
@@ -86,7 +86,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ onOpenPack }) => {
       </div>
 
       {/* Referral */}
-      <div className="bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/[0.06] rounded-2xl p-3">
+      <div className="bg-white/50 dark:bg-white/[0.04] backdrop-blur-xl border border-white/40 dark:border-white/[0.08] rounded-2xl p-3 shadow-[0_8px_32px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]">
         <div className="flex items-center justify-between mb-1.5">
             <h3 className="text-gray-900 dark:text-white font-bold text-xs">Referral Program</h3>
             <UserPlus className="w-3.5 h-3.5 text-gray-400" />
@@ -97,11 +97,11 @@ const RightPanel: React.FC<RightPanelProps> = ({ onOpenPack }) => {
 
         {isConnected && (
             <div className="flex gap-2 mb-2">
-                <div className="flex-1 bg-white/80 dark:bg-white/[0.03] rounded-lg p-1.5 border border-gray-200 dark:border-white/[0.06] text-center">
+                <div className="flex-1 bg-white/40 dark:bg-white/[0.04] rounded-lg p-1.5 border border-white/30 dark:border-white/[0.06] text-center">
                     <p className="text-[9px] text-gray-500 uppercase font-bold">Refs</p>
                     <p className="text-gray-900 dark:text-white font-bold font-mono text-xs">{referralStats.count}</p>
                 </div>
-                <div className="flex-1 bg-white/80 dark:bg-white/[0.03] rounded-lg p-1.5 border border-gray-200 dark:border-white/[0.06] text-center">
+                <div className="flex-1 bg-white/40 dark:bg-white/[0.04] rounded-lg p-1.5 border border-white/30 dark:border-white/[0.06] text-center">
                     <p className="text-[9px] text-gray-500 uppercase font-bold">Earned</p>
                     <p className="text-gray-900 dark:text-white font-bold font-mono text-xs">{referralStats.totalEarned}</p>
                 </div>
@@ -113,7 +113,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ onOpenPack }) => {
                 type="text"
                 value={isConnected ? referralLink : 'Connect wallet first'}
                 readOnly
-                className="w-full bg-white/80 dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06] text-gray-600 dark:text-gray-400 text-[9px] px-2 py-1.5 pr-12 rounded-lg font-mono focus:outline-none truncate"
+                className="w-full bg-white/40 dark:bg-white/[0.04] border border-white/30 dark:border-white/[0.06] text-gray-600 dark:text-gray-400 text-[9px] px-2 py-1.5 pr-12 rounded-lg font-mono focus:outline-none truncate"
             />
             <button
                 onClick={handleCopy}

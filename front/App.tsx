@@ -375,7 +375,7 @@ const AppContent: React.FC = () => {
                                         filteredAndSortedListings.map(({ listing, card }) => (
                                             <div
                                                 key={`${listing.listingId}-${card.tokenId}`}
-                                                className="bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/[0.06] rounded-2xl overflow-hidden hover:border-gray-300 dark:hover:border-white/[0.15] transition-all duration-300 group cursor-pointer"
+                                                className="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl border border-white/40 dark:border-white/[0.08] rounded-2xl overflow-hidden hover:bg-white/70 dark:hover:bg-zinc-900/70 transition-all duration-300 group cursor-pointer shadow-[0_4px_16px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]"
                                                 onClick={() => {
                                                     if (!card.isPack) {
                                                         setDashboardSelectedCard(card);
@@ -472,9 +472,9 @@ const AppContent: React.FC = () => {
                                         setAddressCopied(true);
                                         setTimeout(() => setAddressCopied(false), 2000);
                                     }}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold font-mono transition-all active:scale-95 border ${addressCopied
-                                        ? 'bg-green-500/10 text-green-500 border-green-500/20'
-                                        : 'bg-gray-100 dark:bg-white/[0.04] text-gray-500 dark:text-gray-400 border-gray-200 dark:border-white/[0.08]'
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold font-mono transition-all active:scale-95 ${addressCopied
+                                        ? 'bg-green-500/10 text-green-500'
+                                        : 'bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl text-gray-500 dark:text-gray-400 shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]'
                                         }`}
                                 >
                                     {addressCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
@@ -506,12 +506,12 @@ const AppContent: React.FC = () => {
                                 {isMobileMenuOpen && (
                                     <>
                                         <div className="fixed inset-0 z-40" onClick={() => setIsMobileMenuOpen(false)} />
-                                        <div className="absolute right-0 top-12 z-50 w-64 glass-nav rounded-2xl shadow-[0_4px_24px_-8px_rgba(0,0,0,0.5)] p-4 space-y-3 border border-gray-200 dark:border-white/[0.08]">
+                                        <div className="absolute right-0 top-12 z-50 w-64 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-2xl rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.05)] p-4 space-y-3 border border-white/40 dark:border-white/[0.08]">
 
                                             {/* User info */}
                                             {isConnected && (
                                                 <div
-                                                    className="flex items-center gap-3 p-2 rounded-xl bg-gray-50 dark:bg-white/[0.03] cursor-pointer active:scale-[0.98] transition-transform"
+                                                    className="flex items-center gap-3 p-2 rounded-xl bg-white/40 dark:bg-white/[0.04] cursor-pointer active:scale-[0.98] transition-transform"
                                                     onClick={() => { setIsMobileMenuOpen(false); setIsProfileEditOpen(true); }}
                                                 >
                                                     <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-gray-200 dark:border-gray-700">
@@ -531,7 +531,7 @@ const AppContent: React.FC = () => {
 
                                             {/* Balance */}
                                             {isConnected && (
-                                                <div className="flex items-center justify-between p-2 rounded-xl bg-gray-50 dark:bg-white/[0.03]">
+                                                <div className="flex items-center justify-between p-2 rounded-xl bg-white/40 dark:bg-white/[0.04]">
                                                     <span className="text-xs font-bold text-gray-400">Balance</span>
                                                     {balanceLoading ? (
                                                         <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />

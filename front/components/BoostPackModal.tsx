@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Zap, RefreshCw } from 'lucide-react';
+import { X, RefreshCw } from 'lucide-react';
 import { ethers } from 'ethers';
 import gsap from 'gsap';
 import { useWalletContext } from '../context/WalletContext';
@@ -119,7 +119,7 @@ const BoostPackModal: React.FC<BoostPackModalProps> = ({ isOpen, onClose, onBoos
             {/* Close button */}
             <button
                 onClick={stage === 'revealed' ? handleDone : onClose}
-                className="absolute top-4 right-4 z-50 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                className="absolute top-4 right-4 z-50 p-2 bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 rounded-full transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.15)]"
             >
                 <X className="w-5 h-5 text-white" />
             </button>
@@ -133,11 +133,8 @@ const BoostPackModal: React.FC<BoostPackModalProps> = ({ isOpen, onClose, onBoos
                     </div>
 
                     {/* Info */}
-                    <div className="flex flex-col items-center gap-3 shrink-0 max-w-sm w-full">
-                        <div className="flex items-center gap-2">
-                            <Zap className="w-5 h-5 text-[#9333ea]" />
-                            <h2 className="text-xl font-black text-white uppercase tracking-wider">Boost Pack</h2>
-                        </div>
+                    <div className="flex flex-col items-center gap-3 shrink-0 max-w-sm w-full px-5">
+                        <h2 className="text-xl font-black text-white uppercase tracking-wider">Boost Pack</h2>
                         <p className="text-zinc-400 text-xs text-center leading-relaxed">
                             5 random tokens + <span className="text-[#9333ea] font-bold">+5% score boost</span>
                         </p>
@@ -153,7 +150,6 @@ const BoostPackModal: React.FC<BoostPackModalProps> = ({ isOpen, onClose, onBoos
                             disabled={!isConnected || loading}
                             className="w-full bg-[#9333ea] hover:bg-[#a855f7] text-white py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest active:scale-[0.97] transition-all shadow-[0_4px_30px_rgba(147,51,234,0.4)] disabled:opacity-40 flex items-center justify-center gap-2"
                         >
-                            <Zap className="w-4 h-4" />
                             Buy · {parseFloat(ethers.formatEther(price))} {currencySymbol()}
                         </button>
 
@@ -173,15 +169,17 @@ const BoostPackModal: React.FC<BoostPackModalProps> = ({ isOpen, onClose, onBoos
                     <div className="relative w-48 h-48">
                         <ModelViewer3D mode="gentle" cameraZ={4.5} modelScale={1} glbPath={BOOST_GLB} />
                     </div>
-                    <RefreshCw className="w-6 h-6 text-purple-400 animate-spin" />
-                    <p className="text-white font-bold text-sm">Confirm in wallet...</p>
+                    <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl px-6 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.15)] flex items-center gap-3">
+                        <RefreshCw className="w-5 h-5 text-[#9333ea] animate-spin" />
+                        <p className="text-white font-bold text-sm">Confirm in wallet...</p>
+                    </div>
                 </div>
             )}
 
             {/* REVEALING stage */}
             {stage === 'revealing' && (
                 <div className="flex flex-col items-center justify-center gap-4">
-                    <Zap className="w-12 h-12 text-[#9333ea] animate-pulse" />
+                    <RefreshCw className="w-8 h-8 text-[#9333ea] animate-spin" />
                     <p className="text-white font-black text-lg uppercase tracking-widest">Opening...</p>
                 </div>
             )}
@@ -191,8 +189,7 @@ const BoostPackModal: React.FC<BoostPackModalProps> = ({ isOpen, onClose, onBoos
                 <div className="flex flex-col items-center w-full h-full px-4 py-8 justify-center">
                     {/* Boost badge */}
                     <div className="flex items-center gap-2 mb-6">
-                        <div className="bg-[#9333ea]/20 border border-[#9333ea]/30 rounded-full px-4 py-1.5 flex items-center gap-2">
-                            <Zap className="w-4 h-4 text-[#9333ea]" />
+                        <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-full px-4 py-1.5 shadow-[0_4px_16px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.15)]">
                             <span className="text-[#9333ea] font-black text-sm uppercase tracking-wider">+5% Boosted</span>
                         </div>
                     </div>
@@ -208,7 +205,7 @@ const BoostPackModal: React.FC<BoostPackModalProps> = ({ isOpen, onClose, onBoos
                             return (
                                 <div
                                     key={tokenId}
-                                    className="boost-token-card flex flex-col items-center gap-2 bg-zinc-900 border border-zinc-700 rounded-2xl p-4 w-[72px] md:w-[88px]"
+                                    className="boost-token-card flex flex-col items-center gap-2 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl p-4 w-[72px] md:w-[88px] shadow-[0_4px_16px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.15)]"
                                     style={{ perspective: '600px' }}
                                 >
                                     <TokenIcon symbol={token.symbol} color={token.color} size={36} />

@@ -789,7 +789,7 @@ const Marketplace: React.FC = () => {
                 </div>
 
                 {/* Tab navigation */}
-                <div className="flex items-center space-x-1 bg-gray-100 dark:bg-white/[0.03] border border-transparent dark:border-white/[0.06] p-1 rounded-2xl w-full md:w-fit overflow-x-auto">
+                <div className="flex items-center space-x-1 bg-white/50 dark:bg-white/[0.04] backdrop-blur-xl border border-white/40 dark:border-white/[0.06] p-1 rounded-2xl w-full md:w-fit flex-wrap">
                     <button
                         onClick={() => setActiveTab('listings')}
                         className={`flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all whitespace-nowrap ${activeTab === 'listings'
@@ -833,10 +833,10 @@ const Marketplace: React.FC = () => {
                                 key={t}
                                 onClick={() => { setTypeFilter(t); if (t === 'packs') setRarityFilter('All'); }}
                                 className={`
-                                    whitespace-nowrap px-4 md:px-5 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 transform active:scale-95 flex items-center gap-1.5
+                                    whitespace-nowrap px-3 md:px-5 py-1.5 md:py-2 rounded-full text-[10px] md:text-sm font-bold transition-all duration-300 transform active:scale-95 flex items-center gap-1.5
                                     ${typeFilter === t
-                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 scale-105'
-                                        : 'bg-gray-100 dark:bg-white/[0.04] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white'}
+                                        ? 'bg-[#9333ea] text-white shadow-lg shadow-[#9333ea]/30'
+                                        : 'bg-white/50 dark:bg-white/[0.04] backdrop-blur-xl text-gray-600 dark:text-gray-400 hover:bg-white/70 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white'}
                                 `}
                             >
                                 {t === 'packs' && <Package className="w-3.5 h-3.5" />}
@@ -847,16 +847,16 @@ const Marketplace: React.FC = () => {
 
                     {/* Rarity tabs (hidden when filtering packs only) */}
                     {typeFilter !== 'packs' && (
-                        <div className="flex items-center flex-wrap gap-2">
+                        <div className="flex items-center flex-wrap gap-1.5">
                             {rarityTabs.map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setRarityFilter(tab)}
                                     className={`
-                                        whitespace-nowrap px-4 md:px-6 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 transform active:scale-95
+                                        whitespace-nowrap px-3 md:px-5 py-1 md:py-1.5 rounded-full text-[10px] md:text-xs font-bold transition-all duration-300 transform active:scale-95
                                         ${rarityFilter === tab
-                                            ? 'bg-white dark:bg-white/[0.1] text-gray-900 dark:text-white border border-gray-200 dark:border-white/[0.15]'
-                                            : 'bg-gray-100 dark:bg-white/[0.04] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white'}
+                                            ? 'bg-white/80 dark:bg-white/15 text-gray-900 dark:text-white border border-white/60 dark:border-white/20 backdrop-blur-xl'
+                                            : 'bg-white/40 dark:bg-white/[0.04] text-gray-600 dark:text-gray-400 hover:bg-white/60 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white'}
                                     `}
                                 >
                                     {tab}
@@ -1073,20 +1073,20 @@ const Marketplace: React.FC = () => {
                     <>
                         {/* Activity sub-filters */}
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-                            <div className="flex items-center gap-2 overflow-x-auto pb-1 w-full sm:w-auto">
+                            <div className="flex items-center gap-1.5 flex-wrap w-full sm:w-auto">
                                 {([
                                     { key: 'all', label: 'All', count: myListings.length + myAuctions.length + myBids.length + mySales.length },
-                                    { key: 'listings', label: 'My Listings', count: myListings.length },
-                                    { key: 'auctions', label: 'My Auctions', count: myAuctions.length },
-                                    { key: 'bids', label: 'My Bids', count: myBids.length },
+                                    { key: 'listings', label: 'Listings', count: myListings.length },
+                                    { key: 'auctions', label: 'Auctions', count: myAuctions.length },
+                                    { key: 'bids', label: 'Bids', count: myBids.length },
                                     { key: 'sold', label: 'Sold', count: mySales.length },
                                 ] as { key: ActivityFilter; label: string; count: number }[]).map(f => (
                                     <button
                                         key={f.key}
                                         onClick={() => setActivityFilter(f.key)}
-                                        className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${activityFilter === f.key
-                                                ? 'bg-yc-purple text-white shadow-lg shadow-yc-purple/30'
-                                                : 'bg-gray-100 dark:bg-white/[0.04] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'
+                                        className={`px-3 md:px-4 py-1 md:py-1.5 rounded-full text-[10px] md:text-xs font-bold transition-all ${activityFilter === f.key
+                                                ? 'bg-[#9333ea] text-white shadow-lg shadow-[#9333ea]/30'
+                                                : 'bg-white/50 dark:bg-white/[0.04] text-gray-600 dark:text-gray-400 hover:bg-white/70 dark:hover:bg-white/10'
                                             }`}
                                     >
                                         {f.label}

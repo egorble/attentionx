@@ -35,7 +35,7 @@ const DashboardLeaderboard: React.FC<DashboardLeaderboardProps> = ({ onNavigate 
                         Leaderboard
                     </h3>
                 </div>
-                <div className="bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/[0.06] rounded-2xl p-8">
+                <div className="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-2xl p-8 shadow-[0_8px_32px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]">
                     <div className="flex items-center justify-center">
                         <div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin"></div>
                         <span className="ml-3 text-gray-500 text-sm">Loading leaderboard...</span>
@@ -53,7 +53,7 @@ const DashboardLeaderboard: React.FC<DashboardLeaderboardProps> = ({ onNavigate 
                         Leaderboard
                     </h3>
                 </div>
-                <div className="bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/[0.06] rounded-2xl p-8 text-center">
+                <div className="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-2xl p-8 text-center shadow-[0_8px_32px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]">
                     <Trophy className="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
                     <p className="text-gray-400 dark:text-gray-500 text-sm">No players yet. Be the first to enter the tournament!</p>
                 </div>
@@ -76,8 +76,8 @@ const DashboardLeaderboard: React.FC<DashboardLeaderboardProps> = ({ onNavigate 
                 </button>
             </div>
 
-            <div className="bg-gradient-to-b from-purple-50/50 to-white dark:from-white/[0.02] dark:to-white/[0.02] border border-purple-200/50 dark:border-white/[0.08] rounded-2xl overflow-hidden shadow-sm">
-                <div className="divide-y divide-gray-100 dark:divide-white/[0.04]">
+            <div className="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]">
+                <div className="divide-y divide-white/30 dark:divide-white/[0.04]">
                     {players.map((player) => {
                         const isCurrentUser = address && player.address.toLowerCase() === address.toLowerCase();
 

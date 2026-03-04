@@ -210,3 +210,59 @@ html.dark select option {
   background-color: #111113;
   color: #f3f4f6;
 }
+
+/* Boost Pack button — animated border glow that traces the contour */
+.boost-border-anim {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.boost-border-anim::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--boost-angle, 0deg),
+    transparent 0%,
+    #9333ea 10%,
+    #a855f7 20%,
+    transparent 30%,
+    transparent 100%
+  );
+  animation: boost-rotate 5s linear infinite;
+  z-index: -2;
+}
+
+.boost-border-anim::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: inherit;
+  z-index: -1;
+}
+
+/* Light mode inner fill */
+.boost-border-anim::after {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(24px);
+}
+
+html.dark .boost-border-anim::after,
+.dark .boost-border-anim::after {
+  background: rgba(24, 24, 27, 0.65);
+  backdrop-filter: blur(24px);
+}
+
+@keyframes boost-rotate {
+  to {
+    --boost-angle: 360deg;
+  }
+}
+
+@property --boost-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}

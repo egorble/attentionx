@@ -40,7 +40,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeSection, onNavigate }) => {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex justify-center" style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}>
-      <nav className="mx-4 mb-3 px-3 py-2 rounded-[28px] glass-nav border border-gray-200 dark:border-white/[0.08] relative">
+      <nav className="mx-4 mb-3 px-3 py-2 rounded-[28px] bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] relative">
         <div className="flex items-center gap-1">
           {tabs.map((tab) => {
             const isLeaguesBtn = tab.id === 'leagues-group';

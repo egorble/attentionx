@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Share2, Calendar, Star, Hash, Layers, ExternalLink, TrendingUp, Building2, Zap } from 'lucide-react';
+import { X, Share2, Calendar, Star, Hash, Layers, ExternalLink, TrendingUp, Building2 } from 'lucide-react';
 import { CardData, Rarity } from '../types';
 import { STARTUPS, getActiveContracts } from '../lib/contracts';
 import { getActiveNetwork } from '../lib/networks';
@@ -58,7 +58,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({ data, cardData, onClo
     return (
         <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm md:p-4" onClick={onClose}>
             <div
-                className="bg-white dark:bg-[#09090b] w-full md:max-w-5xl max-h-[85vh] md:max-h-[90vh] rounded-t-2xl md:rounded-xl shadow-2xl border border-gray-200 dark:border-[#27272a] flex flex-col relative overflow-hidden"
+                className="bg-white dark:bg-zinc-900 backdrop-blur-2xl w-full md:max-w-5xl max-h-[85vh] md:max-h-[90vh] rounded-t-2xl md:rounded-xl border border-gray-200 dark:border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex flex-col relative overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Mobile drag handle */}
@@ -67,9 +67,9 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({ data, cardData, onClo
                 </div>
 
                 {/* Header Section */}
-                <div className="flex items-start justify-between p-4 md:p-6 border-b border-gray-200 dark:border-[#27272a]">
+                <div className="flex items-start justify-between p-4 md:p-6 border-b border-gray-100 dark:border-white/[0.06]">
                     <div className="flex gap-3 md:gap-5 min-w-0">
-                        <div className="w-14 h-14 md:w-20 md:h-20 rounded-lg bg-gray-100 dark:bg-[#18181b] border border-gray-200 dark:border-[#27272a] overflow-hidden shrink-0">
+                        <div className="w-20 h-20 md:w-28 md:h-28 rounded-xl overflow-hidden shrink-0">
                             <img
                                 src={cardData?.image || data?.image}
                                 alt={cardData?.name || data?.name}
@@ -124,7 +124,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({ data, cardData, onClo
                 <div className="flex flex-col lg:flex-row overflow-y-auto">
 
                     {/* Left Column: Card Stats */}
-                    <div className="lg:w-2/3 p-4 md:p-6 lg:border-r border-gray-200 dark:border-[#27272a]">
+                    <div className="lg:w-2/3 p-4 md:p-6 lg:border-r border-gray-100 dark:border-white/[0.06]">
 
                         {/* Description */}
                         <div className="mb-4 md:mb-8">
@@ -136,9 +136,9 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({ data, cardData, onClo
 
                         {/* Card Metrics */}
                         <div className="grid grid-cols-3 gap-2 md:gap-4 mb-4 md:mb-8">
-                            <div className="p-2.5 md:p-4 rounded-lg bg-gray-50 dark:bg-[#121212] border border-gray-200 dark:border-[#27272a]">
+                            <div className="p-2.5 md:p-4 rounded-lg bg-gray-50 dark:bg-white/[0.04] border border-gray-100 dark:border-white/[0.06]">
                                 <div className="flex items-center gap-1 md:gap-2 text-gray-500 dark:text-gray-400 mb-1 md:mb-2">
-                                    <Zap className="w-3 h-3 md:w-4 md:h-4" />
+                                    <TrendingUp className="w-3 h-3 md:w-4 md:h-4" />
                                     <span className="text-[10px] md:text-xs font-semibold uppercase">Multiplier</span>
                                 </div>
                                 <p className="text-base md:text-2xl font-bold text-gray-900 dark:text-white font-mono tracking-tight">
@@ -147,7 +147,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({ data, cardData, onClo
                                 <p className="mt-1 md:mt-2 text-[10px] md:text-xs text-gray-500">Score multiplier</p>
                             </div>
 
-                            <div className="p-2.5 md:p-4 rounded-lg bg-gray-50 dark:bg-[#121212] border border-gray-200 dark:border-[#27272a]">
+                            <div className="p-2.5 md:p-4 rounded-lg bg-gray-50 dark:bg-white/[0.04] border border-gray-100 dark:border-white/[0.06]">
                                 <div className="flex items-center gap-1 md:gap-2 text-gray-500 dark:text-gray-400 mb-1 md:mb-2">
                                     <Star className="w-3 h-3 md:w-4 md:h-4" />
                                     <span className="text-[10px] md:text-xs font-semibold uppercase">Rarity</span>
@@ -160,7 +160,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({ data, cardData, onClo
                                 </p>
                             </div>
 
-                            <div className="p-2.5 md:p-4 rounded-lg bg-gray-50 dark:bg-[#121212] border border-gray-200 dark:border-[#27272a]">
+                            <div className="p-2.5 md:p-4 rounded-lg bg-gray-50 dark:bg-white/[0.04] border border-gray-100 dark:border-white/[0.06]">
                                 <div className="flex items-center gap-1 md:gap-2 text-gray-500 dark:text-gray-400 mb-1 md:mb-2">
                                     <Layers className="w-3 h-3 md:w-4 md:h-4" />
                                     <span className="text-[10px] md:text-xs font-semibold uppercase">Edition</span>
@@ -180,7 +180,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({ data, cardData, onClo
                                 </span>
                             )}
                             {startupId && (
-                                <span className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-[#18181b] text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-[#27272a] text-xs font-semibold">
+                                <span className="px-3 py-1.5 rounded-lg bg-white/40 dark:bg-white/[0.04] text-gray-600 dark:text-gray-400 border border-white/30 dark:border-white/[0.06] text-xs font-semibold">
                                     Startup #{startupId}
                                 </span>
                             )}
@@ -188,18 +188,18 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({ data, cardData, onClo
                     </div>
 
                     {/* Right Column: Funding & Links */}
-                    <div className="lg:w-1/3 bg-gray-50 dark:bg-[#0c0c0e]">
+                    <div className="lg:w-1/3 bg-gray-50 dark:bg-white/[0.02]">
 
                         {/* Funding Timeline */}
                         {fundingHistory.length > 0 && (
-                            <div className="p-4 md:p-6 border-b border-gray-200 dark:border-[#27272a]">
+                            <div className="p-4 md:p-6 border-b border-gray-100 dark:border-white/[0.06]">
                                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-6">Funding History</h3>
                                 <div className="relative pl-2">
-                                    <div className="absolute left-[7px] top-2 bottom-2 w-px bg-gray-200 dark:bg-[#27272a]"></div>
+                                    <div className="absolute left-[7px] top-2 bottom-2 w-px bg-gray-200 dark:bg-white/[0.08]"></div>
                                     <div className="space-y-6">
                                         {fundingHistory.map((round, i) => (
                                             <div key={i} className="relative pl-8">
-                                                <div className={`absolute left-0 top-1.5 w-3.5 h-3.5 rounded-full border-[3px] border-white dark:border-[#0c0c0e] z-10
+                                                <div className={`absolute left-0 top-1.5 w-3.5 h-3.5 rounded-full border-[3px] border-white dark:border-zinc-900 z-10
                                                     ${i === 0 ? 'bg-yc-purple ring-1 ring-yc-purple' : 'bg-gray-300 dark:bg-gray-700'}`}></div>
 
                                                 <div className="flex justify-between items-start mb-1">
