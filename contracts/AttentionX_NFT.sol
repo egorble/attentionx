@@ -31,7 +31,7 @@ contract AttentionX_NFT is
     // ============ Constants ============
 
     /// @notice Maximum supply of NFTs
-    uint256 public constant MAX_SUPPLY = 10000;
+    uint256 public constant MAX_SUPPLY = 50000;
 
     /// @notice Total number of startup types
     uint256 public constant TOTAL_STARTUPS = 19;

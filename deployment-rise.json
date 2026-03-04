@@ -15,7 +15,7 @@
     "TokenLeagues": "0x088659F051b82BD10EA6F1B5FC464cf05d3A4e18"
   },
   "implementations": {
-    "AttentionX_NFT": "0x83a576f3344E2684644E884e759DbcA38d93ED5f",
+    "AttentionX_NFT": "0x91bA50F0a5ed37fA4F13c31fb4Ea3139De7A6c9e",
     "PackNFT": "0xC2a9303871BaD267A640B3722cAC3bd18374fDAA",
     "PackOpener": "0x02483f5CD96CfcA9834EeF591EfF6d1860a2dC10",
     "TournamentManager": "0x70d008572bCA649Ebcdaf3174Da8aD776EE520a2",
@@ -54,6 +54,13 @@
       "newImplementation": "0x8d4D7aC4f88946924700C275A86702193B8B027A",
       "timestamp": "2026-03-02T20:32:21.710Z",
       "txHash": "0xbfc03f14fb4d2755838ce6c17eb8ca74b3b84e5caca09b3e1a4fbbdf778586ad"
+    },
+    {
+      "contract": "AttentionX_NFT",
+      "oldImplementation": "0x83a576f3344E2684644E884e759DbcA38d93ED5f",
+      "newImplementation": "0x91bA50F0a5ed37fA4F13c31fb4Ea3139De7A6c9e",
+      "timestamp": "2026-03-04T07:01:32.409Z",
+      "txHash": "0x3d74baee91de6b0af370856b55ee876a4022b8034d5cf5bd25550af32b65b06a"
     }
   ],
   "tokenLeaguesDeployedAt": "2026-03-02T20:29:59.792Z"
