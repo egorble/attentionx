@@ -219,7 +219,7 @@ const BoostPackModal: React.FC<BoostPackModalProps> = ({ isOpen, onClose, onBoos
                             return (
                                 <div
                                     key={tokenId}
-                                    className="boost-token-card flex flex-col items-center gap-2 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl p-4 w-[72px] md:w-[88px] shadow-[0_4px_16px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.15)]"
+                                    className="boost-token-card flex flex-col items-center gap-2 bg-zinc-800/80 border border-white/10 rounded-2xl p-4 w-[72px] md:w-[88px] shadow-[0_4px_16px_rgba(0,0,0,0.3)]"
                                     style={{ perspective: '600px' }}
                                 >
                                     <TokenIcon symbol={token.symbol} color={token.color} size={36} />
