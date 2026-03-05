@@ -262,7 +262,7 @@ export function usePacks() {
             const signerAddress = await signer.getAddress();
 
             // Manual gas limit — each pack mints 5 ERC721Enumerable tokens (~150k each)
-            const tx = await packContract.openPack(packTokenId, { gasLimit: 1_200_000 });
+            const tx = await packContract.openPack(packTokenId, { gasLimit: 2_500_000 });
 
             const receipt = await tx.wait();
 
@@ -334,7 +334,7 @@ export function usePacks() {
             const signerAddress = await signer.getAddress();
 
             // Manual gas limit: ~1M per pack (each mints 5 ERC721Enumerable tokens)
-            const gasLimit = 300_000 + packTokenIds.length * 1_000_000;
+            const gasLimit = 500_000 + packTokenIds.length * 2_000_000;
             const tx = await packContract.batchOpenPacks(packTokenIds, { gasLimit });
             const receipt = await tx.wait();
 

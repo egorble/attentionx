@@ -705,7 +705,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                                 </button>
                             </div>
                         )}
-                        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-1.5 md:gap-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
                             {myPacks.map((packId) => {
                                 const isSelected = isPackSelectMode && selectedPackOpenIds.includes(packId);
                                 return (
