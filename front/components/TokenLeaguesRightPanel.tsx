@@ -89,7 +89,7 @@ const TokenLeaguesRightPanel: React.FC<RightPanelProps> = ({ isMobile }) => {
                         ? 'text-[#9333ea] bg-[#9333ea]/10'
                         : 'text-red-400 bg-red-400/10'
                         }`}>
-                        {entry.score >= 0 ? '+' : ''}{(entry.score / 100).toFixed(2)}%
+                        {entry.score >= 0 ? '+' : ''}{entry.score.toFixed(2)}%
                       </span>
                     </div>
                   );
