@@ -7,6 +7,31 @@ import { blockchainCache, CacheKeys, CacheTTL } from '../lib/cache';
 import { metadataUrl } from '../lib/api';
 import { getActiveNetworkId } from '../lib/networks';
 
+/** Extract maximum detail from an ethers/wallet error */
+function serializeError(e: any): string {
+    const parts: string[] = [];
+    if (e.code) parts.push(`Code: ${e.code}`);
+    if (e.reason) parts.push(`Reason: ${e.reason}`);
+    if (e.message) parts.push(`Message: ${e.message}`);
+    if (e.data) parts.push(`Data: ${typeof e.data === 'string' ? e.data : JSON.stringify(e.data)}`);
+    if (e.shortMessage) parts.push(`Short: ${e.shortMessage}`);
+    if (e.transaction?.hash) parts.push(`TX: ${e.transaction.hash}`);
+    if (e.receipt?.hash) parts.push(`Receipt: ${e.receipt.hash}`);
+    // Nested error (ethers v6 wraps errors)
+    if (e.error) {
+        parts.push(`Inner: ${e.error.message || JSON.stringify(e.error)}`);
+        if (e.error.data) parts.push(`Inner data: ${typeof e.error.data === 'string' ? e.error.data : JSON.stringify(e.error.data)}`);
+    }
+    if (e.info?.error) {
+        parts.push(`Info: ${e.info.error.message || JSON.stringify(e.info.error)}`);
+        if (e.info.error.data) parts.push(`Info data: ${e.info.error.data}`);
+    }
+    if (parts.length === 0) {
+        try { return JSON.stringify(e, null, 2); } catch { return String(e); }
+    }
+    return parts.join('\n');
+}
+
 // Map rarity strings to enum
 const RARITY_STRING_MAP: Record<string, Rarity> = {
     'Common': Rarity.COMMON,
@@ -215,7 +240,7 @@ export function usePacks() {
             return { success: true, packTokenIds };
         } catch (e: any) {
             const msg = e.reason || e.message || 'Failed to buy pack';
-            const raw = e.data ? `${e.message}\n\nData: ${JSON.stringify(e.data)}` : (e.stack || e.message || msg);
+            const raw = serializeError(e);
             setError(msg);
             return { success: false, error: msg, rawError: raw };
         } finally {
@@ -286,7 +311,7 @@ export function usePacks() {
             return { success: true, cards };
         } catch (e: any) {
             const msg = e.reason || e.message || 'Failed to open pack';
-            const raw = e.data ? `${e.message}\n\nData: ${JSON.stringify(e.data)}` : (e.stack || e.message || msg);
+            const raw = serializeError(e);
             setError(msg);
             return { success: false, error: msg, rawError: raw };
         } finally {
@@ -355,7 +380,7 @@ export function usePacks() {
             return { success: true, cards };
         } catch (e: any) {
             const msg = e.reason || e.message || 'Failed to open packs';
-            const raw = e.data ? `${e.message}\n\nData: ${JSON.stringify(e.data)}` : (e.stack || e.message || msg);
+            const raw = serializeError(e);
             setError(msg);
             return { success: false, error: msg, rawError: raw };
         } finally {

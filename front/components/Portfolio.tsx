@@ -732,13 +732,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                                                 }
                                             }}
                                         >
-                                            {/* Static pack image instead of 3D (avoids WebGL context limits) */}
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                <div className="w-[60%] h-[70%] rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-violet-700 shadow-lg flex flex-col items-center justify-center gap-1 border border-white/20">
-                                                    <Package className="w-8 h-8 sm:w-10 sm:h-10 text-white/90" />
-                                                    <span className="text-white/80 text-[9px] font-bold uppercase tracking-widest">Pack</span>
-                                                </div>
-                                            </div>
+                                            <img src="/image.png" alt="Pack" className="absolute inset-0 w-full h-full object-contain p-2" loading="lazy" />
                                             {/* Selection badge */}
                                             {isPackSelectMode && isSelected && (
                                                 <div className="absolute top-2 right-2 w-6 h-6 bg-yc-purple rounded-full flex items-center justify-center z-10 shadow-lg">
@@ -1473,8 +1467,8 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
 
                         {/* Pack Preview */}
                         <div className="flex items-center gap-4 mb-4 p-3 bg-gray-100 dark:bg-black/50 rounded-xl">
-                            <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-violet-700 flex items-center justify-center">
-                                <Package className="w-8 h-8 text-white/90" />
+                            <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-gray-100 dark:bg-black/30">
+                                <img src="/image.png" alt="Pack" className="w-full h-full object-contain" />
                             </div>
                             <div>
                                 <h4 className="text-gray-900 dark:text-white font-bold">AttentionX Pack</h4>
