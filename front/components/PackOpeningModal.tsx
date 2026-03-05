@@ -356,14 +356,18 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
             } else {
                 setBoughtPackIds(prev => [...prev, ...validIds.filter(id => !prev.includes(id))]);
                 setOwnedPacks(prev => [...prev, ...validIds.filter(id => !prev.includes(id))]);
-                setTxError(friendlyError(result.error || 'Failed to open packs', result.rawError));
+                const err = friendlyError(result.error || 'Failed to open packs', result.rawError);
+                if (validIds.length > 2) err.friendly += ' Try opening fewer packs at a time (likely a Rise Wallet limitation).';
+                setTxError(err);
                 setBatchSelection([]);
                 setStage(errorStage);
             }
         } catch (e: any) {
             setBoughtPackIds(prev => [...prev, ...packIds.filter(id => !prev.includes(id))]);
             setOwnedPacks(prev => [...prev, ...packIds.filter(id => !prev.includes(id))]);
-            setTxError(friendlyError(e.message || 'Something went wrong', e.stack || e.message));
+            const err = friendlyError(e.message || 'Something went wrong', e.stack || e.message);
+            if (packIds.length > 2) err.friendly += ' Try opening fewer packs at a time (likely a Rise Wallet limitation).';
+            setTxError(err);
             setBatchSelection([]);
             setStage(errorStage);
         }

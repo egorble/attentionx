@@ -333,7 +333,6 @@ export function usePacks() {
             const nftContract = getNFTContract(signer);
             const signerAddress = await signer.getAddress();
 
-            // Manual gas limit: ~1M per pack (each mints 5 ERC721Enumerable tokens)
             const gasLimit = 500_000 + packTokenIds.length * 2_000_000;
             const tx = await packContract.batchOpenPacks(packTokenIds, { gasLimit });
             const receipt = await tx.wait();
