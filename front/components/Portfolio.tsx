@@ -764,10 +764,11 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                                 </span>
                                 <button
                                     onClick={() => {
+                                        // Invalidate pack cache so modal gets fresh data
+                                        if (address) blockchainCache.invalidate(CacheKeys.userUnopenedPacks(address));
                                         if (onOpenPacks) {
                                             onOpenPacks(selectedPackOpenIds);
                                         } else {
-                                            // Fallback: open first selected pack
                                             onBuyPack(selectedPackOpenIds[0]);
                                         }
                                         setIsPackSelectMode(false);

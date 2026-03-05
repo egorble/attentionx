@@ -3,7 +3,7 @@ import { CardData, sortByRarity } from '../types';
 import { Layers, Package, Minus, Plus, ChevronDown, BoxSelect } from 'lucide-react';
 import { usePacks } from '../hooks/usePacks';
 import { useWalletContext } from '../context/WalletContext';
-import { formatXTZ } from '../lib/contracts';
+import { formatXTZ, getPackNFTContract } from '../lib/contracts';
 import { currencySymbol, getActiveNetwork } from '../lib/networks';
 import ModelViewer3D from './ModelViewer3D';
 import gsap from 'gsap';
@@ -276,27 +276,45 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
         const fromPortfolio = !!(initialPackIds && initialPackIds.length > 0);
         const errorStage: Stage = fromPortfolio ? 'opening' : 'bought';
 
-        setBatchTotal(packIds.length);
         setMintedCards([]);
         setStage('opening');
         setTxError(null);
-
-        // Remove packs from lists immediately (re-add on failure)
-        setBoughtPackIds(prev => prev.filter(id => !packIds.includes(id)));
-        setOwnedPacks(prev => prev.filter(id => !packIds.includes(id)));
 
         try {
             const signer = await getSigner();
             if (!signer) { setTxError('Failed to get signer'); setStage(errorStage); return; }
 
+            // Verify packs still exist on-chain (cache may be stale)
+            const packNft = getPackNFTContract();
+            const signerAddress = await signer.getAddress();
+            const validIds: number[] = [];
+            await Promise.all(packIds.map(async (id) => {
+                try {
+                    const owner = await packNft.ownerOf(id);
+                    if (owner.toLowerCase() === signerAddress.toLowerCase()) {
+                        validIds.push(id);
+                    }
+                } catch { /* pack burned / doesn't exist */ }
+            }));
+
+            if (validIds.length === 0) {
+                setTxError('These packs have already been opened. Refresh your portfolio.');
+                setStage(errorStage);
+                return;
+            }
+
+            setBatchTotal(validIds.length);
+
+            // Remove packs from lists immediately (re-add on failure)
+            setBoughtPackIds(prev => prev.filter(id => !validIds.includes(id)));
+            setOwnedPacks(prev => prev.filter(id => !validIds.includes(id)));
+
             let result: { success: boolean; cards?: CardData[]; error?: string };
 
-            if (packIds.length === 1) {
-                // Single pack — use proven openPack
-                result = await openPack(signer, packIds[0]);
+            if (validIds.length === 1) {
+                result = await openPack(signer, validIds[0]);
             } else {
-                // Multiple packs — use batchOpenPacks (single TX)
-                result = await batchOpenPacks(signer, packIds);
+                result = await batchOpenPacks(signer, validIds);
             }
 
             if (result.success && result.cards && result.cards.length > 0) {
@@ -306,15 +324,13 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                 setMintedCards(sortByRarity(result.cards));
                 setStage('exploding');
             } else {
-                // Re-add packs on failure
-                setBoughtPackIds(prev => [...prev, ...packIds.filter(id => !prev.includes(id))]);
-                setOwnedPacks(prev => [...prev, ...packIds.filter(id => !prev.includes(id))]);
+                setBoughtPackIds(prev => [...prev, ...validIds.filter(id => !prev.includes(id))]);
+                setOwnedPacks(prev => [...prev, ...validIds.filter(id => !prev.includes(id))]);
                 setTxError(friendlyError(result.error || 'Failed to open packs'));
                 setBatchSelection([]);
                 setStage(errorStage);
             }
         } catch (e: any) {
-            // Re-add packs on failure
             setBoughtPackIds(prev => [...prev, ...packIds.filter(id => !prev.includes(id))]);
             setOwnedPacks(prev => [...prev, ...packIds.filter(id => !prev.includes(id))]);
             setTxError(friendlyError(e.message || 'Something went wrong'));

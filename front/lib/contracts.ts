@@ -103,6 +103,16 @@ export const PACK_OPENER_ABI = [
     'function forwardPendingFunds()',
     'function pause()',
     'function unpause()',
+    // Errors (for decoding reverts)
+    'error InsufficientPayment()',
+    'error MaxPacksReached()',
+    'error NotPackOwner()',
+    'error ZeroAddress()',
+    'error WithdrawFailed()',
+    'error InvalidPrice()',
+    'error InvalidPackCount()',
+    'error PackNftNotSet()',
+    'error BatchTooLarge()',
     // Events
     'event PackPurchased(address indexed buyer, uint256 indexed packTokenId, uint256 price, uint256 timestamp)',
     'event PackOpened(address indexed owner, uint256 indexed packTokenId, uint256[5] cardIds, uint256[5] startupIds)',
