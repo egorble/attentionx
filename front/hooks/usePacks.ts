@@ -261,7 +261,8 @@ export function usePacks() {
             const nftContract = getNFTContract(signer);
             const signerAddress = await signer.getAddress();
 
-            const tx = await packContract.openPack(packTokenId);
+            // Manual gas limit to bypass flaky estimation on testnets
+            const tx = await packContract.openPack(packTokenId, { gasLimit: 800_000 });
 
             const receipt = await tx.wait();
 
@@ -332,7 +333,9 @@ export function usePacks() {
             const nftContract = getNFTContract(signer);
             const signerAddress = await signer.getAddress();
 
-            const tx = await packContract.batchOpenPacks(packTokenIds);
+            // Manual gas limit: ~500k per pack + 200k base
+            const gasLimit = 200_000 + packTokenIds.length * 500_000;
+            const tx = await packContract.batchOpenPacks(packTokenIds, { gasLimit });
             const receipt = await tx.wait();
 
             // Parse CardMinted events to get all minted card info
