@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserPlus, Copy, Check, ChevronLeft } from 'lucide-react';
+import { UserPlus, Copy, Check, ChevronLeft, Zap } from 'lucide-react';
 import { useWalletContext } from '../context/WalletContext';
 import { useReferral } from '../hooks/useReferral';
 import { useTokenLeaguesWS } from '../hooks/useTokenLeaguesWS';
@@ -15,7 +15,7 @@ const TokenLeaguesRightPanel: React.FC<RightPanelProps> = ({ isMobile }) => {
   const { isConnected, address } = useWalletContext();
   const { getReferralLink, referralStats } = useReferral();
   const [copied, setCopied] = useState(false);
-  const [selectedPlayer, setSelectedPlayer] = useState<{ address: string, tokens: number[] } | null>(null);
+  const [selectedPlayer, setSelectedPlayer] = useState<{ address: string, tokens: number[], name?: string } | null>(null);
 
   const { leaderboard } = useTokenLeaguesWS();
   const referralLink = getReferralLink();
@@ -42,7 +42,7 @@ const TokenLeaguesRightPanel: React.FC<RightPanelProps> = ({ isMobile }) => {
                 <ChevronLeft className="w-4 h-4 text-gray-500 dark:text-zinc-400" />
               </button>
               <h3 className="text-gray-900 dark:text-white font-bold text-xs uppercase tracking-wider truncate">
-                {selectedPlayer.address.slice(0, 6)}...{selectedPlayer.address.slice(-4)}
+                {selectedPlayer.name || `${selectedPlayer.address.slice(0, 6)}...${selectedPlayer.address.slice(-4)}`}
               </h3>
             </div>
 
@@ -71,7 +71,7 @@ const TokenLeaguesRightPanel: React.FC<RightPanelProps> = ({ isMobile }) => {
                   return (
                     <div
                       key={entry.address}
-                      onClick={() => entry.tokens?.length > 0 && setSelectedPlayer({ address: entry.address, tokens: entry.tokens })}
+                      onClick={() => entry.tokens?.length > 0 && setSelectedPlayer({ address: entry.address, tokens: entry.tokens, name: (entry as any).name })}
                       className={`flex items-center justify-between px-2 py-2 rounded-2xl transition-colors cursor-pointer ${isYou ? 'bg-gray-100 dark:bg-zinc-800 border border-[#9333ea]/30' : 'bg-white dark:bg-zinc-950 hover:bg-gray-100 dark:hover:bg-zinc-800'
                         }`}
                     >
@@ -82,8 +82,11 @@ const TokenLeaguesRightPanel: React.FC<RightPanelProps> = ({ isMobile }) => {
                         </span>
                         <p className={`text-[11px] font-semibold truncate ${isYou ? 'text-[#9333ea]' : 'text-gray-600 dark:text-zinc-300'
                           }`}>
-                          {isYou ? 'You' : `${entry.address.slice(0, 4)}...${entry.address.slice(-4)}`}
+                          {isYou ? 'You' : (entry as any).name || `${entry.address.slice(0, 4)}...${entry.address.slice(-4)}`}
                         </p>
+                        {(entry as any).boosted && (
+                          <Zap className="w-3 h-3 text-[#9333ea] shrink-0 ml-0.5" />
+                        )}
                       </div>
                       <span className={`text-[10px] font-bold font-mono shrink-0 ml-2 px-1.5 py-0.5 rounded-md ${entry.score >= 0
                         ? 'text-[#9333ea] bg-[#9333ea]/10'

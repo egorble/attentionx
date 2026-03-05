@@ -474,6 +474,16 @@ class CycleManager extends EventEmitter {
             scores.sort((a, b) => b.score - a.score);
             scores.forEach((s, i) => { s.rank = i + 1; });
 
+            // Attach usernames from profiles
+            try {
+                const profiles = db.getUserProfiles(scores.map(s => s.address));
+                const nameMap = {};
+                for (const p of profiles) nameMap[p.address.toLowerCase()] = p.username;
+                for (const s of scores) {
+                    s.name = nameMap[s.address.toLowerCase()] || null;
+                }
+            } catch {}
+
             this.liveLeaderboard = scores;
 
             if (missingPrices > 0) {
