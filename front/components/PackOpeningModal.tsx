@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { CardData, sortByRarity } from '../types';
-import { Layers, Package, Minus, Plus, ChevronDown, BoxSelect } from 'lucide-react';
+import { Layers, Package, Minus, Plus, ChevronDown, BoxSelect, ChevronRight } from 'lucide-react';
 import { usePacks } from '../hooks/usePacks';
 import { useWalletContext } from '../context/WalletContext';
 import { formatXTZ, getPackNFTContract } from '../lib/contracts';
@@ -9,25 +9,55 @@ import ModelViewer3D from './ModelViewer3D';
 import gsap from 'gsap';
 
 /** Parse raw blockchain/wallet errors into short, user-friendly messages */
-function friendlyError(raw: string): string {
+function friendlyError(raw: string): { friendly: string; raw: string } {
     const l = raw.toLowerCase();
+    let friendly: string;
     if (l.includes('insufficient funds') || l.includes('have 0 want'))
-        return 'Not enough ETH in your wallet. Top up and try again.';
-    if (l.includes('user rejected') || l.includes('user denied') || l.includes('rejected the request'))
-        return 'Transaction cancelled.';
-    if (l.includes('gas limit too high') || l.includes('exceeds block gas'))
-        return 'Transaction too large. Try buying fewer packs.';
-    if (l.includes('nonce'))
-        return 'Transaction conflict. Please wait a moment and try again.';
-    if (l.includes('timeout') || l.includes('timed out'))
-        return 'Network timeout. Check your connection and try again.';
-    if (l.includes('network') || l.includes('disconnected'))
-        return 'Network error. Check your connection.';
-    if (l.includes('unpredictable gas'))
-        return 'Transaction would fail. Check your balance or try again later.';
-    // Fallback: trim to first sentence, max 120 chars
-    const first = raw.split('\n')[0].slice(0, 120);
-    return first.length < raw.length ? first + '...' : first;
+        friendly = 'Not enough ETH in your wallet. Top up and try again.';
+    else if (l.includes('user rejected') || l.includes('user denied') || l.includes('rejected the request'))
+        friendly = 'Transaction cancelled.';
+    else if (l.includes('gas limit too high') || l.includes('exceeds block gas'))
+        friendly = 'Transaction too large. Try buying fewer packs.';
+    else if (l.includes('nonce'))
+        friendly = 'Transaction conflict. Please wait a moment and try again.';
+    else if (l.includes('timeout') || l.includes('timed out'))
+        friendly = 'Network timeout. Check your connection and try again.';
+    else if (l.includes('network') || l.includes('disconnected'))
+        friendly = 'Network error. Check your connection.';
+    else if (l.includes('unpredictable gas'))
+        friendly = 'Transaction would fail. Check your balance or try again later.';
+    else {
+        const first = raw.split('\n')[0].slice(0, 120);
+        friendly = first.length < raw.length ? first + '...' : first;
+    }
+    return { friendly, raw };
+}
+
+/** Expandable error block */
+function ErrorBlock({ error }: { error: { friendly: string; raw: string } }) {
+    const [expanded, setExpanded] = useState(false);
+    const showToggle = error.raw !== error.friendly && error.raw.length > 0;
+    return (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-2.5 max-w-xs text-center mb-3 shrink-0">
+            <p className="text-red-400 text-xs font-medium">{error.friendly}</p>
+            {showToggle && (
+                <>
+                    <button
+                        onClick={() => setExpanded(!expanded)}
+                        className="flex items-center justify-center gap-1 mx-auto mt-1.5 text-red-400/60 hover:text-red-400 text-[10px] transition-colors"
+                    >
+                        <ChevronRight className={`w-3 h-3 transition-transform ${expanded ? 'rotate-90' : ''}`} />
+                        {expanded ? 'Hide details' : 'Show details'}
+                    </button>
+                    {expanded && (
+                        <p className="mt-2 text-red-400/70 text-[10px] font-mono break-all text-left max-h-32 overflow-y-auto leading-relaxed">
+                            {error.raw}
+                        </p>
+                    )}
+                </>
+            )}
+        </div>
+    );
 }
 
 interface PackOpeningModalProps {
@@ -57,7 +87,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
     const [cardsDealtCount, setCardsDealtCount] = useState(0);
     const [mintedCards, setMintedCards] = useState<CardData[]>([]);
     const packPrice = getActiveNetwork().packPrice;
-    const [txError, setTxError] = useState<string | null>(null);
+    const [txError, setTxError] = useState<{ friendly: string; raw: string } | null>(null);
     const [pendingCards, setPendingCards] = useState<CardData[] | null>(null);
 
     // Two-step state
@@ -204,7 +234,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
 
         try {
             const signer = await getSigner();
-            if (!signer) { setTxError('Failed to get signer'); setStage('select'); return; }
+            if (!signer) { setTxError({ friendly: 'Failed to get signer', raw: '' }); setStage('select'); return; }
 
             const result = await buyPack(signer, packCount);
 
@@ -237,7 +267,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
 
         try {
             const signer = await getSigner();
-            if (!signer) { setTxError('Failed to get signer'); setStage(errorStage); return; }
+            if (!signer) { setTxError({ friendly: 'Failed to get signer', raw: '' }); setStage(errorStage); return; }
 
             const result = await openPack(signer, packTokenId);
 
@@ -282,7 +312,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
 
         try {
             const signer = await getSigner();
-            if (!signer) { setTxError('Failed to get signer'); setStage(errorStage); return; }
+            if (!signer) { setTxError({ friendly: 'Failed to get signer', raw: '' }); setStage(errorStage); return; }
 
             // Verify packs still exist on-chain (cache may be stale)
             const packNft = getPackNFTContract();
@@ -298,7 +328,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
             }));
 
             if (validIds.length === 0) {
-                setTxError('These packs have already been opened. Refresh your portfolio.');
+                setTxError({ friendly: 'These packs have already been opened. Refresh your portfolio.', raw: '' });
                 setStage(errorStage);
                 return;
             }
@@ -446,11 +476,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                     </div>
 
                     {/* Error */}
-                    {txError && (
-                        <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-2.5 text-red-400 text-xs font-medium max-w-xs text-center mb-3 shrink-0">
-                            {txError}
-                        </div>
-                    )}
+                    {txError && <ErrorBlock error={txError} />}
 
                     {/* Buy button */}
                     <button
@@ -550,11 +576,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                     )}
 
                     {/* Error */}
-                    {txError && (
-                        <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-2.5 text-red-400 text-xs font-medium max-w-xs text-center mb-3 shrink-0">
-                            {txError}
-                        </div>
-                    )}
+                    {txError && <ErrorBlock error={txError} />}
 
                     {/* Single pack: Open button */}
                     {boughtPackIds.length === 1 && (
@@ -614,9 +636,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                         </div>
                     ) : (
                         <div className="flex flex-col items-center shrink-0">
-                            <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-2.5 text-red-400 text-xs font-medium max-w-xs text-center mb-4">
-                                {txError}
-                            </div>
+                            <ErrorBlock error={txError!} />
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => {

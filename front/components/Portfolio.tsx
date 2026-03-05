@@ -13,7 +13,6 @@ import { currencySymbol, getActiveNetworkId } from '../lib/networks';
 import gsap from 'gsap';
 import { useOnboarding } from '../hooks/useOnboarding';
 import OnboardingGuide, { OnboardingStep } from './OnboardingGuide';
-import ModelViewer3D from './ModelViewer3D';
 import { blockchainCache, CacheKeys } from '../lib/cache';
 
 const PORTFOLIO_GUIDE: OnboardingStep[] = [
@@ -733,7 +732,13 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                                                 }
                                             }}
                                         >
-                                            <ModelViewer3D mode="static" cameraZ={3} modelScale={0.8} />
+                                            {/* Static pack image instead of 3D (avoids WebGL context limits) */}
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <div className="w-[60%] h-[70%] rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-violet-700 shadow-lg flex flex-col items-center justify-center gap-1 border border-white/20">
+                                                    <Package className="w-8 h-8 sm:w-10 sm:h-10 text-white/90" />
+                                                    <span className="text-white/80 text-[9px] font-bold uppercase tracking-widest">Pack</span>
+                                                </div>
+                                            </div>
                                             {/* Selection badge */}
                                             {isPackSelectMode && isSelected && (
                                                 <div className="absolute top-2 right-2 w-6 h-6 bg-yc-purple rounded-full flex items-center justify-center z-10 shadow-lg">
@@ -758,8 +763,8 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                         </div>
                         {/* Floating action bar for batch open */}
                         {isPackSelectMode && selectedPackOpenIds.length > 0 && (
-                            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 bg-white/80 dark:bg-zinc-900/90 backdrop-blur-2xl border border-white/40 dark:border-white/[0.15] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.05)] animate-[fadeInUp_0.3s_ease-out]">
-                                <span className="text-sm font-bold text-gray-900 dark:text-white">
+                            <div className="fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2 sm:py-3 bg-white/80 dark:bg-zinc-900/90 backdrop-blur-2xl border border-white/40 dark:border-white/[0.15] rounded-xl sm:rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.05)] animate-[fadeInUp_0.3s_ease-out]">
+                                <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">
                                     {selectedPackOpenIds.length}/{myPacks.length}
                                 </span>
                                 <button
@@ -774,10 +779,10 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                                         setIsPackSelectMode(false);
                                         setSelectedPackOpenIds([]);
                                     }}
-                                    className="bg-yc-purple hover:bg-purple-600 text-white px-6 py-2 rounded-xl font-black text-sm uppercase tracking-wider transition-all active:scale-95 shadow-lg shadow-purple-500/20"
+                                    className="bg-yc-purple hover:bg-purple-600 text-white px-4 sm:px-6 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-black text-xs sm:text-sm uppercase tracking-wider transition-all active:scale-95 shadow-lg shadow-purple-500/20"
                                 >
-                                    <PackageOpen className="w-4 h-4 inline-block mr-1.5 -mt-0.5" />
-                                    Open {selectedPackOpenIds.length} Pack{selectedPackOpenIds.length !== 1 ? 's' : ''}
+                                    <PackageOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 inline-block mr-1 sm:mr-1.5 -mt-0.5" />
+                                    Open {selectedPackOpenIds.length}
                                 </button>
                             </div>
                         )}
@@ -1468,8 +1473,8 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
 
                         {/* Pack Preview */}
                         <div className="flex items-center gap-4 mb-4 p-3 bg-gray-100 dark:bg-black/50 rounded-xl">
-                            <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-gradient-to-b from-gray-100 to-gray-50 dark:from-[#111] dark:to-[#0a0a0a]">
-                                <ModelViewer3D mode="static" cameraZ={3.2} modelScale={0.7} />
+                            <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-violet-700 flex items-center justify-center">
+                                <Package className="w-8 h-8 text-white/90" />
                             </div>
                             <div>
                                 <h4 className="text-gray-900 dark:text-white font-bold">AttentionX Pack</h4>
