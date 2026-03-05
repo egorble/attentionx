@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { CardData, Rarity, sortByRarity } from '../types';
 import CardDetailModal, { CardDetailData } from './CardDetailModal';
 import Analytics from './Analytics';
-import { Wallet, ArrowUpRight, TrendingUp, Plus, ShoppingCart, Layers, X, Check, RefreshCw, Tag, Loader2, Gavel, Clock, Activity, DollarSign, History, Package } from 'lucide-react';
+import { Wallet, ArrowUpRight, TrendingUp, Plus, ShoppingCart, Layers, X, Check, RefreshCw, Tag, Loader2, Gavel, Clock, Activity, DollarSign, History, Package, PackageOpen } from 'lucide-react';
 import { useWalletContext } from '../context/WalletContext';
 import { useNFT } from '../hooks/useNFT';
 import { usePacks } from '../hooks/usePacks';
@@ -36,11 +36,13 @@ const PORTFOLIO_GUIDE: OnboardingStep[] = [
 
 interface PortfolioProps {
     onBuyPack: (packId?: number) => void;
+    /** Open modal with multiple packs pre-selected for batch opening */
+    onOpenPacks?: (packIds: number[]) => void;
     /** Increment to force an immediate pack refresh (e.g. after buying packs) */
     packRefreshSignal?: number;
 }
 
-const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, packRefreshSignal }) => {
+const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefreshSignal }) => {
     const packPriceLabel = '0.0009';
     const networkId = getActiveNetworkId();
     const [activeTab, setActiveTab] = useState<'cards' | 'performance'>('cards');
@@ -80,6 +82,10 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, packRefreshSignal }) =
     const flashRef = useRef<HTMLDivElement>(null);
     const animationRanRef = useRef(false); // Prevent animation from running twice
     const pendingCardFetchRef = useRef<Promise<CardData | null> | null>(null); // Pre-fetched card during animation
+
+    // Pack open selection mode
+    const [isPackSelectMode, setIsPackSelectMode] = useState(false);
+    const [selectedPackOpenIds, setSelectedPackOpenIds] = useState<number[]>([]);
 
     // Pack sell modal state
     const [myPacks, setMyPacks] = useState<number[]>([]);
@@ -660,35 +666,120 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, packRefreshSignal }) =
                 {/* My Packs Section */}
                 {!isMergeMode && myPacks.length > 0 && (
                     <div className="mb-8">
-                        <h3 className="text-lg font-bold text-yc-text-primary dark:text-white flex items-center mb-4">
-                            <Package className="w-5 h-5 mr-2 text-gray-400" />
-                            Unopened Packs ({myPacks.length})
-                        </h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 md:gap-4">
-                            {myPacks.map((packId) => (
-                                <div
-                                    key={`pack-${packId}`}
-                                    className="group bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-2xl overflow-hidden hover:border-yc-purple/40 dark:hover:border-yc-purple/30 hover:-translate-y-1 hover:shadow-lg hover:shadow-yc-purple/10 transition-all duration-300 shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]"
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold text-yc-text-primary dark:text-white flex items-center">
+                                <Package className="w-5 h-5 mr-2 text-gray-400" />
+                                Unopened Packs ({myPacks.length})
+                            </h3>
+                            {myPacks.length > 1 && (
+                                <button
+                                    onClick={() => {
+                                        setIsPackSelectMode(!isPackSelectMode);
+                                        setSelectedPackOpenIds([]);
+                                    }}
+                                    className={`
+                                        flex items-center px-4 py-2 rounded-xl text-sm font-bold transition-all border
+                                        ${isPackSelectMode
+                                            ? 'bg-white/70 dark:bg-zinc-900/70 backdrop-blur-2xl text-black dark:text-white border-white/40 dark:border-white/[0.15] shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]'
+                                            : 'bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl text-gray-500 hover:text-yc-text-primary dark:hover:text-white border-white/40 dark:border-white/[0.08] shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]'}
+                                    `}
                                 >
+                                    {isPackSelectMode ? <X className="w-4 h-4 mr-2" /> : <PackageOpen className="w-4 h-4 mr-2" />}
+                                    {isPackSelectMode ? 'Cancel' : 'Open Packs'}
+                                </button>
+                            )}
+                        </div>
+                        {isPackSelectMode && (
+                            <div className="mb-3 p-3 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-2xl flex items-center justify-between shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {selectedPackOpenIds.length === 0
+                                        ? 'Tap packs to select'
+                                        : <><span className="text-yc-purple font-bold">{selectedPackOpenIds.length}</span> selected</>}
+                                </p>
+                                <button
+                                    onClick={() => setSelectedPackOpenIds(prev =>
+                                        prev.length === myPacks.length ? [] : [...myPacks]
+                                    )}
+                                    className="text-xs font-bold text-gray-400 hover:text-yc-purple transition-colors"
+                                >
+                                    {selectedPackOpenIds.length === myPacks.length ? 'Deselect All' : 'Select All'}
+                                </button>
+                            </div>
+                        )}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 md:gap-4">
+                            {myPacks.map((packId) => {
+                                const isSelected = isPackSelectMode && selectedPackOpenIds.includes(packId);
+                                return (
                                     <div
-                                        className="relative bg-gradient-to-b from-yc-purple/5 to-gray-50 dark:from-yc-purple/[0.04] dark:to-transparent cursor-pointer"
-                                        style={{ aspectRatio: '591/1004' }}
-                                        onClick={() => onBuyPack(packId)}
+                                        key={`pack-${packId}`}
+                                        className={`group bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border rounded-2xl overflow-hidden hover:-translate-y-1 hover:shadow-lg transition-all duration-300 shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)] ${
+                                            isSelected
+                                                ? 'border-yc-purple shadow-yc-purple/20 ring-2 ring-yc-purple/30'
+                                                : 'border-white/40 dark:border-white/[0.08] hover:border-yc-purple/40 dark:hover:border-yc-purple/30 hover:shadow-yc-purple/10'
+                                        }`}
                                     >
-                                        <ModelViewer3D mode="static" cameraZ={3} modelScale={0.8} />
-                                        <div className="absolute bottom-2 left-0 right-0 flex flex-col items-center pointer-events-none group-hover:opacity-0 transition-opacity duration-200">
-                                            <span className="text-gray-700 dark:text-white/50 text-xs font-mono bg-white/60 dark:bg-black/40 px-2 py-0.5 rounded">#{packId}</span>
-                                        </div>
-                                        {/* Glass overlay Open button */}
-                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                                            <span className="px-6 py-3 rounded-2xl font-bold text-white text-sm backdrop-blur-xl bg-white/10 border border-white/20 shadow-lg">
-                                                Open Pack
-                                            </span>
+                                        <div
+                                            className="relative bg-gradient-to-b from-yc-purple/5 to-gray-50 dark:from-yc-purple/[0.04] dark:to-transparent cursor-pointer"
+                                            style={{ aspectRatio: '591/1004' }}
+                                            onClick={() => {
+                                                if (isPackSelectMode) {
+                                                    setSelectedPackOpenIds(prev =>
+                                                        prev.includes(packId)
+                                                            ? prev.filter(id => id !== packId)
+                                                            : [...prev, packId]
+                                                    );
+                                                } else {
+                                                    onBuyPack(packId);
+                                                }
+                                            }}
+                                        >
+                                            <ModelViewer3D mode="static" cameraZ={3} modelScale={0.8} />
+                                            {/* Selection badge */}
+                                            {isPackSelectMode && isSelected && (
+                                                <div className="absolute top-2 right-2 w-6 h-6 bg-yc-purple rounded-full flex items-center justify-center z-10 shadow-lg">
+                                                    <Check className="w-3.5 h-3.5 text-white" />
+                                                </div>
+                                            )}
+                                            <div className="absolute bottom-2 left-0 right-0 flex flex-col items-center pointer-events-none group-hover:opacity-0 transition-opacity duration-200">
+                                                <span className="text-gray-700 dark:text-white/50 text-xs font-mono bg-white/60 dark:bg-black/40 px-2 py-0.5 rounded">#{packId}</span>
+                                            </div>
+                                            {/* Glass overlay Open button (only in normal mode) */}
+                                            {!isPackSelectMode && (
+                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                                                    <span className="px-6 py-3 rounded-2xl font-bold text-white text-sm backdrop-blur-xl bg-white/10 border border-white/20 shadow-lg">
+                                                        Open Pack
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
+                        {/* Floating action bar for batch open */}
+                        {isPackSelectMode && selectedPackOpenIds.length > 0 && (
+                            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 bg-white/80 dark:bg-zinc-900/90 backdrop-blur-2xl border border-white/40 dark:border-white/[0.15] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.05)] animate-[fadeInUp_0.3s_ease-out]">
+                                <span className="text-sm font-bold text-gray-900 dark:text-white">
+                                    {selectedPackOpenIds.length}/{myPacks.length}
+                                </span>
+                                <button
+                                    onClick={() => {
+                                        if (onOpenPacks) {
+                                            onOpenPacks(selectedPackOpenIds);
+                                        } else {
+                                            // Fallback: open first selected pack
+                                            onBuyPack(selectedPackOpenIds[0]);
+                                        }
+                                        setIsPackSelectMode(false);
+                                        setSelectedPackOpenIds([]);
+                                    }}
+                                    className="bg-yc-purple hover:bg-purple-600 text-white px-6 py-2 rounded-xl font-black text-sm uppercase tracking-wider transition-all active:scale-95 shadow-lg shadow-purple-500/20"
+                                >
+                                    <PackageOpen className="w-4 h-4 inline-block mr-1.5 -mt-0.5" />
+                                    Open {selectedPackOpenIds.length} Pack{selectedPackOpenIds.length !== 1 ? 's' : ''}
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
 

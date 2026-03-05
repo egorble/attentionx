@@ -95,6 +95,7 @@ export const PACK_OPENER_ABI = [
     'function buyPack(address referrer) payable returns (uint256)',
     'function buyMultiplePacks(address referrer, uint256 count) payable returns (uint256[])',
     'function openPack(uint256 packTokenId) returns (uint256[5], uint256[5])',
+    'function batchOpenPacks(uint256[] packTokenIds) returns (uint256[], uint256[])',
     // Admin functions
     'function withdraw()',
     'function setPackPrice(uint256 newPrice)',
@@ -108,6 +109,7 @@ export const PACK_OPENER_ABI = [
     'event ReferralRegistered(address indexed user, address indexed referrer)',
     'event ReferralRewardPaid(address indexed referrer, address indexed buyer, uint256 amount)',
     'event MultiplePacksPurchased(address indexed buyer, uint256 packCount, uint256[] packTokenIds)',
+    'event BatchPacksOpened(address indexed owner, uint256[] packTokenIds, uint256[] allCardIds)',
     'event FundsDistributed(uint256 prizePoolAmount, uint256 platformAmount, uint256 referralAmount)',
 ];
 

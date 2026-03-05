@@ -292,6 +292,74 @@ export function usePacks() {
         }
     }, []);
 
+    // Batch open multiple packs in a single transaction
+    const batchOpenPacks = useCallback(async (
+        signer: ethers.Signer,
+        packTokenIds: number[]
+    ): Promise<{ success: boolean; cards?: CardData[]; error?: string }> => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const packContract = getPackOpenerContract(signer);
+            const nftContract = getNFTContract(signer);
+            const signerAddress = await signer.getAddress();
+
+            const tx = await packContract.batchOpenPacks(packTokenIds);
+            const receipt = await tx.wait();
+
+            // Parse CardMinted events to get all minted card info
+            const mintedTokens: { tokenId: number; startupId: number; edition: number }[] = [];
+            for (const log of receipt.logs) {
+                try {
+                    const parsed = nftContract.interface.parseLog(log);
+                    if (parsed?.name === 'CardMinted') {
+                        mintedTokens.push({
+                            tokenId: Number(parsed.args.tokenId),
+                            startupId: Number(parsed.args.startupId),
+                            edition: Number(parsed.args.edition),
+                        });
+                    }
+                } catch { }
+            }
+
+            // Invalidate cache
+            blockchainCache.invalidatePrefix(`nft:owned:${signerAddress}`);
+            blockchainCache.invalidatePrefix(`nft:cards:${signerAddress}`);
+            blockchainCache.invalidatePrefix(`pack:user:${signerAddress}`);
+            blockchainCache.invalidate(CacheKeys.userUnopenedPacks(signerAddress));
+
+            // Fetch metadata for all cards in parallel, fallback to event data
+            const metadataResults = await Promise.all(
+                mintedTokens.map(mt => fetchCardMetadata(mt.tokenId))
+            );
+            const cards: CardData[] = mintedTokens.map((mt, i) => {
+                const card = metadataResults[i];
+                if (card) return card;
+                const startup = STARTUPS[mt.startupId];
+                return {
+                    tokenId: mt.tokenId,
+                    startupId: mt.startupId,
+                    name: startup?.name || 'Unknown',
+                    rarity: RARITY_STRING_MAP[startup?.rarity || 'Common'] || Rarity.COMMON,
+                    multiplier: startup?.multiplier || 1,
+                    isLocked: false,
+                    image: `/images/${mt.startupId}.png`,
+                    edition: mt.edition,
+                };
+            });
+            cards.forEach(card => blockchainCache.set(CacheKeys.cardMetadata(card.tokenId), card));
+
+            return { success: true, cards };
+        } catch (e: any) {
+            const msg = e.reason || e.message || 'Failed to open packs';
+            setError(msg);
+            return { success: false, error: msg };
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
     return {
         isLoading,
         error,
@@ -300,5 +368,6 @@ export function usePacks() {
         getUserPacks,
         buyPack,
         openPack,
+        batchOpenPacks,
     };
 }

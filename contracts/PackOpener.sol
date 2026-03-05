@@ -87,6 +87,7 @@ contract PackOpener is Initializable, Ownable2StepUpgradeable, PausableUpgradeab
     event TournamentManagerUpdated(address indexed oldTM, address indexed newTM);
     event ActiveTournamentUpdated(uint256 oldId, uint256 newId);
     event MultiplePacksPurchased(address indexed buyer, uint256 packCount, uint256[] packTokenIds);
+    event BatchPacksOpened(address indexed owner, uint256[] packTokenIds, uint256[] allCardIds);
     event PackNftContractUpdated(address indexed oldContract, address indexed newContract);
 
     // ============ Errors ============
@@ -101,6 +102,7 @@ contract PackOpener is Initializable, Ownable2StepUpgradeable, PausableUpgradeab
     error NotAdmin();
     error InvalidPackCount();
     error PackNftNotSet();
+    error BatchTooLarge();
 
     // ============ Modifiers ============
 
@@ -248,6 +250,43 @@ contract PackOpener is Initializable, Ownable2StepUpgradeable, PausableUpgradeab
 
         emit PackOpened(msg.sender, packTokenId, cardIds, startupIds);
         return (cardIds, startupIds);
+    }
+
+    /**
+     * @notice Open multiple Pack NFTs in one transaction — burns packs and mints cards
+     * @param packTokenIds Array of Pack NFT token IDs to open (max 5)
+     * @return allCardIds All minted card token IDs (5 per pack)
+     * @return allStartupIds All startup IDs assigned to each card
+     */
+    function batchOpenPacks(uint256[] calldata packTokenIds) external whenNotPaused nonReentrant returns (
+        uint256[] memory allCardIds,
+        uint256[] memory allStartupIds
+    ) {
+        if (address(packNftContract) == address(0)) revert PackNftNotSet();
+        if (packTokenIds.length == 0 || packTokenIds.length > MAX_MULTI_PACKS) revert BatchTooLarge();
+
+        uint256 totalCards = packTokenIds.length * CARDS_PER_PACK;
+        allCardIds = new uint256[](totalCards);
+        allStartupIds = new uint256[](totalCards);
+
+        for (uint256 p = 0; p < packTokenIds.length; p++) {
+            if (packNftContract.ownerOf(packTokenIds[p]) != msg.sender) revert NotPackOwner();
+
+            packNftContract.burn(packTokenIds[p]);
+
+            uint256[5] memory startupIds = _generateRandomCards(packTokenIds[p]);
+            uint256[5] memory cardIds = nftContract.batchMint(msg.sender, startupIds);
+
+            for (uint256 i = 0; i < CARDS_PER_PACK; i++) {
+                allCardIds[p * CARDS_PER_PACK + i] = cardIds[i];
+                allStartupIds[p * CARDS_PER_PACK + i] = startupIds[i];
+            }
+
+            emit PackOpened(msg.sender, packTokenIds[p], cardIds, startupIds);
+        }
+
+        emit BatchPacksOpened(msg.sender, packTokenIds, allCardIds);
+        return (allCardIds, allStartupIds);
     }
 
     // ============ Internal Functions ============

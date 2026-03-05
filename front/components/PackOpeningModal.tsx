@@ -38,12 +38,14 @@ interface PackOpeningModalProps {
     onPacksBought?: (packIds: number[]) => void;
     /** If provided, skip to 'bought' stage with this pack ready to open */
     initialPackId?: number | null;
+    /** If provided, skip to 'bought' stage with these packs ready for batch open */
+    initialPackIds?: number[] | null;
 }
 
 // Stages: select → buying → bought → opening → exploding → dealing → finished
 type Stage = 'select' | 'buying' | 'bought' | 'opening' | 'exploding' | 'dealing' | 'finished';
 
-const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, onCardsAcquired, onPacksBought, initialPackId }) => {
+const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, onCardsAcquired, onPacksBought, initialPackId, initialPackIds }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const flashRef = useRef<HTMLDivElement>(null);
     const cardsContainerRef = useRef<HTMLDivElement>(null);
@@ -62,12 +64,16 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
     const [ownedPacks, setOwnedPacks] = useState<number[]>([]);
     const [boughtPackIds, setBoughtPackIds] = useState<number[]>([]);
     const [selectedPackId, setSelectedPackId] = useState<number | null>(null);
+    /** Packs selected for batch opening */
+    const [batchSelection, setBatchSelection] = useState<number[]>([]);
+    /** Total packs in current batch open */
+    const [batchTotal, setBatchTotal] = useState(0);
 
-    const isMultiPack = packCount > 1;
+    const isMultiPack = packCount > 1 || batchTotal > 1;
 
     // Hooks
     const { isConnected, getSigner, connect, isCorrectChain, switchChain, refreshBalance, address } = useWalletContext();
-    const { buyPack, openPack, getUserPacks, isLoading } = usePacks();
+    const { buyPack, openPack, batchOpenPacks, getUserPacks, isLoading } = usePacks();
 
     // Fetch user's owned packs when modal opens
     useEffect(() => {
@@ -86,16 +92,23 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
             setSelectedPackId(initialPackId);
             setBoughtPackIds([initialPackId]);
             setStage('opening');
+        } else if (isOpen && initialPackIds && initialPackIds.length > 0) {
+            setBoughtPackIds([]);
+            setStage('opening');
         }
-    }, [isOpen, initialPackId]);
+    }, [isOpen, initialPackId, initialPackIds]);
 
     // Auto-trigger pack open when coming from portfolio
     useEffect(() => {
-        if (isOpen && initialPackId != null && stage === 'opening' && !autoOpenRef.current) {
+        if (!isOpen || autoOpenRef.current) return;
+        if (initialPackId != null && stage === 'opening') {
             autoOpenRef.current = true;
             handleOpenPack(initialPackId);
+        } else if (initialPackIds && initialPackIds.length > 0 && stage === 'opening') {
+            autoOpenRef.current = true;
+            handleBatchOpen(initialPackIds);
         }
-    }, [isOpen, initialPackId, stage]);
+    }, [isOpen, initialPackId, initialPackIds, stage]);
 
     // Initialize GSAP Context
     useLayoutEffect(() => {
@@ -118,6 +131,8 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
             setPendingCards(null);
             setBoughtPackIds([]);
             setSelectedPackId(null);
+            setBatchSelection([]);
+            setBatchTotal(0);
             cardRefs.current = [];
             setTxError(null);
             autoOpenRef.current = false;
@@ -230,14 +245,17 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                 setPendingCards(result.cards);
                 onCardsAcquired?.(result.cards);
                 refreshBalance();
-                // Remove opened pack from boughtPackIds
-                setBoughtPackIds(prev => prev.filter(id => id !== packTokenId));
-                setOwnedPacks(prev => prev.filter(id => id !== packTokenId));
             } else {
+                // Re-add pack on failure
+                setBoughtPackIds(prev => prev.includes(packTokenId) ? prev : [...prev, packTokenId]);
+                setOwnedPacks(prev => prev.includes(packTokenId) ? prev : [...prev, packTokenId]);
                 setTxError(friendlyError(result.error || 'Failed to open pack'));
                 setStage(errorStage);
             }
         } catch (e: any) {
+            // Re-add pack on failure
+            setBoughtPackIds(prev => prev.includes(packTokenId) ? prev : [...prev, packTokenId]);
+            setOwnedPacks(prev => prev.includes(packTokenId) ? prev : [...prev, packTokenId]);
             setTxError(friendlyError(e.message || 'Something went wrong'));
             setStage(errorStage);
         }
@@ -247,6 +265,51 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
     const handleOpenExistingPack = async (packTokenId: number) => {
         setSelectedPackId(packTokenId);
         await handleOpenPack(packTokenId);
+    };
+
+    // Batch open: open multiple packs in a single transaction
+    const handleBatchOpen = async (packIds: number[]) => {
+        if (packIds.length === 0) return;
+        if (!isConnected) { await connect(); return; }
+        if (!isCorrectChain) { await switchChain(); return; }
+
+        setBatchTotal(packIds.length);
+        setMintedCards([]);
+        setStage('opening');
+        setTxError(null);
+
+        // Remove packs from lists immediately (re-add on failure)
+        setBoughtPackIds(prev => prev.filter(id => !packIds.includes(id)));
+        setOwnedPacks(prev => prev.filter(id => !packIds.includes(id)));
+
+        try {
+            const signer = await getSigner();
+            if (!signer) { setTxError('Failed to get signer'); setStage('bought'); return; }
+
+            const result = await batchOpenPacks(signer, packIds);
+
+            if (result.success && result.cards) {
+                onCardsAcquired?.(result.cards);
+                refreshBalance();
+                setBatchSelection([]);
+                setMintedCards(sortByRarity(result.cards));
+                setStage('exploding');
+            } else {
+                // Re-add packs on failure
+                setBoughtPackIds(prev => [...prev, ...packIds.filter(id => !prev.includes(id))]);
+                setOwnedPacks(prev => [...prev, ...packIds.filter(id => !prev.includes(id))]);
+                setTxError(friendlyError(result.error || 'Failed to open packs'));
+                setBatchSelection([]);
+                setStage('bought');
+            }
+        } catch (e: any) {
+            // Re-add packs on failure
+            setBoughtPackIds(prev => [...prev, ...packIds.filter(id => !prev.includes(id))]);
+            setOwnedPacks(prev => [...prev, ...packIds.filter(id => !prev.includes(id))]);
+            setTxError(friendlyError(e.message || 'Something went wrong'));
+            setBatchSelection([]);
+            setStage('bought');
+        }
     };
 
     const prepareStack = () => {
@@ -396,24 +459,68 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
             {/* --- STAGE: BOUGHT (pack NFTs minted, choose to open) --- */}
             {stage === 'bought' && (
                 <div key="stage-bought" className="flex flex-col items-center w-full h-full px-4 py-4 sm:py-0 sm:justify-center">
-                    {/* 3D pack */}
-                    <div className="relative w-full flex-1 min-h-0 max-h-[50%] shrink mb-4">
-                        <ModelViewer3D mode="interactive" cameraZ={4.5} modelScale={1} paused={!isOpen} />
-                        {boughtPackIds.length > 1 && (
-                            <div className="absolute top-2 right-2 w-9 h-9 bg-yc-purple rounded-full flex items-center justify-center text-white font-black text-base shadow-lg shadow-purple-500/30 z-10">
-                                {boughtPackIds.length}x
+                    {boughtPackIds.length === 1 ? (
+                        /* Single pack — 3D model + Open */
+                        <>
+                            <div className="relative w-full flex-1 min-h-0 max-h-[50%] shrink mb-4">
+                                <ModelViewer3D mode="interactive" cameraZ={4.5} modelScale={1} paused={!isOpen} />
                             </div>
-                        )}
-                    </div>
-
-                    <div className="text-center mb-4 shrink-0">
-                        <h2 className="text-2xl sm:text-3xl font-black text-white mb-2">
-                            {boughtPackIds.length === 1 ? 'Pack Acquired!' : `${boughtPackIds.length} Packs Acquired!`}
-                        </h2>
-                        <p className="text-gray-400 text-sm">
-                            Your pack{boughtPackIds.length > 1 ? 's are' : ' is'} now in your wallet. Open to reveal 5 cards each.
-                        </p>
-                    </div>
+                            <div className="text-center mb-4 shrink-0">
+                                <h2 className="text-2xl sm:text-3xl font-black text-white mb-2">Pack Acquired!</h2>
+                                <p className="text-gray-400 text-sm">Open to reveal 5 cards.</p>
+                            </div>
+                        </>
+                    ) : (
+                        /* Multiple packs — select which to open */
+                        <>
+                            <div className="text-center mb-4 mt-8 shrink-0">
+                                <h2 className="text-2xl sm:text-3xl font-black text-white mb-2">
+                                    {boughtPackIds.length} Packs
+                                </h2>
+                                <p className="text-gray-400 text-sm">
+                                    {batchSelection.length === 0
+                                        ? 'Select packs to open'
+                                        : `${batchSelection.length} selected`}
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mb-4 max-w-lg shrink-0">
+                                {boughtPackIds.map((packId, i) => {
+                                    const isSelected = batchSelection.includes(packId);
+                                    return (
+                                        <button
+                                            key={packId}
+                                            onClick={() => setBatchSelection(prev =>
+                                                isSelected ? prev.filter(id => id !== packId) : [...prev, packId]
+                                            )}
+                                            className={`relative w-20 h-28 sm:w-24 sm:h-32 rounded-2xl flex flex-col items-center justify-center gap-1.5 active:scale-95 transition-all ${
+                                                isSelected
+                                                    ? 'bg-yc-purple/20 border-2 border-yc-purple shadow-[0_0_16px_rgba(147,51,234,0.3)]'
+                                                    : 'bg-zinc-800/80 border border-white/10 hover:border-white/30'
+                                            }`}
+                                            style={{ animation: `fadeInUp 0.3s ease-out ${i * 60}ms both` }}
+                                        >
+                                            {isSelected && (
+                                                <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-yc-purple rounded-full flex items-center justify-center">
+                                                    <span className="text-white text-[10px] font-black">{batchSelection.indexOf(packId) + 1}</span>
+                                                </div>
+                                            )}
+                                            <Package className={`w-8 h-8 sm:w-10 sm:h-10 ${isSelected ? 'text-yc-purple' : 'text-gray-500'}`} />
+                                            <span className="text-[9px] text-gray-400 font-mono">#{packId}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            {/* Select all / deselect all */}
+                            <button
+                                onClick={() => setBatchSelection(prev =>
+                                    prev.length === boughtPackIds.length ? [] : [...boughtPackIds]
+                                )}
+                                className="text-gray-400 hover:text-white text-xs font-bold mb-4 transition-colors shrink-0"
+                            >
+                                {batchSelection.length === boughtPackIds.length ? 'Deselect All' : 'Select All'}
+                            </button>
+                        </>
+                    )}
 
                     {/* Error */}
                     {txError && (
@@ -422,15 +529,34 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                         </div>
                     )}
 
-                    {/* Open Now button */}
-                    <button
-                        onClick={() => handleOpenPack(boughtPackIds[0])}
-                        disabled={boughtPackIds.length === 0}
-                        className="bg-yc-purple hover:bg-purple-600 text-white px-8 sm:px-10 py-3 sm:py-3.5 rounded-xl font-black text-sm sm:text-base uppercase tracking-wider transition-all shadow-lg shadow-purple-500/20 active:scale-95 mb-3 shrink-0 disabled:opacity-50"
-                    >
-                        <Package className="w-4 h-4 sm:w-5 sm:h-5 inline-block mr-2 -mt-0.5" />
-                        Open Pack Now
-                    </button>
+                    {/* Single pack: Open button */}
+                    {boughtPackIds.length === 1 && (
+                        <button
+                            onClick={() => {
+                                const packId = boughtPackIds[0];
+                                setSelectedPackId(packId);
+                                setBoughtPackIds([]);
+                                setOwnedPacks(prev => prev.filter(id => id !== packId));
+                                handleOpenPack(packId);
+                            }}
+                            className="bg-yc-purple hover:bg-purple-600 text-white px-8 sm:px-10 py-3 sm:py-3.5 rounded-xl font-black text-sm sm:text-base uppercase tracking-wider transition-all shadow-lg shadow-purple-500/20 active:scale-95 mb-3 shrink-0"
+                        >
+                            <Package className="w-4 h-4 sm:w-5 sm:h-5 inline-block mr-2 -mt-0.5" />
+                            Open Pack
+                        </button>
+                    )}
+
+                    {/* Multi-pack: Open selected */}
+                    {boughtPackIds.length > 1 && (
+                        <button
+                            onClick={() => handleBatchOpen(batchSelection)}
+                            disabled={batchSelection.length === 0 || isLoading}
+                            className="bg-yc-purple hover:bg-purple-600 text-white px-8 sm:px-10 py-3 sm:py-3.5 rounded-xl font-black text-sm sm:text-base uppercase tracking-wider transition-all shadow-lg shadow-purple-500/20 active:scale-95 mb-3 shrink-0 disabled:opacity-40"
+                        >
+                            <Package className="w-4 h-4 sm:w-5 sm:h-5 inline-block mr-2 -mt-0.5" />
+                            Open {batchSelection.length} Pack{batchSelection.length !== 1 ? 's' : ''}
+                        </button>
+                    )}
 
                     <button onClick={onClose} className="text-gray-500 hover:text-white text-sm font-medium transition-colors shrink-0">
                         Open Later
@@ -448,8 +574,10 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                     {!txError ? (
                         <div className="flex flex-col items-center shrink-0">
                             <div className="w-10 h-10 mb-4 border-[3px] border-yc-purple/30 border-t-yc-purple rounded-full animate-spin" />
-                            <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Opening Pack...</h2>
-                            <p className="text-gray-500 text-sm mb-4">Confirm in wallet to reveal 5 cards</p>
+                            <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
+                                {batchTotal > 1 ? `Opening ${batchTotal} Packs...` : 'Opening Pack...'}
+                            </h2>
+                            <p className="text-gray-500 text-sm mb-4">Confirm in wallet to reveal {batchTotal > 1 ? `${batchTotal * 5} cards` : '5 cards'}</p>
                             <button
                                 onClick={() => initialPackId != null ? onClose() : setStage('bought')}
                                 className="text-gray-500 hover:text-white text-sm font-medium transition-colors"
