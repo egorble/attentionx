@@ -305,9 +305,7 @@ export function usePacks() {
             const nftContract = getNFTContract(signer);
             const signerAddress = await signer.getAddress();
 
-            // Explicit gas limit: ~500k per pack (burn + mint 5 cards + events)
-            const gasLimit = 500_000n * BigInt(packTokenIds.length) + 100_000n;
-            const tx = await packContract.batchOpenPacks(packTokenIds, { gasLimit });
+            const tx = await packContract.batchOpenPacks(packTokenIds);
             const receipt = await tx.wait();
 
             // Parse CardMinted events to get all minted card info
