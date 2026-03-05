@@ -9,8 +9,8 @@ import ModelViewer3D from './ModelViewer3D';
 import gsap from 'gsap';
 
 /** Parse raw blockchain/wallet errors into short, user-friendly messages */
-function friendlyError(raw: string): { friendly: string; raw: string } {
-    const l = raw.toLowerCase();
+function friendlyError(msg: string, rawError?: string): { friendly: string; raw: string } {
+    const l = msg.toLowerCase();
     let friendly: string;
     if (l.includes('insufficient funds') || l.includes('have 0 want'))
         friendly = 'Not enough ETH in your wallet. Top up and try again.';
@@ -27,10 +27,10 @@ function friendlyError(raw: string): { friendly: string; raw: string } {
     else if (l.includes('unpredictable gas'))
         friendly = 'Transaction would fail. Check your balance or try again later.';
     else {
-        const first = raw.split('\n')[0].slice(0, 120);
-        friendly = first.length < raw.length ? first + '...' : first;
+        const first = msg.split('\n')[0].slice(0, 120);
+        friendly = first.length < msg.length ? first + '...' : first;
     }
-    return { friendly, raw };
+    return { friendly, raw: rawError || msg };
 }
 
 /** Expandable error block */
@@ -245,11 +245,11 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                 onPacksBought?.(result.packTokenIds);
                 setStage('bought');
             } else {
-                setTxError(friendlyError(result.error || 'Failed to buy pack'));
+                setTxError(friendlyError(result.error || 'Failed to buy pack', result.rawError));
                 setStage('select');
             }
         } catch (e: any) {
-            setTxError(friendlyError(e.message || 'Something went wrong'));
+            setTxError(friendlyError(e.message || 'Something went wrong', e.stack || e.message));
             setStage('select');
         }
     };
@@ -279,14 +279,14 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                 // Re-add pack on failure
                 setBoughtPackIds(prev => prev.includes(packTokenId) ? prev : [...prev, packTokenId]);
                 setOwnedPacks(prev => prev.includes(packTokenId) ? prev : [...prev, packTokenId]);
-                setTxError(friendlyError(result.error || 'Failed to open pack'));
+                setTxError(friendlyError(result.error || 'Failed to open pack', result.rawError));
                 setStage(errorStage);
             }
         } catch (e: any) {
             // Re-add pack on failure
             setBoughtPackIds(prev => prev.includes(packTokenId) ? prev : [...prev, packTokenId]);
             setOwnedPacks(prev => prev.includes(packTokenId) ? prev : [...prev, packTokenId]);
-            setTxError(friendlyError(e.message || 'Something went wrong'));
+            setTxError(friendlyError(e.message || 'Something went wrong', e.stack || e.message));
             setStage(errorStage);
         }
     };
@@ -339,7 +339,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
             setBoughtPackIds(prev => prev.filter(id => !validIds.includes(id)));
             setOwnedPacks(prev => prev.filter(id => !validIds.includes(id)));
 
-            let result: { success: boolean; cards?: CardData[]; error?: string };
+            let result: { success: boolean; cards?: CardData[]; error?: string; rawError?: string };
 
             if (validIds.length === 1) {
                 result = await openPack(signer, validIds[0]);
@@ -356,14 +356,14 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
             } else {
                 setBoughtPackIds(prev => [...prev, ...validIds.filter(id => !prev.includes(id))]);
                 setOwnedPacks(prev => [...prev, ...validIds.filter(id => !prev.includes(id))]);
-                setTxError(friendlyError(result.error || 'Failed to open packs'));
+                setTxError(friendlyError(result.error || 'Failed to open packs', result.rawError));
                 setBatchSelection([]);
                 setStage(errorStage);
             }
         } catch (e: any) {
             setBoughtPackIds(prev => [...prev, ...packIds.filter(id => !prev.includes(id))]);
             setOwnedPacks(prev => [...prev, ...packIds.filter(id => !prev.includes(id))]);
-            setTxError(friendlyError(e.message || 'Something went wrong'));
+            setTxError(friendlyError(e.message || 'Something went wrong', e.stack || e.message));
             setBatchSelection([]);
             setStage(errorStage);
         }

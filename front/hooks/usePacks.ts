@@ -127,7 +127,7 @@ export function usePacks() {
     const buyPack = useCallback(async (
         signer: ethers.Signer,
         count: number = 1
-    ): Promise<{ success: boolean; packTokenIds?: number[]; error?: string }> => {
+    ): Promise<{ success: boolean; packTokenIds?: number[]; error?: string; rawError?: string }> => {
         setIsLoading(true);
         setError(null);
 
@@ -215,8 +215,9 @@ export function usePacks() {
             return { success: true, packTokenIds };
         } catch (e: any) {
             const msg = e.reason || e.message || 'Failed to buy pack';
+            const raw = e.data ? `${e.message}\n\nData: ${JSON.stringify(e.data)}` : (e.stack || e.message || msg);
             setError(msg);
-            return { success: false, error: msg };
+            return { success: false, error: msg, rawError: raw };
         } finally {
             setIsLoading(false);
         }
@@ -226,7 +227,7 @@ export function usePacks() {
     const openPack = useCallback(async (
         signer: ethers.Signer,
         packTokenId: number
-    ): Promise<{ success: boolean; cards?: CardData[]; error?: string }> => {
+    ): Promise<{ success: boolean; cards?: CardData[]; error?: string; rawError?: string }> => {
         setIsLoading(true);
         setError(null);
 
@@ -285,8 +286,9 @@ export function usePacks() {
             return { success: true, cards };
         } catch (e: any) {
             const msg = e.reason || e.message || 'Failed to open pack';
+            const raw = e.data ? `${e.message}\n\nData: ${JSON.stringify(e.data)}` : (e.stack || e.message || msg);
             setError(msg);
-            return { success: false, error: msg };
+            return { success: false, error: msg, rawError: raw };
         } finally {
             setIsLoading(false);
         }
@@ -296,7 +298,7 @@ export function usePacks() {
     const batchOpenPacks = useCallback(async (
         signer: ethers.Signer,
         packTokenIds: number[]
-    ): Promise<{ success: boolean; cards?: CardData[]; error?: string }> => {
+    ): Promise<{ success: boolean; cards?: CardData[]; error?: string; rawError?: string }> => {
         setIsLoading(true);
         setError(null);
 
@@ -353,8 +355,9 @@ export function usePacks() {
             return { success: true, cards };
         } catch (e: any) {
             const msg = e.reason || e.message || 'Failed to open packs';
+            const raw = e.data ? `${e.message}\n\nData: ${JSON.stringify(e.data)}` : (e.stack || e.message || msg);
             setError(msg);
-            return { success: false, error: msg };
+            return { success: false, error: msg, rawError: raw };
         } finally {
             setIsLoading(false);
         }
