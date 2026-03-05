@@ -267,11 +267,14 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
         await handleOpenPack(packTokenId);
     };
 
-    // Batch open: open multiple packs in a single transaction
+    // Batch open: single pack uses openPack, multiple uses batchOpenPacks
     const handleBatchOpen = async (packIds: number[]) => {
         if (packIds.length === 0) return;
         if (!isConnected) { await connect(); return; }
         if (!isCorrectChain) { await switchChain(); return; }
+
+        const fromPortfolio = !!(initialPackIds && initialPackIds.length > 0);
+        const errorStage: Stage = fromPortfolio ? 'opening' : 'bought';
 
         setBatchTotal(packIds.length);
         setMintedCards([]);
@@ -284,11 +287,19 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
 
         try {
             const signer = await getSigner();
-            if (!signer) { setTxError('Failed to get signer'); setStage('bought'); return; }
+            if (!signer) { setTxError('Failed to get signer'); setStage(errorStage); return; }
 
-            const result = await batchOpenPacks(signer, packIds);
+            let result: { success: boolean; cards?: CardData[]; error?: string };
 
-            if (result.success && result.cards) {
+            if (packIds.length === 1) {
+                // Single pack — use proven openPack
+                result = await openPack(signer, packIds[0]);
+            } else {
+                // Multiple packs — use batchOpenPacks (single TX)
+                result = await batchOpenPacks(signer, packIds);
+            }
+
+            if (result.success && result.cards && result.cards.length > 0) {
                 onCardsAcquired?.(result.cards);
                 refreshBalance();
                 setBatchSelection([]);
@@ -300,7 +311,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                 setOwnedPacks(prev => [...prev, ...packIds.filter(id => !prev.includes(id))]);
                 setTxError(friendlyError(result.error || 'Failed to open packs'));
                 setBatchSelection([]);
-                setStage('bought');
+                setStage(errorStage);
             }
         } catch (e: any) {
             // Re-add packs on failure
@@ -308,7 +319,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
             setOwnedPacks(prev => [...prev, ...packIds.filter(id => !prev.includes(id))]);
             setTxError(friendlyError(e.message || 'Something went wrong'));
             setBatchSelection([]);
-            setStage('bought');
+            setStage(errorStage);
         }
     };
 
@@ -579,7 +590,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                             </h2>
                             <p className="text-gray-500 text-sm mb-4">Confirm in wallet to reveal {batchTotal > 1 ? `${batchTotal * 5} cards` : '5 cards'}</p>
                             <button
-                                onClick={() => initialPackId != null ? onClose() : setStage('bought')}
+                                onClick={() => (initialPackId != null || (initialPackIds && initialPackIds.length > 0)) ? onClose() : setStage('bought')}
                                 className="text-gray-500 hover:text-white text-sm font-medium transition-colors"
                             >
                                 Cancel
@@ -595,7 +606,11 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                                     onClick={() => {
                                         setTxError(null);
                                         autoOpenRef.current = false;
-                                        handleOpenPack(selectedPackId || initialPackId!);
+                                        if (initialPackIds && initialPackIds.length > 0) {
+                                            handleBatchOpen(initialPackIds);
+                                        } else {
+                                            handleOpenPack(selectedPackId || initialPackId!);
+                                        }
                                     }}
                                     className="px-6 py-2.5 bg-yc-purple hover:bg-purple-600 text-white rounded-xl font-bold text-sm transition-all"
                                 >
@@ -663,7 +678,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ isOpen, onClose, on
                     {/* Header */}
                     <div className="flex-shrink-0 pt-4 sm:pt-8 pb-2 sm:pb-4 text-center">
                         <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white uppercase tracking-tighter animate-[fadeInUp_0.5s_ease-out]">
-                            {isMultiPack ? `${packCount} Packs Opened!` : 'Pack Opened!'}
+                            {isMultiPack ? `${batchTotal || packCount} Packs Opened!` : 'Pack Opened!'}
                         </h2>
                         <p className="text-gray-400 text-xs sm:text-sm mt-1">{mintedCards.length} cards acquired</p>
                         {isMultiPack && mintedCards.length > 10 && (
