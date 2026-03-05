@@ -705,13 +705,13 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                                 </button>
                             </div>
                         )}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 md:gap-4">
+                        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-1.5 md:gap-3">
                             {myPacks.map((packId) => {
                                 const isSelected = isPackSelectMode && selectedPackOpenIds.includes(packId);
                                 return (
                                     <div
                                         key={`pack-${packId}`}
-                                        className={`group bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border rounded-2xl overflow-hidden hover:-translate-y-1 hover:shadow-lg transition-all duration-300 shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)] ${
+                                        className={`group bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border rounded-xl overflow-hidden hover:-translate-y-1 hover:shadow-lg transition-all duration-300 shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)] ${
                                             isSelected
                                                 ? 'border-yc-purple shadow-yc-purple/20 ring-2 ring-yc-purple/30'
                                                 : 'border-white/40 dark:border-white/[0.08] hover:border-yc-purple/40 dark:hover:border-yc-purple/30 hover:shadow-yc-purple/10'
@@ -719,7 +719,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                                     >
                                         <div
                                             className="relative bg-gradient-to-b from-yc-purple/5 to-gray-50 dark:from-yc-purple/[0.04] dark:to-transparent cursor-pointer"
-                                            style={{ aspectRatio: '591/1004' }}
+                                            style={{ aspectRatio: '1/1' }}
                                             onClick={() => {
                                                 if (isPackSelectMode) {
                                                     setSelectedPackOpenIds(prev =>
@@ -732,15 +732,15 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                                                 }
                                             }}
                                         >
-                                            <img src="/image.png" alt="Pack" className="absolute inset-0 w-full h-full object-contain p-2" loading="lazy" />
+                                            <img src="/image.png" alt="Pack" className="absolute inset-0 w-full h-full object-contain p-1.5" loading="lazy" />
                                             {/* Selection badge */}
                                             {isPackSelectMode && isSelected && (
                                                 <div className="absolute top-2 right-2 w-6 h-6 bg-yc-purple rounded-full flex items-center justify-center z-10 shadow-lg">
                                                     <Check className="w-3.5 h-3.5 text-white" />
                                                 </div>
                                             )}
-                                            <div className="absolute bottom-2 left-0 right-0 flex flex-col items-center pointer-events-none group-hover:opacity-0 transition-opacity duration-200">
-                                                <span className="text-gray-700 dark:text-white/50 text-xs font-mono bg-white/60 dark:bg-black/40 px-2 py-0.5 rounded">#{packId}</span>
+                                            <div className="absolute bottom-1 left-0 right-0 flex flex-col items-center pointer-events-none group-hover:opacity-0 transition-opacity duration-200">
+                                                <span className="text-gray-700 dark:text-white/50 text-[10px] font-mono bg-white/60 dark:bg-black/40 px-1.5 py-0.5 rounded">#{packId}</span>
                                             </div>
                                             {/* Glass overlay Open button (only in normal mode) */}
                                             {!isPackSelectMode && (
