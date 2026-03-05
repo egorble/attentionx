@@ -1387,16 +1387,21 @@ app.post('/api/token-leagues/autoplay', writeLimiter, (req, res) => {
 // Record entry (called by frontend after contract tx succeeds)
 app.post('/api/token-leagues/entry', writeLimiter, (req, res) => {
     try {
-        const { cycleId, address, tokenIds } = req.body;
-        console.log(`[API] POST /entry — cycleId=${cycleId} address=${address} tokens=${JSON.stringify(tokenIds)}`);
+        const { cycleId, address, tokenIds, boosted } = req.body;
+        console.log(`[API] POST /entry — cycleId=${cycleId} address=${address} tokens=${JSON.stringify(tokenIds)} boosted=${!!boosted}`);
         if (!cycleId || !address || !Array.isArray(tokenIds) || tokenIds.length !== 5) {
             console.warn(`[API] POST /entry — invalid params rejected`);
             return res.status(400).json({ success: false, error: 'Invalid params' });
         }
-        db.saveTokenEntry(cycleId, address, tokenIds);
+        db.saveTokenEntry(cycleId, address, tokenIds, !!boosted);
         const cycle = db.getActiveTokenCycle();
         if (cycle) {
             db.updateTokenCycleEntry(cycleId, (cycle.entry_count || 0) + 1, cycle.prize_pool);
+        }
+        // Immediately register boost so live scores pick it up without waiting for on-chain sync
+        if (boosted && cycleManager._boostedPlayers) {
+            cycleManager._boostedPlayers.add(address.toLowerCase());
+            console.log(`[API] POST /entry — marked ${address.substring(0, 10)}... as boosted for cycle #${cycleId}`);
         }
         db.saveDatabase();
         console.log(`[API] POST /entry — saved successfully for cycle #${cycleId}`);

@@ -802,6 +802,9 @@ export function runTokenLeaguesMigrations() {
     for (const sql of tables) {
         try { db.run(sql); } catch (e) { /* already exists */ }
     }
+
+    // Migrations
+    try { db.run('ALTER TABLE token_entries ADD COLUMN boosted INTEGER DEFAULT 0'); } catch (e) { /* column already exists */ }
 }
 
 export function saveTokenCycle(cycleId, startTime, endTime) {
@@ -832,11 +835,11 @@ export function updateTokenCycleEntry(cycleId, entryCount, prizePool) {
         [entryCount, prizePool, cycleId]);
 }
 
-export function saveTokenEntry(cycleId, playerAddress, tokenIds) {
+export function saveTokenEntry(cycleId, playerAddress, tokenIds, boosted = false) {
     exec(`
-        INSERT OR IGNORE INTO token_entries (cycle_id, player_address, token_ids)
-        VALUES (?, ?, ?)
-    `, [cycleId, playerAddress.toLowerCase(), JSON.stringify(tokenIds)]);
+        INSERT OR IGNORE INTO token_entries (cycle_id, player_address, token_ids, boosted)
+        VALUES (?, ?, ?, ?)
+    `, [cycleId, playerAddress.toLowerCase(), JSON.stringify(tokenIds), boosted ? 1 : 0]);
 }
 
 export function getTokenEntries(cycleId) {

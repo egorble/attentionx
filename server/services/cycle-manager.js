@@ -457,8 +457,9 @@ class CycleManager extends EventEmitter {
                 // Score = average % change × leverage
                 let score = (totalPct / tokenIds.length) * LEVERAGE;
 
-                // Apply boost (+5 flat points for boosted players)
-                const isBoosted = this._boostedPlayers && this._boostedPlayers.has(entry.player_address.toLowerCase());
+                // Apply boost (+5 flat points for boosted players) — check DB column OR in-memory set OR on-chain sync
+                const isBoosted = entry.boosted
+                    || (this._boostedPlayers && this._boostedPlayers.has(entry.player_address.toLowerCase()));
                 if (isBoosted) score += 5;
 
                 scores.push({
@@ -587,8 +588,8 @@ class CycleManager extends EventEmitter {
             }
             let score = (totalPct / entry.token_ids.length) * LEVERAGE;
 
-            // Apply boost (+5 flat points for boosted players)
-            if (boostedFinal.has(entry.player_address.toLowerCase())) {
+            // Apply boost (+5 flat points for boosted players) — DB column OR on-chain
+            if (entry.boosted || boostedFinal.has(entry.player_address.toLowerCase())) {
                 score += 5;
             }
 
