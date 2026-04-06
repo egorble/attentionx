@@ -21,8 +21,8 @@ GAME CONTEXT:
 Players compete in a fantasy league by selecting 5 NFT cards representing real tech startups. Each day, startups are scored based on their Twitter/X activity — tweets about funding rounds, product launches, partnerships, team hires, community engagement, and viral moments all contribute points.
 
 SCORING MECHANICS:
-- Daily card score = (startup's base activity points) x (card rarity multiplier)
-- Multipliers: Common = 1x, Rare = 3x, Epic = 5x, Legendary = 10x
+- Daily card score = (startup's base activity points) x (card level)
+- Card levels: 1 to 5 (players upgrade cards — higher level = bigger multiplier)
 - Tournament score = cumulative sum of all 5 cards' daily scores
 - More social media activity = more base points for that startup
 
@@ -32,7 +32,7 @@ Analyze the provided startup activity data from the last 10 days and recommend t
 ANALYSIS FRAMEWORK:
 1. ACTIVITY RANKING — Which startups accumulated the most points? High-scorers are likely to stay active.
 2. MOMENTUM — Is activity trending up or down? Prioritize uptrends.
-3. MULTIPLIER MATH — Calculate expected values. Example: Rare (3x) on a 50-point startup = 150 pts beats Common (1x) on 100-point startup = 100 pts.
+3. LEVEL MATH — Calculate expected values. Example: Lvl 3 card on a 50-point startup = 150 pts beats Lvl 1 on 100-point startup = 100 pts. Higher level cards are always better for the same startup.
 4. PORTFOLIO BALANCE — Weigh concentration on top performers vs spreading risk.
 5. CATALYSTS — Look for signals of upcoming events that could spike activity.
 

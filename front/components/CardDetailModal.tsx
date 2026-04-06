@@ -35,7 +35,7 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({ data, cardData, onClo
     if (!displayData) return null;
 
     const rarity = cardData?.rarity || data?.rarity || 'Common';
-    const multiplier = cardData?.multiplier || Number(data?.multiplier || data?.value || 1);
+    const level = cardData?.level || cardData?.multiplier || Number(data?.multiplier || data?.value || 1);
     const edition = cardData?.edition;
     const tokenId = cardData?.tokenId;
     const startupId = cardData?.startupId;
@@ -139,10 +139,10 @@ const CardDetailModal: React.FC<CardDetailModalProps> = ({ data, cardData, onClo
                             <div className="p-2.5 md:p-4 rounded-lg bg-gray-50 dark:bg-white/[0.04] border border-gray-100 dark:border-white/[0.06]">
                                 <div className="flex items-center gap-1 md:gap-2 text-gray-500 dark:text-gray-400 mb-1 md:mb-2">
                                     <TrendingUp className="w-3 h-3 md:w-4 md:h-4" />
-                                    <span className="text-[10px] md:text-xs font-semibold uppercase">Multiplier</span>
+                                    <span className="text-[10px] md:text-xs font-semibold uppercase">Level</span>
                                 </div>
                                 <p className="text-base md:text-2xl font-bold text-gray-900 dark:text-white font-mono tracking-tight">
-                                    {multiplier}x
+                                    Lvl {level} <span className="text-sm text-gray-500">({level}x)</span>
                                 </p>
                                 <p className="mt-1 md:mt-2 text-[10px] md:text-xs text-gray-500">Score multiplier</p>
                             </div>

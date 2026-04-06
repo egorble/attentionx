@@ -180,18 +180,28 @@ async function checkAndFinalize() {
 
     console.log(`\n   Total score: ${totalScore}`);
 
-    // 6. Calculate proportional prize distribution
+    // 6. Calculate proportional prize distribution (TOP 100 only)
+    const TOP_N = 100;
     const winners = [];
     const amounts = [];
 
     if (totalScore > 0n && prizePool > 0n) {
-        for (const { address, score } of userScores) {
-            if (score > 0n) {
-                const prize = (score * prizePool) / totalScore;
-                winners.push(address);
-                amounts.push(prize);
-                console.log(`     ${address.substring(0, 10)}... - prize: ${ethers.formatEther(prize)} XTZ`);
-            }
+        // Sort by score descending and take top 100
+        const sortedScores = userScores
+            .filter(({ score }) => score > 0n)
+            .sort((a, b) => (b.score > a.score ? 1 : b.score < a.score ? -1 : 0));
+
+        const topPlayers = sortedScores.slice(0, TOP_N);
+        console.log(`   Distributing to top ${Math.min(topPlayers.length, TOP_N)} of ${sortedScores.length} players`);
+
+        // Recalculate total score for top players only
+        const topTotalScore = topPlayers.reduce((sum, p) => sum + p.score, 0n);
+
+        for (const { address, score } of topPlayers) {
+            const prize = (score * prizePool) / topTotalScore;
+            winners.push(address);
+            amounts.push(prize);
+            console.log(`     ${address.substring(0, 10)}... - prize: ${ethers.formatEther(prize)} XTZ`);
         }
     } else if (totalScore === 0n) {
         console.log('   No scores - no prizes to distribute');

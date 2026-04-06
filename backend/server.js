@@ -192,8 +192,10 @@ function buildMetadata(tokenId, tokenData) {
 
     const effectiveRarity = (contractRarity !== null && contractRarity >= 0 && contractRarity <= 4)
         ? RARITY_NAMES[contractRarity] : startup.rarity;
-    const effectiveMultiplier = (contractMultiplier !== null && contractMultiplier > 0)
-        ? contractMultiplier : startup.multiplier;
+    // contractMultiplier now represents card level (1-5) after upgrade system
+    const cardLevel = (contractMultiplier !== null && contractMultiplier > 0)
+        ? contractMultiplier : 1;
+    const effectiveMultiplier = cardLevel;
     const stats = DYNAMIC_STATS[startupId] || {};
 
     const imageUrl = IPFS_IMAGE_BASE.startsWith("ipfs://") && !IPFS_IMAGE_BASE.includes("PLACEHOLDER")
@@ -210,7 +212,8 @@ function buildMetadata(tokenId, tokenData) {
             { trait_type: "Startup", value: startup.name },
             { trait_type: "Startup ID", value: startupId.toString() },
             { trait_type: "Rarity", value: effectiveRarity },
-            { trait_type: "Multiplier", value: effectiveMultiplier.toString() + "x" },
+            { trait_type: "Level", value: cardLevel, display_type: "number" },
+            { trait_type: "Multiplier", value: cardLevel.toString() + "x" },
             { trait_type: "Edition", value: edition.toString(), display_type: "number" },
             { trait_type: "Total Minted", value: totalMinted, display_type: "number" },
             { trait_type: "Locked", value: isLocked ? "Yes" : "No" },

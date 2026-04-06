@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { CardData, Rarity, sortByRarity } from '../types';
 import CardDetailModal, { CardDetailData } from './CardDetailModal';
 import Analytics from './Analytics';
-import { Wallet, ArrowUpRight, TrendingUp, Plus, ShoppingCart, Layers, X, Check, RefreshCw, Tag, Loader2, Gavel, Clock, Activity, DollarSign, History, Package, PackageOpen } from 'lucide-react';
+import { Wallet, ArrowUpRight, TrendingUp, Plus, ShoppingCart, Layers, X, Check, RefreshCw, Tag, Loader2, Gavel, Clock, Activity, DollarSign, History, Package, PackageOpen, ArrowUp } from 'lucide-react';
 import { useWalletContext } from '../context/WalletContext';
 import { useNFT } from '../hooks/useNFT';
 import { usePacks } from '../hooks/usePacks';
+import { useUpgrade, UpgradeConfig } from '../hooks/useUpgrade';
 import { useMarketplaceV2 } from '../hooks/useMarketplaceV2';
 import { usePollingData } from '../hooks/usePollingData';
 import { formatXTZ } from '../lib/contracts';
@@ -15,6 +16,21 @@ import { useOnboarding } from '../hooks/useOnboarding';
 import OnboardingGuide, { OnboardingStep } from './OnboardingGuide';
 import { blockchainCache, CacheKeys } from '../lib/cache';
 
+// Level badge overlay component
+const LevelBadge: React.FC<{ level?: number; className?: string }> = ({ level, className = '' }) => {
+    const lvl = level || 1;
+    const colors = lvl >= 5 ? 'from-yellow-500 to-amber-600 text-white' :
+                   lvl >= 4 ? 'from-purple-500 to-violet-600 text-white' :
+                   lvl >= 3 ? 'from-blue-500 to-indigo-600 text-white' :
+                   lvl >= 2 ? 'from-green-500 to-emerald-600 text-white' :
+                              'from-gray-500 to-gray-600 text-white';
+    return (
+        <div className={`absolute top-1.5 left-1.5 md:top-2 md:left-2 z-20 bg-gradient-to-r ${colors} text-[9px] md:text-[10px] font-black px-1.5 py-0.5 md:px-2 md:py-0.5 rounded shadow-lg ${className}`}>
+            LVL {lvl}
+        </div>
+    );
+};
+
 const PORTFOLIO_GUIDE: OnboardingStep[] = [
     {
         title: 'Your Collection',
@@ -22,8 +38,13 @@ const PORTFOLIO_GUIDE: OnboardingStep[] = [
         icon: '\uD83C\uDCCF',
     },
     {
+        title: 'Upgrade Cards',
+        description: 'All cards start at Level 1. Tap the UP button to upgrade (Lvl 1-5). Higher level = bigger score multiplier. But beware: if the upgrade fails, your card is burned forever!',
+        icon: '\u26A1',
+    },
+    {
         title: 'Merge Cards',
-        description: 'Combine 3 cards of the same startup and rarity to forge a higher rarity card with a bigger score multiplier.',
+        description: 'Combine 3 cards of the same rarity to forge a higher rarity card. Use the Merge button to select cards.',
         icon: '\u2728',
     },
     {
@@ -97,10 +118,17 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
     const [packAuctionDuration, setPackAuctionDuration] = useState('24');
     const [isSellingPack, setIsSellingPack] = useState(false);
 
+    // Upgrade state
+    const [upgradeModalCard, setUpgradeModalCard] = useState<CardData | null>(null);
+    const [upgradeConfig, setUpgradeConfig] = useState<UpgradeConfig | null>(null);
+    const [upgradeStatus, setUpgradeStatus] = useState<'idle' | 'confirming' | 'success' | 'failed'>('idle');
+    const [upgradeResultLevel, setUpgradeResultLevel] = useState<number | null>(null);
+
     // Hooks
     const { isConnected, address, getSigner, connect } = useWalletContext();
     const { getCards, getCardInfo, getCardInfoWithRetry, mergeCards, isLoading, clearCache, updateServerCache } = useNFT();
     const { getUserPacks } = usePacks();
+    const { upgradeCard, getUpgradeConfig, isLoading: upgradeLoading } = useUpgrade();
     const { listCard, listPack, createAuction, createPackAuction, getBidsForToken, getTokenStats, getTokenSaleHistory, loading: marketplaceLoading } = useMarketplaceV2();
     const { isVisible: showGuide, currentStep: guideStep, nextStep: guideNext, dismiss: guideDismiss } = useOnboarding('portfolio');
 
@@ -237,6 +265,41 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                 batch: 'W24',
                 stage: card.isLocked ? 'Locked' : 'Available'
             });
+        }
+    };
+
+    // Open upgrade modal for a card
+    const openUpgradeModal = async (card: CardData) => {
+        setUpgradeModalCard(card);
+        setUpgradeStatus('idle');
+        setUpgradeResultLevel(null);
+        // Fetch config
+        const config = await getUpgradeConfig();
+        setUpgradeConfig(config);
+    };
+
+    // Execute upgrade
+    const handleUpgrade = async () => {
+        if (!upgradeModalCard || !upgradeConfig) return;
+        const signer = await getSigner();
+        if (!signer) return;
+
+        setUpgradeStatus('confirming');
+        const result = await upgradeCard(signer, upgradeModalCard.tokenId);
+
+        if (result.success && result.newLevel) {
+            setUpgradeStatus('success');
+            setUpgradeResultLevel(result.newLevel);
+            // Update local card data
+            setMyCards(prev => prev.map(c =>
+                c.tokenId === upgradeModalCard.tokenId
+                    ? { ...c, level: result.newLevel!, multiplier: result.newLevel! }
+                    : c
+            ));
+            // Invalidate cache and refresh
+            clearCache();
+        } else {
+            setUpgradeStatus('failed');
         }
     };
 
@@ -816,6 +879,105 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                     </button>
                 </div>
 
+                {/* Upgrade Modal */}
+                {upgradeModalCard && (
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => { setUpgradeModalCard(null); setUpgradeStatus('idle'); }}>
+                        <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-white/20 dark:border-white/10" onClick={e => e.stopPropagation()}>
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Upgrade Card</h3>
+                                <button onClick={() => { setUpgradeModalCard(null); setUpgradeStatus('idle'); }} className="text-gray-400 hover:text-white">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="flex items-center gap-4 mb-4">
+                                <img src={upgradeModalCard.image} alt={upgradeModalCard.name} className="w-20 h-20 rounded-lg object-contain" />
+                                <div>
+                                    <p className="font-bold text-gray-900 dark:text-white">{upgradeModalCard.name}</p>
+                                    <p className="text-sm text-gray-500">{upgradeModalCard.rarity}</p>
+                                    <p className="text-sm font-mono text-yc-purple">Level {upgradeModalCard.level || upgradeModalCard.multiplier} → {(upgradeModalCard.level || upgradeModalCard.multiplier) + 1}</p>
+                                </div>
+                            </div>
+
+                            {upgradeConfig && upgradeStatus === 'idle' && (
+                                <>
+                                    <div className="bg-gray-100 dark:bg-zinc-800 rounded-xl p-3 mb-3 space-y-2">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-500">Cost</span>
+                                            <span className="font-bold text-green-500">FREE</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-500">Success Rate</span>
+                                            <span className="font-bold text-green-500">{upgradeConfig.chances[upgradeModalCard.level || upgradeModalCard.multiplier] || 0}%</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-500">On Failure</span>
+                                            <span className="font-bold text-red-500">Card is BURNED</span>
+                                        </div>
+                                    </div>
+                                    <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 mb-4">
+                                        <p className="text-red-400 text-xs text-center font-semibold">
+                                            WARNING: If upgrade fails, your card will be permanently destroyed!
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={handleUpgrade}
+                                        disabled={upgradeLoading}
+                                        className="w-full py-3 bg-gradient-to-r from-yc-purple to-violet-600 text-white font-bold rounded-xl hover:opacity-90 transition-all active:scale-95 disabled:opacity-50"
+                                    >
+                                        {upgradeLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Upgrade (Risk it!)'}
+                                    </button>
+                                </>
+                            )}
+
+                            {upgradeStatus === 'confirming' && (
+                                <div className="text-center py-4">
+                                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-yc-purple" />
+                                    <p className="text-gray-400">Confirm in your wallet...</p>
+                                </div>
+                            )}
+
+                            {upgradeStatus === 'success' && (
+                                <div className="text-center py-4">
+                                    <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <ArrowUp className="w-8 h-8 text-green-500" />
+                                    </div>
+                                    <h4 className="text-xl font-bold text-green-500 mb-1">Upgrade Success!</h4>
+                                    <p className="text-gray-400 mb-4">Card is now Level {upgradeResultLevel}</p>
+                                    <button
+                                        onClick={() => { setUpgradeModalCard(null); setUpgradeStatus('idle'); }}
+                                        className="px-6 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            )}
+
+                            {upgradeStatus === 'failed' && (
+                                <div className="text-center py-4">
+                                    <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-3 animate-pulse">
+                                        <X className="w-8 h-8 text-red-500" />
+                                    </div>
+                                    <h4 className="text-xl font-bold text-red-400 mb-1">Card Burned!</h4>
+                                    <p className="text-gray-400 mb-4">Upgrade failed. Your card has been permanently destroyed.</p>
+                                    <button
+                                        onClick={() => {
+                                            // Remove burned card from local state
+                                            setMyCards(prev => prev.filter(c => c.tokenId !== upgradeModalCard.tokenId));
+                                            setUpgradeModalCard(null);
+                                            setUpgradeStatus('idle');
+                                            clearCache();
+                                        }}
+                                        className="px-6 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* Merge Instructions */}
                 {isMergeMode && (
                     <div className="mb-6 p-4 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-2xl flex items-center animate-[fadeIn_0.3s] shadow-[0_8px_32px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]">
@@ -875,9 +1037,12 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                                         </div>
                                     )}
 
+                                    {/* Level Badge */}
+                                    <LevelBadge level={card.level || card.multiplier} />
+
                                     {/* Locked Badge */}
                                     {card.isLocked && (
-                                        <div className="absolute top-3 left-3 z-20 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded">
+                                        <div className="absolute top-3 right-3 z-20 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded">
                                             LOCKED
                                         </div>
                                     )}
@@ -885,6 +1050,17 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                                     <div className="relative" style={{ aspectRatio: '591/1004' }}>
                                         <img src={card.image} alt={card.name} className="w-full h-full object-contain" />
                                     </div>
+
+                                    {/* Upgrade button - visible when not in merge mode and card is upgradeable */}
+                                    {!isMergeMode && !card.isLocked && (card.level || card.multiplier || 1) < 5 && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); openUpgradeModal(card); }}
+                                            className="absolute bottom-1.5 right-1.5 md:bottom-2 md:right-2 z-20 bg-gradient-to-r from-yc-purple to-violet-600 text-white text-[9px] md:text-[10px] font-bold px-2 py-1 md:px-2.5 md:py-1 rounded-lg shadow-lg hover:opacity-90 transition-all active:scale-95 flex items-center gap-0.5"
+                                        >
+                                            <ArrowUp className="w-3 h-3" />
+                                            UP
+                                        </button>
+                                    )}
                                 </div>
                             );
                         })}
@@ -1068,7 +1244,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                             <div>
                                 <h4 className="text-gray-900 dark:text-white font-bold">{cardToSell.name}</h4>
                                 <p className="text-gray-500 dark:text-gray-400 text-sm">
-                                    {cardToSell.rarity} · {cardToSell.multiplier}x
+                                    {cardToSell.rarity} · Lvl {cardToSell.level || cardToSell.multiplier}
                                 </p>
                             </div>
                         </div>
@@ -1279,7 +1455,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                             <div>
                                 <h4 className="text-gray-900 dark:text-white font-bold">{statsCard.name}</h4>
                                 <p className="text-gray-500 dark:text-gray-400 text-sm">
-                                    {statsCard.rarity} · {statsCard.multiplier}x · #{statsCard.tokenId}
+                                    {statsCard.rarity} · Lvl {statsCard.level || statsCard.multiplier} · #{statsCard.tokenId}
                                 </p>
                             </div>
                         </div>

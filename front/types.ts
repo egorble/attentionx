@@ -49,7 +49,8 @@ export interface CardData {
   startupId: number;
   name: string;
   rarity: Rarity;
-  multiplier: number;
+  level?: number; // Card level 1-5 (= score multiplier), defaults to multiplier
+  multiplier: number; // = level (kept for backward compat)
   isLocked: boolean;
   image: string;
   edition: number;
@@ -120,12 +121,14 @@ export interface Pack {
 
 // Helper to convert legacy to new CardData
 export function legacyToCardData(legacy: LegacyCardData, index: number): CardData {
+  const level = parseFloat(legacy.multiplier) || 1;
   return {
     tokenId: index,
     startupId: index,
     name: legacy.startupName,
     rarity: legacy.rarity,
-    multiplier: parseFloat(legacy.multiplier) || 1,
+    level,
+    multiplier: level,
     isLocked: false,
     image: legacy.image,
     edition: 1,

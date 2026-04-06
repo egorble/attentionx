@@ -52,11 +52,20 @@ export const NFT_ABI = [
     'function startups(uint256 id) view returns (tuple(string name, uint8 rarity, uint256 multiplier))',
     // Write functions
     'function mergeCards(uint256[3] tokenIds) returns (uint256)',
+    'function upgradeCard(uint256 tokenId)',
     'function approve(address to, uint256 tokenId)',
     'function setApprovalForAll(address operator, bool approved)',
+    // Upgrade system read functions
+    'function getCardLevel(uint256 tokenId) view returns (uint8)',
+    'function upgradeChance(uint8 level) view returns (uint16)',
+    // Upgrade admin functions
+    'function initializeUpgradeSystem()',
+    'function setUpgradeChance(uint8 level, uint16 chance)',
     // Events
     'event CardMinted(address indexed to, uint256 indexed tokenId, uint256 indexed startupId, uint256 edition)',
     'event CardsMerged(address indexed owner, uint256[3] burnedTokenIds, uint256 indexed newTokenId, uint8 fromRarity, uint8 toRarity)',
+    'event CardUpgraded(address indexed owner, uint256 indexed tokenId, uint8 fromLevel, uint8 toLevel)',
+    'event CardUpgradeFailed(address indexed owner, uint256 indexed tokenId, uint8 currentLevel)',
     'event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)',
 ];
 

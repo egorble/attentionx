@@ -101,6 +101,33 @@ contract AttentionX_NFT is
     /// @notice Startup information by ID (1-20)
     mapping(uint256 => StartupInfo) public startups;
 
+    // ============ Card Upgrade System (added in upgrade) ============
+
+    /// @notice Card level per tokenId (0 means level 1 — default for unmapped)
+    mapping(uint256 => uint8) public cardLevel;
+
+    /// @notice Upgrade cost in wei (default 0.0005 ETH)
+    uint256 public upgradeCost;
+
+    /// @notice Success chance per level upgrade in basis points (10000 = 100%)
+    /// upgradeChance[1] = chance for lv1→lv2, upgradeChance[4] = chance for lv4→lv5
+    mapping(uint8 => uint16) public upgradeChance;
+
+    /// @notice Maximum card level
+    uint8 public constant MAX_CARD_LEVEL = 5;
+
+    /// @notice TournamentManager address for prize pool forwarding
+    address public tournamentManagerAddress;
+
+    /// @notice Active tournament ID for prize pool forwarding
+    uint256 public activeTournamentIdForUpgrade;
+
+    /// @notice Pending prize pool (when no active tournament)
+    uint256 public pendingUpgradePrizePool;
+
+    /// @notice Platform percentage for upgrade fees (10 = 10%)
+    uint256 public constant UPGRADE_PLATFORM_PERCENT = 10;
+
     // ============ Events ============
 
     event CardMinted(
@@ -125,6 +152,26 @@ contract AttentionX_NFT is
         Rarity toRarity
     );
 
+    event CardUpgraded(
+        address indexed owner,
+        uint256 indexed tokenId,
+        uint8 fromLevel,
+        uint8 toLevel
+    );
+
+    event CardUpgradeFailed(
+        address indexed owner,
+        uint256 indexed tokenId,
+        uint8 currentLevel
+    );
+
+    event UpgradeCostUpdated(uint256 oldCost, uint256 newCost);
+    event UpgradeChanceUpdated(uint8 level, uint16 oldChance, uint16 newChance);
+    event UpgradeFundsDistributed(uint256 prizePoolAmount, uint256 platformAmount);
+    event TournamentManagerAddressUpdated(address oldAddr, address newAddr);
+    event ActiveTournamentIdUpdated(uint256 oldId, uint256 newId);
+    event PendingUpgradeFundsForwarded(uint256 tournamentId, uint256 amount);
+
     // ============ Errors ============
 
     error MaxSupplyReached();
@@ -139,6 +186,10 @@ contract AttentionX_NFT is
     error CannotMergeLegendary();
     error RarityMismatch();
     error NotAdmin();
+    error MaxLevelReached();
+    error InsufficientPayment();
+    error NoContractCalls();
+    error WithdrawFailed();
 
     // ============ Modifiers ============
 
@@ -381,7 +432,7 @@ contract AttentionX_NFT is
             startupId: startupId,
             edition: tokenToEdition[tokenId],
             rarity: startup.rarity,
-            multiplier: startup.multiplier,
+            multiplier: uint256(getCardLevel(tokenId)),
             isLocked: isLocked[tokenId],
             name: startup.name
         });
@@ -401,6 +452,59 @@ contract AttentionX_NFT is
         }
 
         return tokenIds;
+    }
+
+    // ============ Card Upgrade Functions ============
+
+    /// @notice Initialize upgrade system defaults (call once after UUPS upgrade)
+    function initializeUpgradeSystem() external onlyAdmin {
+        upgradeChance[1] = 8000;  // 80% for lv1→lv2
+        upgradeChance[2] = 7000;  // 70% for lv2→lv3
+        upgradeChance[3] = 6000;  // 60% for lv3→lv4
+        upgradeChance[4] = 5000;  // 50% for lv4→lv5
+    }
+
+    /// @notice Get the effective level of a card (0 stored = level 1)
+    function getCardLevel(uint256 tokenId) public view returns (uint8) {
+        uint8 stored = cardLevel[tokenId];
+        return stored == 0 ? 1 : stored;
+    }
+
+    /// @notice Upgrade a card's level. FREE but card is BURNED on failure.
+    /// @param tokenId The token to upgrade
+    function upgradeCard(uint256 tokenId) external nonReentrant whenNotPaused {
+        // Anti-contract-sniper: only EOAs can upgrade
+        if (tx.origin != msg.sender) revert NoContractCalls();
+        // Must own the card
+        if (ownerOf(tokenId) != msg.sender) revert NotCardOwner();
+        // Card must not be locked in tournament
+        if (isLocked[tokenId]) revert CardIsLocked();
+
+        uint8 currentLevel = getCardLevel(tokenId);
+        if (currentLevel >= MAX_CARD_LEVEL) revert MaxLevelReached();
+
+        // Generate pseudo-random number
+        uint256 randomSeed = uint256(keccak256(abi.encodePacked(
+            block.prevrandao,
+            block.timestamp,
+            msg.sender,
+            tokenId,
+            currentLevel
+        )));
+        uint16 roll = uint16(randomSeed % 10000); // 0-9999
+
+        uint16 chance = upgradeChance[currentLevel];
+        bool success = roll < chance;
+
+        if (success) {
+            uint8 newLevel = currentLevel + 1;
+            cardLevel[tokenId] = newLevel;
+            emit CardUpgraded(msg.sender, tokenId, currentLevel, newLevel);
+        } else {
+            // BURN the card on failure
+            emit CardUpgradeFailed(msg.sender, tokenId, currentLevel);
+            _burn(tokenId);
+        }
     }
 
     // ============ Admin Functions ============
@@ -438,6 +542,15 @@ contract AttentionX_NFT is
     /// @notice Re-initialize startup data after UUPS upgrade (fixes any stale storage)
     function reinitializeStartups() external onlyAdmin {
         _initializeStartups();
+    }
+
+    /// @notice Set upgrade chance for a specific level transition (in basis points, 10000 = 100%)
+    function setUpgradeChance(uint8 level, uint16 chance) external onlyAdmin {
+        require(level >= 1 && level <= 4, "Level must be 1-4");
+        require(chance <= 10000, "Chance must be <= 10000");
+        uint16 oldChance = upgradeChance[level];
+        upgradeChance[level] = chance;
+        emit UpgradeChanceUpdated(level, oldChance, chance);
     }
 
     // ============ Overrides ============

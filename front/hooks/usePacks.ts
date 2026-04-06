@@ -60,7 +60,9 @@ async function fetchCardMetadata(tokenId: number): Promise<CardData | null> {
         };
 
         const rarityStr = getAttribute('Rarity') || 'Common';
+        const levelAttr = getAttribute('Level');
         const multiplierStr = getAttribute('Multiplier') || '1x';
+        const level = levelAttr ? parseInt(levelAttr) : (parseInt(multiplierStr) || 1);
 
         const startupId = parseInt(getAttribute('Startup ID')) || 1;
         return {
@@ -68,7 +70,8 @@ async function fetchCardMetadata(tokenId: number): Promise<CardData | null> {
             startupId,
             name: getAttribute('Startup') || data.name?.split(' #')[0] || 'Unknown',
             rarity: RARITY_STRING_MAP[rarityStr] || Rarity.COMMON,
-            multiplier: parseInt(multiplierStr) || 1,
+            level,
+            multiplier: level,
             isLocked: getAttribute('Locked') === 'Yes',
             image: `/images/${startupId}.png`,
             edition: parseInt(getAttribute('Edition')) || 1,

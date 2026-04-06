@@ -29,7 +29,7 @@ const LEAGUES_GUIDE: OnboardingStep[] = [
     },
     {
         title: 'Daily Scoring',
-        description: 'Every night, our system scans Twitter for startup activity. The more active a startup is, the more points your card earns. Higher rarity cards have bigger multipliers.',
+        description: 'Every night, our system scans Twitter for startup activity. The more active a startup is, the more points your card earns. Higher level cards have bigger multipliers — upgrade your cards!',
         icon: '\uD83D\uDCCA',
     },
     {
@@ -925,7 +925,7 @@ const Leagues: React.FC = () => {
                                                                         </div>
                                                                         <p className="text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 mt-1 text-center truncate w-full">{card.name}</p>
                                                                         <span className={`text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded mt-0.5 ${RARITY_BADGE[card.rarity] || RARITY_BADGE.Common}`}>
-                                                                            {card.rarity} {card.multiplier}x
+                                                                            {card.rarity} Lvl{card.multiplier}
                                                                         </span>
                                                                         {scoreData && (
                                                                             <span className="text-[9px] sm:text-[10px] font-bold font-mono text-emerald-500 mt-0.5">

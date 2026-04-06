@@ -47,6 +47,7 @@ interface ListingWithMeta extends Listing {
     cardName?: string;
     cardImage?: string;
     rarity?: string;
+    level?: number;
     multiplier?: number;
     priceFormatted?: string;
     isPack?: boolean;
@@ -56,11 +57,27 @@ interface AuctionWithMeta extends Auction {
     cardName?: string;
     cardImage?: string;
     rarity?: string;
+    level?: number;
     multiplier?: number;
     timeLeft?: string;
     isEnded?: boolean;
     isPack?: boolean;
 }
+
+// Level badge overlay component
+const LevelBadge: React.FC<{ level?: number; className?: string }> = ({ level, className = '' }) => {
+    const lvl = level || 1;
+    const colors = lvl >= 5 ? 'from-yellow-500 to-amber-600 text-white' :
+                   lvl >= 4 ? 'from-purple-500 to-violet-600 text-white' :
+                   lvl >= 3 ? 'from-blue-500 to-indigo-600 text-white' :
+                   lvl >= 2 ? 'from-green-500 to-emerald-600 text-white' :
+                              'from-gray-500 to-gray-600 text-white';
+    return (
+        <div className={`absolute top-1.5 left-1.5 md:top-2 md:left-2 z-20 bg-gradient-to-r ${colors} text-[9px] md:text-[10px] font-black px-1.5 py-0.5 md:px-2 md:py-0.5 rounded shadow-lg ${className}`}>
+            LVL {lvl}
+        </div>
+    );
+};
 
 // Pack visual component — renders the 3D pack model
 const PackVisual: React.FC<{ tokenId: number | bigint; className?: string; style?: React.CSSProperties }> = ({ tokenId, className = '', style }) => (
@@ -186,6 +203,7 @@ const Marketplace: React.FC = () => {
     const [cancellingBidId, setCancellingBidId] = useState<number | null>(null);
 
     const rarityTabs = ['All', 'Common', 'Rare', 'Epic', 'Legendary'];
+    const [levelFilter, setLevelFilter] = useState<number>(0); // 0 = All
 
     // Fetcher functions for polling
     const fetchListings = useCallback(async (): Promise<ListingWithMeta[]> => {
@@ -212,6 +230,7 @@ const Marketplace: React.FC = () => {
                             cardName: cardInfo?.name || `Card #${listing.tokenId}`,
                             cardImage: cardInfo?.image || '/placeholder-card.png',
                             rarity: cardInfo?.rarity || 'Common',
+                            level: cardInfo?.level || 1,
                             multiplier: cardInfo?.multiplier || 1,
                             priceFormatted: formatXTZ(listing.price),
                         };
@@ -221,6 +240,7 @@ const Marketplace: React.FC = () => {
                             cardName: `Card #${listing.tokenId}`,
                             cardImage: '/placeholder-card.png',
                             rarity: 'Common',
+                            level: 1,
                             multiplier: 1,
                             priceFormatted: formatXTZ(listing.price),
                         };
@@ -260,6 +280,7 @@ const Marketplace: React.FC = () => {
                             cardName: cardInfo?.name || `Card #${auction.tokenId}`,
                             cardImage: cardInfo?.image || '/placeholder-card.png',
                             rarity: cardInfo?.rarity || 'Common',
+                            level: cardInfo?.level || 1,
                             multiplier: cardInfo?.multiplier || 1,
                             timeLeft: text,
                             isEnded,
@@ -271,6 +292,7 @@ const Marketplace: React.FC = () => {
                             cardName: `Card #${auction.tokenId}`,
                             cardImage: '/placeholder-card.png',
                             rarity: 'Common',
+                            level: 1,
                             multiplier: 1,
                             timeLeft: text,
                             isEnded,
@@ -718,6 +740,7 @@ const Marketplace: React.FC = () => {
             if (typeFilter === 'cards' && l.isPack) return false;
             if (typeFilter === 'packs' && !l.isPack) return false;
             if (typeFilter !== 'packs' && rarityFilter !== 'All' && l.rarity !== rarityFilter) return false;
+            if (typeFilter !== 'packs' && levelFilter > 0 && (l.level || 1) !== levelFilter) return false;
             if (searchQuery && !l.cardName?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
             return true;
         })
@@ -733,6 +756,7 @@ const Marketplace: React.FC = () => {
             if (typeFilter === 'cards' && a.isPack) return false;
             if (typeFilter === 'packs' && !a.isPack) return false;
             if (typeFilter !== 'packs' && rarityFilter !== 'All' && a.rarity !== rarityFilter) return false;
+            if (typeFilter !== 'packs' && levelFilter > 0 && (a.level || 1) !== levelFilter) return false;
             if (searchQuery && !a.cardName?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
             return true;
         });
@@ -862,6 +886,21 @@ const Marketplace: React.FC = () => {
                                     {tab}
                                 </button>
                             ))}
+                            <span className="text-gray-400 mx-1">|</span>
+                            {[0, 1, 2, 3, 4, 5].map((lvl) => (
+                                <button
+                                    key={`lvl-${lvl}`}
+                                    onClick={() => setLevelFilter(lvl)}
+                                    className={`
+                                        whitespace-nowrap px-3 md:px-5 py-1 md:py-1.5 rounded-full text-[10px] md:text-xs font-bold transition-all duration-300 transform active:scale-95
+                                        ${levelFilter === lvl
+                                            ? 'bg-white/80 dark:bg-white/15 text-gray-900 dark:text-white border border-white/60 dark:border-white/20 backdrop-blur-xl'
+                                            : 'bg-white/40 dark:bg-white/[0.04] text-gray-600 dark:text-gray-400 hover:bg-white/60 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white'}
+                                    `}
+                                >
+                                    {lvl === 0 ? 'All Lvl' : `Lvl ${lvl}`}
+                                </button>
+                            ))}
                         </div>
                     )}
 
@@ -927,11 +966,14 @@ const Marketplace: React.FC = () => {
                                         {listing.isPack ? (
                                             <PackVisual tokenId={listing.tokenId} className="w-full h-full rounded-none" />
                                         ) : (
-                                            <img
-                                                src={listing.cardImage}
-                                                alt={listing.cardName}
-                                                className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
-                                            />
+                                            <>
+                                                <LevelBadge level={listing.level} />
+                                                <img
+                                                    src={listing.cardImage}
+                                                    alt={listing.cardName}
+                                                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                                                />
+                                            </>
                                         )}
                                     </div>
                                     <div className="p-1.5 md:p-4">
@@ -1014,11 +1056,14 @@ const Marketplace: React.FC = () => {
                                         {auction.isPack ? (
                                             <PackVisual tokenId={auction.tokenId} className="w-full h-full rounded-none" />
                                         ) : (
-                                            <img
-                                                src={auction.cardImage}
-                                                alt={auction.cardName}
-                                                className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
-                                            />
+                                            <>
+                                                <LevelBadge level={auction.level} />
+                                                <img
+                                                    src={auction.cardImage}
+                                                    alt={auction.cardName}
+                                                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                                                />
+                                            </>
                                         )}
                                         {/* Timer */}
                                         <div className={`absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 text-xs font-bold rounded ${auction.isEnded ? 'bg-red-600 text-white' : 'bg-black/80 dark:bg-black/80 text-yc-purple'}`}>

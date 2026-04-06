@@ -128,11 +128,13 @@ async function getPlayerCards(networkName, tournamentId, playerAddress) {
     for (const tokenId of lineup.cardIds) {
         if (tokenId == 0) continue;
         const info = await nft.getCardInfo(tokenId);
+        const level = Number(info.multiplier); // multiplier now = card level (1-5)
         cards.push({
             tokenId: Number(tokenId),
             name: info.name,
             rarity: RARITY_NAMES[info.rarity] || 'Common',
-            multiplier: Number(info.multiplier)
+            level,
+            multiplier: level // level IS the multiplier now
         });
     }
 
@@ -147,13 +149,15 @@ function calculatePlayerScore(playerCards, startupBaseScores) {
 
     for (const card of playerCards) {
         const baseScore = startupBaseScores[card.name] || 0;
-        const cardPoints = baseScore * card.multiplier;
+        const level = card.level || card.multiplier || 1;
+        const cardPoints = baseScore * level;
 
         totalPoints += cardPoints;
         breakdown[card.name] = {
             basePoints: baseScore,
             rarity: card.rarity,
-            multiplier: card.multiplier,
+            level,
+            multiplier: level,
             totalPoints: cardPoints
         };
     }
@@ -195,7 +199,9 @@ async function applyToNetwork(networkName, scoringDate, startupBaseScores, tweet
             console.error(`  [${networkName}] Failed to read tournament: ${error.message}`);
         }
 
-        const hasTournament = tournament && tournament.status === 'active';
+        // Score as long as tournament exists and hasn't been settled yet
+        // (an 'ended' tournament still needs its final day scored before settlement)
+        const hasTournament = tournament && (tournament.status === 'active' || tournament.status === 'ended');
 
         if (hasTournament) {
             console.log(`  Tournament #${tournament.id} | status=${tournament.status} | players=${tournament.entryCount}`);
