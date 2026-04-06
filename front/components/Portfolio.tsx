@@ -315,24 +315,15 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
         if (result && result.success && result.newLevel) {
             setUpgradeStatus('success');
             setUpgradeResultLevel(result.newLevel);
-            // Update local card data
-            setMyCards(prev => prev.map(c =>
-                c.tokenId === upgradeModalCard?.tokenId
-                    ? { ...c, level: result.newLevel!, multiplier: result.newLevel! }
-                    : c
-            ));
-            // Push updated card to server cache
-            if (upgradeModalCard && address) {
-                const updatedCard = { ...upgradeModalCard, level: result.newLevel, multiplier: result.newLevel };
-                updateServerCache(address, [updatedCard]);
-            }
-            clearCache();
-        } else {
+            loadCards(true); // refresh from blockchain to get new level
+        } else if (result && result.burned) {
+            // TX went through but upgrade failed — card is burned on-chain
             setUpgradeStatus('failed');
-            // Card was burned — remove from server cache
-            if (upgradeModalCard && address) {
-                updateServerCache(address, undefined, [upgradeModalCard.tokenId]);
-            }
+            loadCards(true); // refresh from blockchain — card will be gone
+        } else {
+            // TX error (rejected, reverted, gas issue) — card is still alive
+            setUpgradeStatus('idle');
+            // Don't reload — nothing changed on-chain
         }
     };
 
@@ -1071,11 +1062,8 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                                     <p className="text-gray-400 mb-4">Your card has been permanently destroyed.</p>
                                     <button
                                         onClick={() => {
-                                            // Remove burned card from local state
-                                            setMyCards(prev => prev.filter(c => c.tokenId !== upgradeModalCard.tokenId));
                                             setUpgradeModalCard(null);
                                             setUpgradeStatus('idle');
-                                            clearCache();
                                         }}
                                         className="px-6 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all font-bold"
                                     >

@@ -593,7 +593,8 @@ contract AttentionX_NFT is
         returns (address)
     {
         address from = _ownerOf(tokenId);
-        if (from != address(0) && isLocked[tokenId]) {
+        // Block transfers of locked cards, but always allow burns (to == address(0))
+        if (from != address(0) && to != address(0) && isLocked[tokenId]) {
             revert CardIsLocked();
         }
 

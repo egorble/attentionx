@@ -112,7 +112,8 @@ export function useUpgrade() {
 
             setError(errorMsg);
             setIsLoading(false);
-            return { success: false, error: errorMsg };
+            // TX never went through — card is NOT burned, just an error
+            return { success: false, burned: false, error: errorMsg };
         }
     }, []);
 
