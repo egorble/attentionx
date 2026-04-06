@@ -121,8 +121,15 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
     // Upgrade state
     const [upgradeModalCard, setUpgradeModalCard] = useState<CardData | null>(null);
     const [upgradeConfig, setUpgradeConfig] = useState<UpgradeConfig | null>(null);
-    const [upgradeStatus, setUpgradeStatus] = useState<'idle' | 'confirming' | 'success' | 'failed'>('idle');
+    const [upgradeStatus, setUpgradeStatus] = useState<'idle' | 'confirming' | 'processing' | 'success' | 'failed'>('idle');
     const [upgradeResultLevel, setUpgradeResultLevel] = useState<number | null>(null);
+
+    // Refs for upgrade animation
+    const upgradeContainerRef = useRef<HTMLDivElement>(null);
+    const upgradeCardRef = useRef<HTMLImageElement>(null);
+    const upgradeBgRef = useRef<HTMLDivElement>(null);
+    const upgradeRanRef = useRef(false);
+    const upgradeResultRef = useRef<{success: boolean, newLevel?: number, error?: string} | null>(null);
 
     // Hooks
     const { isConnected, address, getSigner, connect } = useWalletContext();
@@ -273,6 +280,8 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
         setUpgradeModalCard(card);
         setUpgradeStatus('idle');
         setUpgradeResultLevel(null);
+        upgradeResultRef.current = null;
+        upgradeRanRef.current = false;
         // Fetch config
         const config = await getUpgradeConfig();
         setUpgradeConfig(config);
@@ -285,23 +294,80 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
         if (!signer) return;
 
         setUpgradeStatus('confirming');
+        upgradeRanRef.current = false;
         const result = await upgradeCard(signer, upgradeModalCard.tokenId);
 
-        if (result.success && result.newLevel) {
+        upgradeResultRef.current = result;
+        setUpgradeStatus('processing');
+    };
+
+    const finalizeUpgrade = () => {
+        const result = upgradeResultRef.current;
+        if (result && result.success && result.newLevel) {
             setUpgradeStatus('success');
             setUpgradeResultLevel(result.newLevel);
             // Update local card data
             setMyCards(prev => prev.map(c =>
-                c.tokenId === upgradeModalCard.tokenId
+                c.tokenId === upgradeModalCard?.tokenId
                     ? { ...c, level: result.newLevel!, multiplier: result.newLevel! }
                     : c
             ));
-            // Invalidate cache and refresh
+            // Push updated card to server cache
+            if (upgradeModalCard && address) {
+                const updatedCard = { ...upgradeModalCard, level: result.newLevel, multiplier: result.newLevel };
+                updateServerCache(address, [updatedCard]);
+            }
             clearCache();
         } else {
             setUpgradeStatus('failed');
+            // Card was burned — remove from server cache
+            if (upgradeModalCard && address) {
+                updateServerCache(address, undefined, [upgradeModalCard.tokenId]);
+            }
         }
     };
+
+    // GSAP Animation Effect for Upgrade
+    useLayoutEffect(() => {
+        if (upgradeStatus === 'processing' && upgradeContainerRef.current && !upgradeRanRef.current) {
+            upgradeRanRef.current = true;
+
+            const ctx = gsap.context(() => {
+                const tl = gsap.timeline();
+
+                // Blinking background gradient
+                gsap.to(upgradeBgRef.current, {
+                    opacity: 1,
+                    duration: 0.15,
+                    yoyo: true,
+                    repeat: 15,
+                    ease: "power2.inOut"
+                });
+
+                // Spin the card and scale
+                tl.to(upgradeCardRef.current, {
+                    rotationY: 1080, // 3 full spins
+                    scale: 1.25,
+                    duration: 2.5,
+                    ease: "power1.inOut"
+                }).to(upgradeCardRef.current, {
+                    scale: 1,
+                    duration: 0.3,
+                    ease: "back.out(1.7)"
+                });
+            }, upgradeContainerRef);
+
+            const animationDuration = 2800; // time it takes to finish animation
+            const timer = setTimeout(() => {
+                finalizeUpgrade();
+            }, animationDuration);
+
+            return () => {
+                clearTimeout(timer);
+                ctx.revert(); // clean up gsap timeline
+            };
+        }
+    }, [upgradeStatus]);
 
     // Execute Merge - transaction first, animation after success
     const handleForge = async () => {
@@ -881,17 +947,21 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
 
                 {/* Upgrade Modal */}
                 {upgradeModalCard && (
-                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => { setUpgradeModalCard(null); setUpgradeStatus('idle'); }}>
-                        <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-white/20 dark:border-white/10" onClick={e => e.stopPropagation()}>
-                            <div className="flex justify-between items-center mb-4">
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => { if(upgradeStatus !== 'processing' && upgradeStatus !== 'confirming') { setUpgradeModalCard(null); setUpgradeStatus('idle'); } }}>
+                        <div ref={upgradeContainerRef} className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-white/20 dark:border-white/10 relative overflow-hidden" onClick={e => e.stopPropagation()}>
+                            
+                            {/* Blinking Background Gradient for Animation */}
+                            <div ref={upgradeBgRef} className="absolute inset-0 bg-gradient-to-tr from-purple-600/40 via-fuchsia-500/40 to-indigo-600/40 opacity-0 pointer-events-none mix-blend-screen transition-opacity" />
+
+                            <div className="flex justify-between items-center mb-4 relative z-10">
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Upgrade Card</h3>
-                                <button onClick={() => { setUpgradeModalCard(null); setUpgradeStatus('idle'); }} className="text-gray-400 hover:text-white">
+                                <button onClick={() => { setUpgradeModalCard(null); setUpgradeStatus('idle'); }} disabled={upgradeStatus === 'confirming' || upgradeStatus === 'processing'} className="text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed">
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
 
-                            <div className="flex items-center gap-4 mb-4">
-                                <img src={upgradeModalCard.image} alt={upgradeModalCard.name} className="w-20 h-20 rounded-lg object-contain" />
+                            <div className="flex items-center gap-4 mb-4 relative z-10" style={{ perspective: '1000px' }}>
+                                <img ref={upgradeCardRef} src={upgradeModalCard.image} alt={upgradeModalCard.name} className="w-20 h-20 rounded-lg object-contain" style={{ transformStyle: 'preserve-3d' }} />
                                 <div>
                                     <p className="font-bold text-gray-900 dark:text-white">{upgradeModalCard.name}</p>
                                     <p className="text-sm text-gray-500">{upgradeModalCard.rarity}</p>
@@ -931,14 +1001,20 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                             )}
 
                             {upgradeStatus === 'confirming' && (
-                                <div className="text-center py-4">
+                                <div className="text-center py-4 relative z-10">
                                     <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-yc-purple" />
                                     <p className="text-gray-400">Confirm in your wallet...</p>
                                 </div>
                             )}
 
+                            {upgradeStatus === 'processing' && (
+                                <div className="text-center py-4 relative z-10">
+                                    <p className="text-fuchsia-400 font-black animate-pulse text-xl tracking-widest mt-2">UPGRADING...</p>
+                                </div>
+                            )}
+
                             {upgradeStatus === 'success' && (
-                                <div className="text-center py-4">
+                                <div className="text-center py-4 relative z-10">
                                     <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
                                         <ArrowUp className="w-8 h-8 text-green-500" />
                                     </div>
@@ -946,20 +1022,20 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                                     <p className="text-gray-400 mb-4">Card is now Level {upgradeResultLevel}</p>
                                     <button
                                         onClick={() => { setUpgradeModalCard(null); setUpgradeStatus('idle'); }}
-                                        className="px-6 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all"
+                                        className="px-6 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all font-bold"
                                     >
-                                        Close
+                                        Awesome!
                                     </button>
                                 </div>
                             )}
 
                             {upgradeStatus === 'failed' && (
-                                <div className="text-center py-4">
-                                    <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-3 animate-pulse">
+                                <div className="text-center py-4 relative z-10">
+                                    <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-3 animate-[shake_0.5s_ease-in-out]">
                                         <X className="w-8 h-8 text-red-500" />
                                     </div>
-                                    <h4 className="text-xl font-bold text-red-400 mb-1">Card Burned!</h4>
-                                    <p className="text-gray-400 mb-4">Upgrade failed. Your card has been permanently destroyed.</p>
+                                    <h4 className="text-xl font-bold text-red-400 mb-1">Upgrade Failed!</h4>
+                                    <p className="text-gray-400 mb-4">Your card has been permanently destroyed.</p>
                                     <button
                                         onClick={() => {
                                             // Remove burned card from local state
@@ -968,7 +1044,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                                             setUpgradeStatus('idle');
                                             clearCache();
                                         }}
-                                        className="px-6 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all"
+                                        className="px-6 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all font-bold"
                                     >
                                         Close
                                     </button>

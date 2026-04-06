@@ -238,6 +238,22 @@ app.get("/", (req, res) => {
     });
 });
 
+// Invalidate cache for specific token(s) — called by frontend after upgrade/merge
+app.delete("/metadata/cache/:tokenId", (req, res) => {
+    const tokenId = parseInt(req.params.tokenId);
+    if (isNaN(tokenId) || tokenId <= 0) return res.status(400).json({ error: "Invalid tokenId" });
+    tokenCache.delete(tokenId);
+    res.json({ success: true, invalidated: tokenId });
+});
+
+app.delete("/metadata/cache", (req, res) => {
+    const idsParam = req.query.tokenIds;
+    if (!idsParam) return res.status(400).json({ error: "tokenIds query parameter required" });
+    const tokenIds = String(idsParam).split(",").map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
+    tokenIds.forEach(id => tokenCache.delete(id));
+    res.json({ success: true, invalidated: tokenIds });
+});
+
 app.get("/metadata/batch", async (req, res) => {
     try {
         const idsParam = req.query.tokenIds;
@@ -264,7 +280,7 @@ app.get("/metadata/batch", async (req, res) => {
             else tokens[r.tokenId] = r.metadata;
         }
 
-        res.set("Cache-Control", "public, max-age=3600");
+        res.set("Cache-Control", "public, max-age=60");
         res.json({ tokens, errors });
     } catch (error) {
         console.error("Error in batch metadata:", error);
@@ -283,7 +299,7 @@ app.get("/metadata/:tokenId", async (req, res) => {
         const metadata = buildMetadata(tokenId, tokenData);
         if (metadata.error) return res.status(404).json({ error: metadata.error });
 
-        res.set("Cache-Control", "public, max-age=3600");
+        res.set("Cache-Control", "public, max-age=60");
         res.json(metadata);
     } catch (error) {
         console.error("Error generating metadata:", error);

@@ -264,3 +264,10 @@ html.dark .boost-border-anim::after,
   initial-value: 0deg;
   inherits: false;
 }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); }
+  75% { transform: translateX(-4px); }
+}

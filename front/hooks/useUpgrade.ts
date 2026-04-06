@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { getNFTContract, NFT_ABI, getActiveContracts } from '../lib/contracts';
 import { blockchainCache, CacheKeys } from '../lib/cache';
+import { metadataUrl } from '../lib/api';
 
 // Upgrade chance display (basis points → percentage)
 const DEFAULT_CHANCES: Record<number, number> = {
@@ -83,8 +84,10 @@ export function useUpgrade() {
                 }
             }
 
-            // Invalidate metadata cache for this token
+            // Invalidate ALL caches for this token
             blockchainCache.invalidate(CacheKeys.cardMetadata(tokenId));
+            // Invalidate backend metadata server cache (so refresh gets fresh data)
+            try { await fetch(metadataUrl(`/cache/${tokenId}`), { method: 'DELETE' }); } catch {}
 
             setIsLoading(false);
             return {

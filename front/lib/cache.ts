@@ -364,6 +364,30 @@ class BlockchainCache {
 // Singleton instance
 export const blockchainCache = new BlockchainCache();
 
+// ── Build version cache bust ──
+// Every deploy gets a new __BUILD_TIMESTAMP__. If it changed, wipe all caches.
+declare const __BUILD_TIMESTAMP__: string;
+const BUILD_VERSION_KEY = 'fyc:buildVersion';
+
+try {
+    const currentBuild = typeof __BUILD_TIMESTAMP__ !== 'undefined' ? __BUILD_TIMESTAMP__ : '';
+    const storedBuild = localStorage.getItem(BUILD_VERSION_KEY);
+    if (currentBuild && storedBuild && storedBuild !== currentBuild) {
+        console.warn('[cache] New build detected — clearing all caches.');
+        // Wipe all fyc: keys from localStorage
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('fyc:')) keysToRemove.push(key);
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+        blockchainCache.clear();
+    }
+    if (currentBuild) {
+        localStorage.setItem(BUILD_VERSION_KEY, currentBuild);
+    }
+} catch { /* SSR or localStorage unavailable */ }
+
 // Auto-restore NFT card cache from localStorage on startup (instant load)
 const _restored = blockchainCache.restoreKeys('nft:');
 if (_restored > 0) {
