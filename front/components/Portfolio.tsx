@@ -69,6 +69,8 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
     const [myCards, setMyCards] = useState<CardData[]>([]);
     const [isMergeMode, setIsMergeMode] = useState(false);
     const [selectedCardIds, setSelectedCardIds] = useState<number[]>([]);
+    const [isUpgradeMode, setIsUpgradeMode] = useState(false);
+    const [selectedUpgradeCardId, setSelectedUpgradeCardId] = useState<number | null>(null);
     const [mergeStatus, setMergeStatus] = useState<'idle' | 'confirming' | 'processing' | 'success'>('idle');
     const [newlyForgedCard, setNewlyForgedCard] = useState<CardData | null>(null);
     const [viewingCard, setViewingCard] = useState<CardDetailData | null>(null);
@@ -260,6 +262,13 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
     const handleCardClick = (card: CardData) => {
         if (isMergeMode) {
             toggleCardSelection(card.tokenId);
+        } else if (isUpgradeMode) {
+            if (card.isLocked || (card.level || card.multiplier || 1) >= 5) return;
+            if (selectedUpgradeCardId === card.tokenId) {
+                setSelectedUpgradeCardId(null);
+            } else {
+                setSelectedUpgradeCardId(card.tokenId);
+            }
         } else {
             setViewingCardData(card); // Store full card data
             setViewingCard({
@@ -926,23 +935,47 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                         </button>
                     </h3>
 
-                    <button
-                        onClick={() => {
-                            setIsMergeMode(!isMergeMode);
-                            setSelectedCardIds([]);
-                            setViewingCard(null);
-                            setViewingCardData(null);
-                        }}
-                        className={`
-                        flex items-center px-4 py-2 rounded-xl text-sm font-bold transition-all border
-                        ${isMergeMode
-                                ? 'bg-white/70 dark:bg-zinc-900/70 backdrop-blur-2xl text-black dark:text-white border-white/40 dark:border-white/[0.15] shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]'
-                                : 'bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl text-gray-500 hover:text-yc-text-primary dark:hover:text-white border-white/40 dark:border-white/[0.08] shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]'}
-                    `}
-                    >
-                        {isMergeMode ? <X className="w-4 h-4 mr-2" /> : <Layers className="w-4 h-4 mr-2" />}
-                        {isMergeMode ? 'Cancel Merge' : 'Merge Cards'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => {
+                                setIsUpgradeMode(!isUpgradeMode);
+                                setSelectedUpgradeCardId(null);
+                                setIsMergeMode(false);
+                                setSelectedCardIds([]);
+                                setViewingCard(null);
+                                setViewingCardData(null);
+                            }}
+                            className={`
+                            flex items-center px-4 py-2 rounded-xl text-sm font-bold transition-all border
+                            ${isUpgradeMode
+                                    ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white border-transparent shadow-[0_4px_16px_rgba(139,92,246,0.3)]'
+                                    : 'bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl text-gray-500 hover:text-yc-text-primary dark:hover:text-white border-white/40 dark:border-white/[0.08] shadow-[0_4px_16px_rgba(0,0,0,0.06)]'
+                            }
+                        `}
+                        >
+                            {isUpgradeMode ? <X className="w-4 h-4 mr-2" /> : <ArrowUp className="w-4 h-4 mr-2" />}
+                            {isUpgradeMode ? 'Cancel Upgrade' : 'Upgrade Card'}
+                        </button>
+                        <button
+                            onClick={() => {
+                                setIsMergeMode(!isMergeMode);
+                                setSelectedCardIds([]);
+                                setIsUpgradeMode(false);
+                                setSelectedUpgradeCardId(null);
+                                setViewingCard(null);
+                                setViewingCardData(null);
+                            }}
+                            className={`
+                            flex items-center px-4 py-2 rounded-xl text-sm font-bold transition-all border
+                            ${isMergeMode
+                                    ? 'bg-white/70 dark:bg-zinc-900/70 backdrop-blur-2xl text-black dark:text-white border-white/40 dark:border-white/[0.15] shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]'
+                                    : 'bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl text-gray-500 hover:text-yc-text-primary dark:hover:text-white border-white/40 dark:border-white/[0.08] shadow-[0_4px_16px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]'}
+                        `}
+                        >
+                            {isMergeMode ? <X className="w-4 h-4 mr-2" /> : <Layers className="w-4 h-4 mr-2" />}
+                            {isMergeMode ? 'Cancel Merge' : 'Merge Cards'}
+                        </button>
+                    </div>
                 </div>
 
                 {/* Upgrade Modal */}
@@ -1054,11 +1087,18 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                     </div>
                 )}
 
-                {/* Merge Instructions */}
+                {/* Merge/Upgrade Instructions */}
                 {isMergeMode && (
                     <div className="mb-6 p-4 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-2xl flex items-center animate-[fadeIn_0.3s] shadow-[0_8px_32px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]">
                         <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400">Select <span className="text-gray-900 dark:text-white font-semibold">3 cards of same rarity</span> to forge 1 higher rarity.</p>
+                        </div>
+                    </div>
+                )}
+                {isUpgradeMode && (
+                    <div className="mb-6 p-4 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/40 dark:border-white/[0.08] rounded-2xl flex items-center animate-[fadeIn_0.3s] shadow-[0_8px_32px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]">
+                        <div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Select <span className="text-gray-900 dark:text-white font-semibold">1 card</span> to risk an upgrade.</p>
                         </div>
                     </div>
                 )}
@@ -1090,8 +1130,13 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                 {myCards.length > 0 && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 md:gap-4 pb-24">
                         {myCards.map((card) => {
-                            const isSelected = selectedCardIds.includes(card.tokenId);
-                            const isDimmed = isMergeMode && !isSelected && (selectedCardIds.length >= 3 || !getAvailableForMerge(card));
+                            const isSelectedForMerge = selectedCardIds.includes(card.tokenId);
+                            const isSelectedForUpgrade = selectedUpgradeCardId === card.tokenId;
+                            const isSelected = isMergeMode ? isSelectedForMerge : (isUpgradeMode ? isSelectedForUpgrade : false);
+                            
+                            const isDimmedMerge = isMergeMode && !isSelectedForMerge && (selectedCardIds.length >= 3 || !getAvailableForMerge(card));
+                            const isDimmedUpgrade = isUpgradeMode && !isSelectedForUpgrade && (card.isLocked || (card.level || card.multiplier || 1) >= 5 || (selectedUpgradeCardId !== null));
+                            const isDimmed = isMergeMode ? isDimmedMerge : (isUpgradeMode ? isDimmedUpgrade : false);
 
                             return (
                                 <div
@@ -1107,7 +1152,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                               `}
                                 >
                                     {/* Selection Checkbox Overlay */}
-                                    {isMergeMode && !card.isLocked && card.rarity !== Rarity.LEGENDARY && (
+                                    {((isMergeMode && !card.isLocked && card.rarity !== Rarity.LEGENDARY) || (isUpgradeMode && !card.isLocked && (card.level || card.multiplier || 1) < 5)) && (
                                         <div className={`absolute top-3 right-3 z-20 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-yc-purple border-yc-purple' : 'bg-black/50 border-white/50'}`}>
                                             {isSelected && <Check className="w-4 h-4 text-white" />}
                                         </div>
@@ -1127,8 +1172,8 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                                         <img src={card.image} alt={card.name} className="w-full h-full object-contain" />
                                     </div>
 
-                                    {/* Upgrade button - visible when not in merge mode and card is upgradeable */}
-                                    {!isMergeMode && !card.isLocked && (card.level || card.multiplier || 1) < 5 && (
+                                    {/* Upgrade button - visible when not in mode and card is upgradeable */}
+                                    {!isMergeMode && !isUpgradeMode && !card.isLocked && (card.level || card.multiplier || 1) < 5 && (
                                         <button
                                             onClick={(e) => { e.stopPropagation(); openUpgradeModal(card); }}
                                             className="absolute bottom-1.5 right-1.5 md:bottom-2 md:right-2 z-20 bg-gradient-to-r from-yc-purple to-violet-600 text-white text-[9px] md:text-[10px] font-bold px-2 py-1 md:px-2.5 md:py-1 rounded-lg shadow-lg hover:opacity-90 transition-all active:scale-95 flex items-center gap-0.5"
@@ -1142,7 +1187,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                         })}
 
                         {/* Add New Asset Placeholder */}
-                        {!isMergeMode && (
+                        {!isMergeMode && !isUpgradeMode && (
                             <button
                                 onClick={() => onBuyPack()}
                                 className="border-2 border-dashed border-white/40 dark:border-white/[0.08] rounded-xl flex flex-col items-center justify-center p-4 md:p-6 text-gray-400 hover:text-yc-purple hover:border-yc-purple/40 dark:hover:border-white/[0.15] transition-colors min-h-[120px] md:min-h-[280px] bg-white/30 dark:bg-zinc-900/30 backdrop-blur-xl"
@@ -1151,6 +1196,35 @@ const Portfolio: React.FC<PortfolioProps> = ({ onBuyPack, onOpenPacks, packRefre
                                 <span className="font-bold text-sm">Add Asset</span>
                             </button>
                         )}
+                    </div>
+                )}
+
+                {/* Floating Action Bar for Upgrade */}
+                {isUpgradeMode && (
+                    <div className="fixed bottom-28 md:bottom-8 left-1/2 transform -translate-x-1/2 z-40 animate-[slideUp_0.3s_cubic-bezier(0.2,0.8,0.2,1)]">
+                        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-2xl border border-white/40 dark:border-white/[0.1] p-2 pl-5 pr-2 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] flex items-center gap-4">
+                            <span className="text-gray-900 dark:text-white font-mono font-bold text-base">{selectedUpgradeCardId !== null ? '1' : '0'}/1</span>
+                            <button
+                                disabled={selectedUpgradeCardId === null}
+                                onClick={() => {
+                                    if (selectedUpgradeCardId !== null) {
+                                        const card = myCards.find(c => c.tokenId === selectedUpgradeCardId);
+                                        if (card) {
+                                            setSelectedUpgradeCardId(null);
+                                            openUpgradeModal(card);
+                                        }
+                                    }
+                                }}
+                                className={`
+                                px-6 py-2.5 rounded-xl font-bold uppercase tracking-wider text-sm transition-all
+                                ${selectedUpgradeCardId !== null
+                                        ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-[0_0_20px_rgba(139,92,246,0.5)] animate-pulse'
+                                        : 'bg-gray-800 text-gray-500 cursor-not-allowed'}
+                            `}
+                            >
+                                Upgrade
+                            </button>
+                        </div>
                     </div>
                 )}
 
